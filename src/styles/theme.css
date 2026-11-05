@@ -1,0 +1,2945 @@
+/* People Taxi — "Friendly and rounded" theme. Loaded last.
+   Bright blue with soft sky tints, pill-shaped buttons, big gentle corners, bubbly shadows and gradient
+   highlights. Behaviour and layout stay the same as the other two customer sites. */
+
+:root {
+  --shadow-1: 0 3px 10px rgb(22 101 232 / 0.08);
+  --shadow-2: 0 10px 28px rgb(22 101 232 / 0.14);
+}
+
+/* ── Headlines: round and heavy ──────────────────────────────────────────────────────────────────── */
+h1,
+h2,
+.display-h,
+.hx-head h2,
+.sec-heading h2 {
+  font-weight: 800;
+  letter-spacing: -0.015em;
+}
+.hx-head h2::after,
+.sec-heading h2::after,
+.routes__head .display-h::after,
+.why__intro .display-h::after,
+.faq__intro .display-h::after {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 6px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--brand);
+}
+
+/* ── Buttons: pills with a gradient ──────────────────────────────────────────────────────────────── */
+.btn {
+  border-radius: 999px;
+  font-weight: 800;
+}
+.btn--primary {
+  border-color: transparent;
+  background: var(--brand);
+  box-shadow: 0 10px 22px -10px rgb(22 101 232 / 0.75);
+}
+.btn--primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+.btn--secondary {
+  border-color: var(--brand-line);
+  color: var(--brand-ink);
+}
+
+/* ── Hero: a soft sky wash with bubbles ──────────────────────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .home-hero::after {
+    background: rgb(244 249 255 / 0.82);
+  }
+  .hero-copy h1 {
+    font-size: clamp(2rem, 1.3rem + 2.4vw, 3.4rem);
+  }
+  .bf {
+    border: 0;
+    border-radius: var(--r-xl);
+    box-shadow: 0 2px 6px rgb(15 23 42 / 0.12), 0 20px 44px -26px rgb(15 23 42 / 0.4);
+  }
+}
+
+/* ── Booking form: pill tabs with a gradient when chosen ─────────────────────────────────────────── */
+.bf-services {
+  gap: 6px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+}
+.bf-service {
+  border-radius: 999px;
+  font-weight: 700;
+}
+.bf-service.is-active {
+  border-color: transparent;
+  background: var(--brand);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px rgb(22 101 232 / 0.8);
+}
+.bf-service.is-active .icon {
+  color: #fff;
+}
+.bf-journey.tabs {
+  border-radius: 999px;
+}
+.bf-journey.tabs .tab {
+  border-radius: 999px;
+}
+.bf-submit {
+  min-height: 54px;
+  border-radius: 999px;
+  font-size: 1rem;
+}
+.bf-add-city {
+  border-radius: 999px;
+}
+
+/* ── Cards: soft and floating ────────────────────────────────────────────────────────────────────── */
+.hx-service,
+.hx-photo,
+.review-card,
+.catalog-item,
+.faq__item,
+.why__list > li {
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-1);
+}
+
+/* ── Phone bar, floating buttons, menu ───────────────────────────────────────────────────────────── */
+.tabbar,
+.bottom-nav {
+  border-top: 0;
+  box-shadow: 0 -1px 0 var(--line);
+}
+.floating-ai-launcher--people {
+  background: var(--brand);
+}
+.drawer__panel {
+  border-radius: 0 var(--r-lg) var(--r-lg) 0;
+}
+.drawer__call {
+  border-radius: 999px;
+  background: var(--brand);
+}
+.drawer__quick a {
+  border-radius: 999px;
+}
+
+/* Crystal clear: a flat white page, solid buttons, no glow, no moving decoration. */
+.home {
+  background: var(--surface, #fff);
+}
+.home::before,
+.home::after,
+.home__wrap::before {
+  display: none;
+}
+.bf-submit {
+  background-image: none;
+  background: var(--brand);
+  box-shadow: none;
+  animation: none;
+}
+.bf-submit::after {
+  display: none;
+}
+.bf-submit:hover:not(:disabled) {
+  background: var(--brand-hover);
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+.btn--primary,
+.btn--primary:hover:not(:disabled) {
+  box-shadow: none;
+}
+.bf {
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.1), 0 12px 28px -16px rgb(15 23 42 / 0.28);
+}
+.bf:focus-within {
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.1), 0 12px 28px -16px rgb(15 23 42 / 0.28);
+}
+.floating-call-btn,
+.floating-call-btn__icon,
+.floating-ai-launcher,
+.floating-ai-launcher__pulse {
+  animation: none;
+}
+.floating-call-btn {
+  background: #1f7a4d;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.28);
+}
+.floating-call-btn:hover {
+  background: #186540;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.28);
+  transform: none;
+}
+.floating-ai-launcher {
+  background-image: none;
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.28);
+}
+.floating-ai-launcher:hover {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 0.28);
+  transform: none;
+}
+.floating-ai-launcher__pulse {
+  display: none;
+}
+.floating-ai-launcher--people,
+.ai-chat-window--people .ai-chat-head {
+  background: var(--brand);
+}
+
+/* ── Phone hero: the same photo, centred logo and bold headline as the desktop ───────────────────── */
+@media (max-width: 767.98px) {
+  .home__wrap {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .home-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    gap: 14px;
+    width: auto;
+    max-width: none;
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 28px var(--gutter) 36px;
+  }
+  .home-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -2;
+    background: url('/website-images/web/heroes/hero-desktop.webp') 58% 50% / cover no-repeat;
+  }
+  .home-hero::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgb(244 249 255 / 0.84);
+  }
+  .hero-logo {
+    display: flex;
+    order: -1;
+    justify-content: center;
+    margin: 0 auto 2px;
+  }
+  .hero-logo img {
+    width: auto;
+    height: 44px;
+  }
+  .topbar .brand {
+    transition: opacity 0.3s ease, visibility 0.3s;
+  }
+  html[data-hero-logo='in'] .topbar .brand {
+    opacity: 0;
+    visibility: hidden;
+  }
+  .hero-copy h1 {
+    font-size: clamp(1.6rem, 7.4vw, 2.1rem);
+    font-weight: 800;
+    line-height: 1.1;
+    text-align: center;
+  }
+}
+
+/* The header keeps its logo at all times; the hero logo is larger. */
+html[data-hero-logo='in'] .topbar .brand {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.hero-logo img {
+  width: auto;
+  height: clamp(68px, 6.2vw, 96px);
+}
+@media (max-width: 767.98px) {
+  .hero-logo img {
+    height: 62px;
+  }
+}
+
+/* Service buttons: readable text on the pale bar; the chosen one is solid blue with white text. */
+.bf-service {
+  background: transparent;
+  color: var(--brand-ink);
+}
+.bf-service:hover:not(.is-active) {
+  background: #fff;
+  color: var(--brand);
+}
+.bf-service.is-active,
+.bf-service.is-active:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+/* ── Layout: photo first, headline top-left, the booking bar anchored along the bottom ──────────── */
+@media (min-width: 768px) {
+  .home-hero {
+    justify-content: space-between;
+  }
+  .hero-copy {
+    align-items: flex-start;
+    text-align: left;
+  }
+  .hero-logo {
+    justify-content: flex-start;
+    margin-inline: 0;
+  }
+  .hero-copy h1 {
+    max-width: 14ch;
+    font-size: clamp(2.4rem, 1.4rem + 3vw, 4.2rem);
+    line-height: 1.04;
+  }
+}
+
+/* Section headings are centred. */
+.sec-heading,
+.hx-head,
+.routes__head,
+.why__intro,
+.faq__intro {
+  text-align: center;
+}
+.hx-head__text {
+  margin-inline: auto;
+}
+.hx-head h2::after,
+.sec-heading h2::after,
+.routes__head .display-h::after,
+.why__intro .display-h::after,
+.faq__intro .display-h::after {
+  margin-inline: auto;
+}
+
+/* Phone bar: a floating pill instead of a full-width strip. */
+@media (max-width: 899.98px) {
+  .tabbar {
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    left: 12px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 6px 18px rgb(15 23 42 / 0.16);
+  }
+}
+
+/* Multicity on phones: the same padded inner box as the single-trip form, so fields never touch the card edge. */
+@media (max-width: 767.98px) {
+  .bf-multicity {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface, #fff);
+  }
+}
+
+/* ── Fonts (bundled; latin) ─────────────────────────────────────────────────────────────────────── */
+@font-face {
+  font-family: 'Nunito';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('../assets/fonts/nunito-400-900.woff2') format('woff2');
+}
+
+/* ── Icons: soft rounded lines, set in tinted bubbles on the service buttons ─────────────────────── */
+.icon svg {
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.bf-service .icon {
+  box-sizing: content-box;
+  padding: 5px;
+  border-radius: 50%;
+  background: rgb(22 101 232 / 0.1);
+}
+.bf-service.is-active .icon {
+  background: rgb(255 255 255 / 0.22);
+}
+
+/* ── Side menu: a bottom sheet with rounded top corners, pill shortcuts and soft cards ───────────── */
+.drawer {
+  align-items: flex-end;
+}
+.drawer__panel {
+  width: 100%;
+  height: auto;
+  max-height: 88dvh;
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -12px 40px rgb(15 23 42 / 0.25);
+}
+.drawer__panel::before {
+  content: '';
+  flex: none;
+  align-self: center;
+  width: 44px;
+  height: 5px;
+  margin-top: 10px;
+  border-radius: 999px;
+  background: var(--line-strong);
+}
+.drawer__head {
+  padding: 8px 14px 4px 20px;
+  border-bottom: 0;
+}
+.drawer__quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 6px 16px 12px;
+}
+.drawer__quick a {
+  min-height: 46px;
+  padding: 0 18px 0 8px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 800;
+}
+.drawer__quick a .icon {
+  box-sizing: content-box;
+  padding: 6px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand);
+}
+.drawer__group {
+  margin: 0 16px 8px;
+  border-top: 0;
+  border-radius: 20px;
+  background: var(--sunken);
+}
+.drawer__group summary {
+  min-height: 52px;
+  padding: 0 18px;
+  color: var(--ink);
+  font-size: 0.9375rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.drawer__links {
+  padding: 0 8px 10px;
+}
+.drawer__foot {
+  border-top: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .drawer__panel {
+    animation-name: drawer-up;
+  }
+}
+@keyframes drawer-up {
+  from {
+    translate: 0 100%;
+  }
+}
+
+/* Header on wide screens: while the hero shows the logo, the header leaves its own out and "Book a ride"
+   takes the first place; once the hero scrolls away the logo slides back in and the menu moves along. */
+@media (min-width: 900px) {
+  .topnav {
+    justify-content: flex-start;
+  }
+  .topbar .brand {
+    max-width: 260px;
+    overflow: hidden;
+    transition: max-width 0.4s ease, opacity 0.3s ease, visibility 0.4s;
+  }
+  html[data-hero-logo='in'] .topbar .brand {
+    max-width: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* The same on phones and small tablets: no header logo while the hero shows it; it slides in on scroll. */
+@media (max-width: 899.98px) {
+  .topbar__mobile {
+    margin-left: auto;
+  }
+  .topbar .brand {
+    max-width: 220px;
+    overflow: hidden;
+    transition: max-width 0.4s ease, opacity 0.3s ease, visibility 0.4s;
+  }
+  html[data-hero-logo='in'] .topbar .brand {
+    max-width: 0;
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+/* Side menu shortcuts: a tidy 2 × 2 grid of equal pills. */
+.drawer__quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.drawer__quick a {
+  justify-content: flex-start;
+  gap: 8px;
+  min-width: 0;
+  padding: 0 10px 0 6px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+.drawer__quick a .icon {
+  flex: none;
+}
+
+/* ── Inner pages: plain page headers and white account cards (no banner, no rings, no gradients) ─── */
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px 24px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink);
+  isolation: auto;
+  overflow: visible;
+}
+.page-head::before,
+.page-head::after {
+  display: none;
+}
+.page-head__text h1 {
+  color: var(--ink);
+  font-weight: 800;
+}
+.page-head .eyebrow {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+.page-head__text p:not(.eyebrow) {
+  color: var(--muted);
+}
+.page-head .btn--secondary {
+  --btn-bg: #fff;
+  --btn-fg: var(--ink);
+  --btn-line: var(--line-strong);
+}
+.page-head .btn--primary {
+  --btn-bg: var(--brand);
+  --btn-fg: #fff;
+  --btn-line: var(--brand);
+  box-shadow: none;
+}
+.page-head .back-link {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.profile-card {
+  padding: 28px 20px 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #fff;
+  box-shadow: none;
+  color: var(--body);
+}
+.profile-card .muted {
+  color: var(--muted);
+}
+.profile-card h2 {
+  color: var(--ink);
+  font-weight: 800;
+}
+.profile-card .btn--secondary {
+  --btn-bg: #fff;
+  --btn-fg: var(--brand-ink);
+  --btn-line: var(--brand-line);
+}
+.profile-card__photo {
+  border: 3px solid var(--brand-soft);
+  box-shadow: none;
+}
+.profile-card__cam {
+  border-color: #fff;
+  background: var(--brand);
+  color: #fff;
+}
+.credit-card {
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #fff;
+  box-shadow: none;
+  color: var(--ink);
+}
+.credit-card:hover {
+  transform: none;
+  border-color: var(--brand-line);
+}
+.credit-card > .icon {
+  color: var(--brand);
+}
+.credit-card__text small {
+  color: var(--muted);
+  font-weight: 600;
+}
+.credit-card__text strong {
+  font-weight: 800;
+}
+.group > h2.eyebrow {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+}
+
+/* A page header with a back button: the button sits to the left of the title. */
+.page-head:has(> .back-btn) {
+  flex-wrap: nowrap;
+  gap: 12px;
+  justify-content: flex-start;
+}
+.page-head:has(> .back-btn) .page-head__actions {
+  margin-left: auto;
+}
+
+/* Vehicle cards on phones: the price sits right under the car image; "Fare details" is at the bottom left. */
+@media (max-width: 999.98px) {
+  .cab__info {
+    display: flex;
+    flex-direction: column;
+    grid-row: 1 / span 2;
+  }
+  .cab__breakup-btn {
+    margin-top: auto;
+    padding-top: 8px;
+  }
+  .cab__photo {
+    align-self: start;
+  }
+  .cab__price {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+}
+
+/* Under the Confirm button: the shield on the left, two short lines of text beside it. */
+.rv-act__note {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 2px;
+  align-items: start;
+  justify-content: center;
+  text-align: left;
+}
+.rv-act__note > .icon {
+  grid-row: 1 / span 2;
+  margin-top: 2px;
+  color: var(--brand);
+}
+.rv-act__note a {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* Wide screens: the total is already in the price summary on the right, so the left card does not repeat it. */
+@media (min-width: 1000px) {
+  .rv-sum__total {
+    display: none;
+  }
+}
+
+/* Hero on wide screens: the form sits close under the headline. */
+@media (min-width: 768px) {
+  .home-hero {
+    justify-content: center;
+    gap: clamp(18px, 2.4vw, 32px);
+  }
+}
+
+/* ── Booking done: the success mark (a ring that draws, a disc that pops, a tick, ripples, confetti) ── */
+.success-burst {
+  --sb: var(--brand);
+  --sb-gold: #ffc53d;
+  --sb-soft: #a9c8fb;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+  margin: 0 auto 4px;
+}
+.success-burst__svg {
+  position: relative;
+  z-index: 1;
+  width: 128px;
+  height: 128px;
+  overflow: visible;
+}
+.success-burst__halo {
+  fill: none;
+  stroke: var(--sb);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 340;
+  opacity: 0.35;
+}
+.success-burst__disc {
+  fill: var(--sb);
+  transform-origin: 60px 60px;
+}
+.success-burst__tick {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 60;
+}
+.success-burst__ripple {
+  position: absolute;
+  inset: 22px;
+  border: 2px solid var(--sb);
+  border-radius: 50%;
+  opacity: 0;
+}
+.success-burst__bit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 2px;
+  background: var(--sb);
+  opacity: 0;
+}
+.success-burst__bit--1 {
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--sb-gold);
+}
+.success-burst__bit--2 {
+  width: 10px;
+  height: 5px;
+  margin: -2.5px 0 0 -5px;
+  background: var(--sb-soft);
+}
+.success-burst__bit--3 {
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: var(--sb-gold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .success-burst__halo {
+    animation: sb-ring 0.8s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .success-burst__disc {
+    animation: sb-pop 0.6s 0.25s cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  }
+  .success-burst__tick {
+    animation: sb-tick 0.45s 0.7s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .success-burst__ripple {
+    animation: sb-ripple 1.5s 0.75s ease-out 2 both;
+  }
+  .success-burst__ripple--late {
+    animation-delay: 1.15s;
+  }
+  .success-burst__bit {
+    animation: sb-burst 1.15s var(--t, 0.6s) cubic-bezier(0.15, 0.7, 0.3, 1) both;
+  }
+  .success-burst ~ h1,
+  .success-burst ~ p {
+    animation: sb-rise 0.6s 0.95s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .success-burst ~ p {
+    animation-delay: 1.1s;
+  }
+}
+@keyframes sb-ring {
+  from {
+    stroke-dashoffset: 340;
+    opacity: 0;
+  }
+  to {
+    opacity: 0.35;
+  }
+}
+@keyframes sb-pop {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes sb-tick {
+  from {
+    stroke-dashoffset: 60;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes sb-ripple {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.7);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+@keyframes sb-burst {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--a)) translateX(10px) scale(0.3);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--a)) translateX(var(--d)) rotate(160deg) scale(1);
+  }
+}
+@keyframes sb-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+
+/* Phones: the bottom bar already switches between Outstation, Airport Taxi, Local Rental and Multicity, so the same choices are not repeated above the form. */
+@media (max-width: 899.98px) {
+  .bf-services {
+    display: none;
+  }
+}
+
+/* Choose-vehicle trip summary: one compact row. Back arrow left; the route in bold; type, date and distance in one small line. */
+.trip-sum.trip-sum--compact {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0 12px;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  border-radius: 18px;
+}
+.trip-sum--compact .back-btn {
+  width: 36px;
+  height: 36px;
+}
+.trip-sum--compact .trip-sum__body {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.trip-sum.trip-sum--compact .route-title {
+  gap: 1px 6px;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+.trip-sum.trip-sum--compact .route-title .icon {
+  width: 13px;
+  height: 13px;
+}
+.trip-sum.trip-sum--compact .trip-sum__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.78125rem;
+  font-weight: 500;
+}
+.trip-sum--compact .trip-sum__meta .badge {
+  padding: 1px 8px;
+  font-size: 0.6875rem;
+}
+.trip-sum--compact .trip-sum__meta > span + span::before {
+  height: 10px;
+  margin: 0 8px;
+}
+.trip-sum--compact .trip-sum__when {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+/* Booking review: the back arrow alone at the top (the page heading is hidden text). */
+.flow-back {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Review summary card: route, one line for date and distance, the cab, then the total with two short notes. */
+.rv-sum {
+  gap: 8px;
+}
+.rv-sum .route-title--lg {
+  gap: 2px 8px;
+  font-size: 1.1875rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+.rv-sum .route-title--lg .icon {
+  width: 15px;
+  height: 15px;
+}
+.rv-sum .rv-sum__when {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.rv-sum .rv-sum__when .icon {
+  flex: none;
+  margin-top: 2px;
+}
+.rv-sum .rv-sum__car {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 0;
+  font-size: 0.9375rem;
+}
+.rv-sum .rv-sum__car strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.rv-sum .rv-sum__car span {
+  color: var(--muted);
+}
+.rv-sum .rv-sum__car span::before {
+  content: '·';
+  margin-right: 8px;
+}
+.rv-sum .rv-sum__total {
+  display: block;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.rv-sum .rv-sum__row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rv-sum .rv-sum__label {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.rv-sum .rv-sum__amount {
+  font-size: 1.625rem !important;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.rv-sum .rv-sum__notes {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+/* Review form: no divider lines between the checkbox and the fields around it; spacing does the separating. */
+.rv-fold {
+  padding-top: 10px;
+  border-top: 0;
+}
+
+/* Payment card: room under the heading, and a little air between the option title and its line. */
+#rv-pay-head {
+  margin-bottom: 14px;
+}
+.pay-opt__text {
+  display: grid;
+  gap: 4px;
+}
+
+/* Fare card beside the form: the total, two small links, one button, one small support line. */
+.sel-card.sel-card--sum {
+  gap: 12px;
+  padding: 16px;
+}
+.sel-card--sum .sel-card__total {
+  align-items: baseline;
+}
+.sel-card--sum .sel-card__total span {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+}
+.sel-card--sum .sel-card__total strong {
+  font-size: 1.5rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.sel-card--sum .rv-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.sel-card--sum .rv-links .link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.sel-card--sum .rv-act {
+  display: grid;
+  gap: 8px;
+}
+.sel-card--sum .rv-act .btn {
+  min-height: 48px;
+  font-size: 1rem;
+}
+.sel-card--sum .rv-act__note {
+  display: block;
+  margin: 0;
+  text-align: center;
+  font-size: 0.8125rem;
+}
+
+/* Phones and tablets: the Confirm button lives in the bottom bar, so the fare card does not repeat it.
+   On desktop (no bottom bar) the card's button stays; it is the only one. */
+@media (max-width: 999.98px) {
+  .sel-card--sum .rv-act .btn {
+    display: none;
+  }
+  .sel-card--sum .rv-act {
+    gap: 0;
+  }
+}
+
+/* Review summary card, tidied: the back arrow sits inside the card beside the route; date and distance read as two clean chunks. */
+.rv-sum .rv-sum__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.rv-sum .rv-sum__head .back-btn {
+  width: 36px;
+  height: 36px;
+}
+.rv-sum .rv-sum__head .route-title {
+  margin: 0;
+  min-width: 0;
+}
+.rv-sum .rv-sum__when {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 14px;
+  padding-left: 48px;
+}
+.rv-sum .rv-sum__when .icon {
+  display: none;
+}
+.rv-sum .rv-sum__when > span {
+  white-space: nowrap;
+}
+.rv-sum .rv-sum__car {
+  justify-content: flex-start;
+  padding-left: 48px;
+}
+.rv-sum .rv-sum__total {
+  margin-top: 8px;
+}
+
+/* Review summary card has no back button now: the date and cab lines line up with the route. */
+.rv-sum .rv-sum__when,
+.rv-sum .rv-sum__car {
+  padding-left: 0;
+}
+
+/* The example cars under a vehicle name ("Dzire / Etios or similar"). */
+.cab__model {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+}
+
+/* Review summary: three aligned detail rows (date, distance, cab), each with a small icon. */
+.rv-sum .rv-meta {
+  display: grid;
+  gap: 8px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.rv-sum .rv-meta li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text, var(--ink));
+  font-size: 0.9375rem;
+  line-height: 1.35;
+}
+.rv-sum .rv-meta .icon {
+  flex: none;
+  color: var(--brand);
+}
+.rv-sum .rv-meta strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+.rv-sum .rv-sum__head {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.rv-sum .rv-sum__total {
+  margin-top: 12px;
+}
+
+/* Bottom bar: Back (left) and Home (right) as square icon buttons around the main button. */
+.flow-bar .flow-bar__total--with-icons {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.flow-bar .flow-bar__total--with-icons .btn {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+.flow-bar__icon {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--line-strong, var(--line));
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+.flow-bar__icon:hover {
+  border-color: var(--brand);
+  color: var(--brand);
+}
+.flow-bar__icon:active {
+  background: var(--brand-soft, #edf4ff);
+}
+
+/* Policy links under the terms checkbox: a tidy two-column list, no dots between them, nothing hanging at a line end. */
+.rv-policy .policy-links {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 20px;
+  margin: 12px 0 0;
+  font-size: 0; /* hides the " · " separators */
+}
+.rv-policy .policy-links a {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-decoration: none;
+}
+.rv-policy .policy-links a:hover {
+  text-decoration: underline;
+}
+@media (max-width: 339.98px) {
+  .rv-policy .policy-links {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Terms: the checkbox and one link under it. */
+.rv-policy .policy-links {
+  display: block;
+  margin: 6px 0 0 34px;
+}
+
+/* Choose-vehicle trip card has no back button now (Back is in the bottom bar): one column. */
+.trip-sum.trip-sum--compact {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The main bottom-bar button: bold, full width, soft corners, no arrow. */
+.flow-bar .flow-bar__total--with-icons .btn {
+  min-height: 52px;
+  border-radius: 12px;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  box-shadow: none;
+}
+
+/* Terms checkbox: on phones and tablets it sits in the bottom bar, right above the Book & Confirm button; the page copy is for desktop. */
+.flow-bar__terms {
+  padding: 0 2px 2px;
+  font-size: 0.875rem;
+}
+@media (max-width: 999.98px) {
+  .rv-policy--page,
+  .rv-terms--page {
+    display: none;
+  }
+}
+
+/* Vehicle card price: the base amount in a smaller size, the GST as a separate, smaller line under it. */
+.cab__price strong {
+  font-size: 1.1875rem;
+  line-height: 1.15;
+}
+.cab__price .cab__tax {
+  display: block;
+  color: var(--muted);
+  font-size: 0.6875rem;
+  font-weight: 500;
+}
+
+/* Terms line in the bottom bar: smaller text and a smaller tick box. */
+.flow-bar__terms,
+.flow-bar__terms label,
+.flow-bar__terms .check {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+.flow-bar__terms .check {
+  align-items: center;
+  gap: 10px;
+}
+.flow-bar__terms .check input,
+.flow-bar__terms input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  border-width: 1.5px;
+  border-radius: 6px;
+  background-size: 12px;
+}
+
+/* The two notes now sit under the total in the fare card. */
+.sel-card--sum .rv-sum__notes {
+  display: grid;
+  gap: 2px;
+  margin: -4px 0 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+/* Vehicle card price: the amount on the right, the "+ ₹… GST" line directly under it, both right-aligned. */
+.cab__price {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 2px;
+  text-align: right;
+}
+.cab__price strong {
+  order: 0;
+  grid-column: auto;
+  grid-row: auto;
+  align-self: auto;
+}
+.cab__price .cab__tax {
+  order: 1;
+  grid-column: auto;
+  grid-row: auto;
+  margin: 0;
+  white-space: nowrap;
+}
+.cab__price .cab__saving {
+  order: 2;
+}
+
+/* Fare card, smaller: lighter total, tighter notes and links, a small support line. */
+.sel-card.sel-card--sum {
+  gap: 8px;
+  padding: 12px 14px;
+}
+.sel-card--sum .sel-card__total span {
+  font-size: 0.875rem;
+}
+.sel-card--sum .sel-card__total strong {
+  font-size: 1.1875rem;
+}
+.sel-card--sum .rv-sum__notes {
+  margin: -2px 0 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+}
+.sel-card--sum .rv-links {
+  gap: 4px 12px;
+  padding: 8px 0;
+}
+.sel-card--sum .rv-links .link-btn,
+.sel-card--sum .rv-links .promo .link-btn {
+  font-size: 0.75rem;
+}
+.sel-card--sum .rv-act__note {
+  font-size: 0.6875rem;
+}
+
+/* One Way / Round Trip (and the airport To / From switch): centred in the form, in capital letters. */
+.bf-journey.tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
+}
+.bf-journey.tabs .tab {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+@media (max-width: 767.98px) {
+  .bf-journey.tabs {
+    width: 100%;
+  }
+}
+
+/* The words sit exactly in the middle of each One Way / Round Trip pill. */
+.bf-journey.tabs .tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding-inline: 18px;
+  text-align: center;
+}
+
+/* ── Booking form, soft raised style ─────────────────────────────────────────────────────────────────────────
+   A pill switch, a route with a dashed rail (green start, red pin), raised cards for pickup, drop and time,
+   a "Tomorrow" tag on the date, and a round swap button between the two places. Every colour comes from the
+   site's own accent (--brand, or --red on NESAM), so the same form looks right in each theme. Flat colours only. */
+.bf.bf {
+  --bfx: var(--brand, var(--red, #1665e8));
+  --bfx-raise: 8px 10px 20px -10px rgb(15 23 42 / 0.22), -6px -6px 14px rgb(255 255 255 / 0.95);
+  background: color-mix(in srgb, var(--bfx) 6%, #fff);
+}
+
+/* Pill switch */
+.bf .bf-journey.tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  width: min(100%, 380px);
+  margin: 0 auto;
+  padding: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bfx) 13%, #fff);
+  box-shadow: inset 3px 3px 8px rgb(15 23 42 / 0.1), inset -3px -3px 8px rgb(255 255 255 / 0.7);
+}
+.bf .bf-journey.tabs .tab {
+  min-height: 48px;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: color-mix(in srgb, var(--bfx) 55%, var(--ink, #20252d));
+  font-size: 1.0625rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.bf .bf-journey.tabs .tab.is-active,
+.bf .bf-journey.tabs .tab[aria-selected='true'] {
+  background: var(--bfx);
+  box-shadow: 0 10px 18px -8px color-mix(in srgb, var(--bfx) 70%, transparent);
+  color: #fff;
+}
+
+/* Route: dashed rail on the left, raised cards, round swap button between them */
+.bf .bf-form .bf-route {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  padding-left: 34px;
+}
+.bf .bf-form .bf-route::before {
+  content: '';
+  position: absolute;
+  top: 40px;
+  bottom: 40px;
+  left: 9px;
+  border-left: 2px dashed color-mix(in srgb, var(--muted, #697587) 55%, transparent);
+}
+.bf .bf-form .bf-route.bf-route--single {
+  padding-left: 0;
+}
+.bf .bf-form .bf-route.bf-route--single::before {
+  display: none;
+}
+.bf .bf-form .bf-route:not(.bf-route--single) > .bf-route__cell:last-of-type {
+  margin-left: 20px;
+}
+.bf .bf-form .bf-route .bf-field {
+  position: relative;
+  min-height: 76px;
+  padding: 12px 16px 12px 20px;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--bfx-raise);
+}
+.bf .bf-form .bf-route .bf-field:focus-within {
+  box-shadow: var(--bfx-raise), 0 0 0 2px var(--bfx);
+}
+.bf .bf-form .bf-route .bf-field.is-invalid {
+  box-shadow: var(--bfx-raise), 0 0 0 2px var(--danger, #d92d20);
+}
+.bf .bf-form .bf-route .bf-field__main {
+  padding: 0;
+}
+.bf .bf-form .bf-route .bf-label {
+  color: var(--ink, #20252d);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.bf .bf-form .bf-route .bf-field:has(.bf-trigger.is-empty) .bf-label {
+  font-size: 0.875rem;
+}
+.bf .bf-form .bf-route .bf-trigger {
+  color: var(--ink, #20252d);
+  font-size: 1.1875rem;
+  font-weight: 800;
+}
+.bf .bf-form .bf-route .bf-chev {
+  position: static;
+  display: block;
+  color: var(--muted, #697587);
+}
+.bf .bf-form .bf-route .bf-pin {
+  position: absolute;
+  top: 50%;
+  left: -30px;
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 5px rgb(34 197 94 / 0.22);
+  translate: 0 -50%;
+}
+.bf .bf-form .bf-route .bf-pin.bf-pin--drop {
+  width: 17px;
+  height: 17px;
+  border-radius: 50% 50% 50% 0;
+  background: #ef4444;
+  box-shadow: none;
+  rotate: -45deg;
+}
+.bf .bf-form .bf-route .bf-pin.bf-pin--drop::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
+.bf .bf-form .bf-route .bf-swap {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 3;
+  grid-column: 1;
+  width: 44px;
+  height: 44px;
+  margin: -22px 26px -22px 0;
+  justify-self: end;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--bfx-raise);
+  color: var(--ink, #20252d);
+  transform: none !important;
+}
+.bf .bf-form .bf-route .bf-swap:hover:not(:disabled) {
+  color: var(--bfx);
+}
+
+/* Date, time */
+.bf .bf-form .bf-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.bf .bf-form .bf-row.bf-row--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+.bf .bf-form .bf-label--out {
+  margin-bottom: 8px;
+  color: var(--ink, #20252d);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.bf .bf-datewrap {
+  position: relative;
+}
+.bf .bf-datewrap .bf-input {
+  width: 100%;
+  min-height: 60px;
+  padding: 0 16px;
+  border: 1.5px solid color-mix(in srgb, var(--bfx) 22%, #cfd6e4);
+  border-radius: 20px;
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink, #20252d);
+  font-size: 1.0625rem;
+  font-weight: 700;
+}
+.bf .bf-datewrap .bf-input:focus {
+  border-color: var(--bfx);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bfx) 18%, transparent);
+}
+.bf .bf-chip {
+  position: absolute;
+  top: -11px;
+  right: 16px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bfx) 14%, #fff);
+  color: var(--bfx);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  pointer-events: none;
+}
+.bf .bf-form .bf-row .bf-time {
+  min-height: 60px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: var(--bfx-raise);
+  color: var(--ink, #20252d);
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+.bf .bf-form .bf-row .bf-time .icon {
+  color: var(--ink, #20252d);
+}
+
+@media (max-width: 420px) {
+  .bf .bf-form .bf-route {
+    padding-left: 30px;
+  }
+  .bf .bf-form .bf-route .bf-pin {
+    left: -26px;
+  }
+  .bf .bf-form .bf-route:not(.bf-route--single) > .bf-route__cell:last-of-type {
+    margin-left: 12px;
+  }
+  .bf .bf-form .bf-row {
+    gap: 12px;
+  }
+}
+
+/* ── Booking form: matched to the reference picture ──────────────────────────────────────────────────────────
+   Soft panel, cards raised from it with a light and a dark shadow, a curved dotted rail from the green start dot to the
+   red pin, a drop card set in from the pickup card, a round swap button between them, an outlined date with a tag on its
+   edge and a raised time card. Colours follow each site's accent. */
+.bf.bf {
+  --bfx: var(--brand, var(--red, #1665e8));
+  --bfx-bg: color-mix(in srgb, var(--bfx) 7%, #eceff5);
+  --bfx-raise: 7px 7px 16px rgb(15 23 42 / 0.13), -6px -6px 14px rgb(255 255 255 / 0.92);
+  background: var(--bfx-bg);
+}
+
+/* Pill switch */
+.bf .bf-journey.tabs {
+  width: min(100%, 360px);
+  padding: 7px;
+  background: color-mix(in srgb, var(--bfx) 16%, #dfe6f1);
+  box-shadow: inset 3px 3px 8px rgb(15 23 42 / 0.12), inset -3px -3px 8px rgb(255 255 255 / 0.55);
+}
+.bf .bf-journey.tabs .tab {
+  min-height: 50px;
+  color: color-mix(in srgb, var(--bfx) 45%, #4a5875);
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+.bf .bf-journey.tabs .tab.is-active,
+.bf .bf-journey.tabs .tab[aria-selected='true'] {
+  background: var(--bfx);
+  box-shadow: 4px 6px 14px -4px color-mix(in srgb, var(--bfx) 65%, transparent), inset 0 1px 0 rgb(255 255 255 / 0.22);
+  color: #fff;
+}
+
+/* Route */
+.bf .bf-form .bf-route {
+  gap: 18px;
+  padding-left: 50px;
+}
+.bf .bf-form .bf-route::before {
+  top: 38px;
+  bottom: 38px;
+  left: 8px;
+  width: 56px;
+  border: 0;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 56 100' preserveAspectRatio='none'%3E%3Cpath d='M20 0 C 1 22, 0 70, 50 100' fill='none' stroke='%238b95a8' stroke-width='2' stroke-dasharray='5 6' stroke-linecap='round' vector-effect='non-scaling-stroke'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.bf .bf-form .bf-route:not(.bf-route--single) > .bf-route__cell:last-of-type {
+  margin-left: 30px;
+}
+.bf .bf-form .bf-route .bf-field {
+  min-height: 76px;
+  padding: 12px 18px 12px 20px;
+  border-radius: 22px;
+  background: var(--bfx-bg);
+  box-shadow: var(--bfx-raise);
+}
+.bf .bf-form .bf-route .bf-field:focus-within {
+  box-shadow: var(--bfx-raise), 0 0 0 2px var(--bfx);
+}
+.bf .bf-form .bf-route .bf-label {
+  font-size: 0.8125rem;
+  letter-spacing: 0.03em;
+}
+.bf .bf-form .bf-route .bf-trigger {
+  padding: 2px 0 0 8px;
+  font-size: 1.125rem;
+}
+.bf .bf-form .bf-route .bf-addr {
+  display: none;
+}
+.bf .bf-form .bf-route .bf-chev {
+  color: color-mix(in srgb, var(--muted, #697587) 70%, #fff);
+}
+.bf .bf-form .bf-route .bf-pin {
+  left: -24px;
+  width: 16px;
+  height: 16px;
+  background: #22a85a;
+  box-shadow: 0 0 0 6px rgb(34 168 90 / 0.25);
+}
+.bf .bf-form .bf-route .bf-pin.bf-pin--drop {
+  left: -23px;
+  width: 18px;
+  height: 18px;
+  background: #e8344c;
+  box-shadow: none;
+}
+.bf .bf-form .bf-route .bf-swap {
+  margin: -24px 44px -24px 0;
+  width: 46px;
+  height: 46px;
+  background: var(--bfx-bg);
+}
+
+/* Date and time */
+.bf .bf-form .bf-row {
+  gap: 14px;
+}
+.bf .bf-form .bf-label--out {
+  font-size: 0.8125rem;
+  letter-spacing: 0.03em;
+}
+.bf .bf-datewrap .bf-input {
+  min-height: 52px;
+  padding: 0 14px;
+  border-radius: 20px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+.bf .bf-chip {
+  top: -10px;
+  right: 18px;
+  background: color-mix(in srgb, var(--bfx) 14%, #dfe6f1);
+  color: var(--ink, #20252d);
+  font-weight: 500;
+}
+.bf .bf-form .bf-row .bf-time {
+  min-height: 52px;
+  padding: 0 18px;
+  border-radius: 20px;
+  background: var(--bfx-bg);
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+@media (max-width: 420px) {
+  .bf .bf-form .bf-route {
+    padding-left: 42px;
+  }
+  .bf .bf-form .bf-route::before {
+    left: 6px;
+    width: 46px;
+  }
+  .bf .bf-form .bf-route:not(.bf-route--single) > .bf-route__cell:last-of-type {
+    margin-left: 22px;
+  }
+  .bf .bf-form .bf-route .bf-pin {
+    left: -20px;
+  }
+  .bf .bf-form .bf-route .bf-pin.bf-pin--drop {
+    left: -19px;
+  }
+  .bf .bf-form .bf-route .bf-swap {
+    margin-right: 30px;
+  }
+}
+
+/* ── Booking form: flat and white, tight, with the reference's icons ─────────────────────────────────────────
+   No shadows. A white panel; cards are told apart by a thin line in the site's accent. The green start dot has a ring,
+   the drop is a red map pin, the swap is two arrows, the date has the dotted calendar and the time a solid clock. */
+.bf.bf {
+  --bfx: var(--brand, var(--red, #1665e8));
+  --bfx-line: color-mix(in srgb, var(--bfx) 16%, #d9dfe9);
+  --bfx-bg: #fff;
+  --bfx-raise: none;
+  background: #fff;
+  box-shadow: none;
+}
+
+/* Pill switch */
+.bf .bf-journey.tabs {
+  width: min(100%, 340px);
+  padding: 5px;
+  background: color-mix(in srgb, var(--bfx) 11%, #fff);
+  box-shadow: none;
+}
+.bf .bf-journey.tabs .tab {
+  min-height: 44px;
+  font-size: 1.0625rem;
+}
+.bf .bf-journey.tabs .tab.is-active,
+.bf .bf-journey.tabs .tab[aria-selected='true'] {
+  box-shadow: none;
+}
+
+/* Route: tighter, thin outlines instead of shadows */
+.bf .bf-form {
+  gap: 10px;
+}
+.bf .bf-form .bf-route {
+  gap: 10px;
+  padding-left: 44px;
+}
+.bf .bf-form .bf-route::before {
+  top: 32px;
+  bottom: 32px;
+  left: 6px;
+  width: 50px;
+}
+.bf .bf-form .bf-route:not(.bf-route--single) > .bf-route__cell:last-of-type {
+  margin-left: 26px;
+}
+.bf .bf-form .bf-route .bf-field {
+  min-height: 64px;
+  padding: 9px 14px 9px 16px;
+  border: 1px solid var(--bfx-line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: none;
+}
+.bf .bf-form .bf-route .bf-field:focus-within {
+  border-color: var(--bfx);
+  box-shadow: none;
+}
+.bf .bf-form .bf-route .bf-field.is-invalid {
+  border-color: var(--danger, #d92d20);
+  box-shadow: none;
+}
+.bf .bf-form .bf-route .bf-label {
+  font-size: 0.75rem;
+}
+.bf .bf-form .bf-route .bf-trigger {
+  padding: 1px 0 0 8px;
+  font-size: 1.0625rem;
+}
+.bf .bf-form .bf-route .bf-pin {
+  left: -22px;
+  width: 16px;
+  height: 16px;
+  border: 5px solid rgb(34 168 90 / 0.3);
+  background: #22a85a;
+  background-clip: padding-box;
+  box-sizing: content-box;
+  box-shadow: none;
+  translate: -5px -50%;
+}
+.bf .bf-form .bf-route .bf-pin.bf-pin--drop {
+  left: -21px;
+  width: 18px;
+  height: 18px;
+  border: 0;
+  background: #e8344c;
+  box-sizing: border-box;
+  translate: 0 -50%;
+}
+.bf .bf-form .bf-route .bf-swap {
+  width: 40px;
+  height: 40px;
+  margin: -20px 36px -20px 0;
+  border: 1px solid var(--bfx-line);
+  background: #fff;
+  box-shadow: none;
+}
+
+/* Date and time */
+.bf .bf-form .bf-row {
+  gap: 10px;
+}
+.bf .bf-form .bf-label--out {
+  margin-bottom: 6px;
+  font-size: 0.75rem;
+}
+.bf .bf-datewrap .bf-input {
+  position: relative;
+  min-height: 48px;
+  padding: 0 46px 0 14px;
+  border: 1px solid var(--bfx-line);
+  border-radius: 18px;
+  font-size: 1rem;
+}
+.bf .bf-datewrap .bf-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  opacity: 0;
+  cursor: pointer;
+}
+.bf .bf-datewrap::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  background: var(--ink, #20252d);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='3.5'/%3E%3Cpath d='M8 3v4M16 3v4M3.5 10h17'/%3E%3Cpath d='M8.5 14.2h.01M12 14.2h.01M15.5 14.2h.01M8.5 17.2h.01M12 17.2h.01M15.5 17.2h.01' stroke-width='2.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='3.5'/%3E%3Cpath d='M8 3v4M16 3v4M3.5 10h17'/%3E%3Cpath d='M8.5 14.2h.01M12 14.2h.01M15.5 14.2h.01M8.5 17.2h.01M12 17.2h.01M15.5 17.2h.01' stroke-width='2.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+.bf .bf-chip {
+  top: -9px;
+  right: 16px;
+  padding: 2px 10px;
+  font-size: 0.6875rem;
+}
+.bf .bf-form .bf-row .bf-time {
+  min-height: 48px;
+  padding: 0 14px 0 16px;
+  border: 1px solid var(--bfx-line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: none;
+  font-size: 1rem;
+}
+.bf .bf-form .bf-row .bf-time svg {
+  color: var(--ink, #20252d);
+}
+
+@media (max-width: 420px) {
+  .bf .bf-form .bf-route {
+    padding-left: 38px;
+  }
+  .bf .bf-form .bf-route::before {
+    left: 5px;
+    width: 42px;
+  }
+  .bf .bf-form .bf-route:not(.bf-route--single) > .bf-route__cell:last-of-type {
+    margin-left: 18px;
+  }
+  .bf .bf-form .bf-route .bf-pin {
+    left: -19px;
+  }
+  .bf .bf-form .bf-route .bf-pin.bf-pin--drop {
+    left: -18px;
+  }
+  .bf .bf-form .bf-route .bf-swap {
+    margin-right: 24px;
+  }
+}
+
+/* The start dot and the drop pin sit just outside the cards: the cards must not clip them. */
+.bf .bf-form .bf-route .bf-field,
+.bf .bf-form .bf-route .bf-route__cell {
+  overflow: visible;
+}
+.bf .bf-form .bf-route .bf-field__main {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* Pickup date and time: the labels and the values sit in the middle of their boxes (the icons stay on the right). */
+.bf .bf-form .bf-row .bf-label--out {
+  text-align: center;
+}
+.bf .bf-datewrap .bf-input {
+  padding-inline: 46px;
+  text-align: center;
+}
+.bf .bf-datewrap .bf-input::-webkit-datetime-edit {
+  display: block;
+  padding: 0;
+  text-align: center;
+}
+.bf .bf-form .bf-row .bf-time {
+  position: relative;
+  justify-content: center;
+  padding-inline: 46px;
+  text-align: center;
+}
+.bf .bf-form .bf-row .bf-time svg {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  translate: 0 -50%;
+}
+
+/* Desktop hero: let the photo show. The pale wash is much lighter now, so the sea and hills keep their colour. */
+@media (min-width: 768px) {
+  .home-hero::after {
+    background: rgb(236 244 255 / 0.3);
+  }
+}
+
+/* ── Booking form on wide screens: two even columns ──────────────────────────────────────────────────────────
+   When the card is wide, pickup and drop sit side by side with the swap button between them, and the date and time
+   sit directly under them, so every edge lines up. Narrow cards (phones, NESAM's side card) keep the stacked form. */
+.bf.bf {
+  container-type: inline-size;
+}
+@container (min-width: 760px) {
+  .bf .bf-form .bf-route {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px 16px;
+    padding-left: 0;
+  }
+  .bf .bf-form .bf-route::before {
+    display: none;
+  }
+  .bf .bf-form .bf-route:not(.bf-route--single) > .bf-route__cell:last-of-type {
+    margin-left: 0;
+  }
+  .bf .bf-form .bf-route.bf-route--single {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* The start dot and the drop pin sit inside their cards, before the text. */
+  .bf .bf-form .bf-route .bf-pin {
+    position: relative;
+    top: auto;
+    left: auto;
+    flex: none;
+    margin-right: 6px;
+    translate: none;
+  }
+  .bf .bf-form .bf-route .bf-pin.bf-pin--drop {
+    margin-right: 8px;
+    rotate: -45deg;
+  }
+  /* Swap: centred on the gap between the two cards. */
+  .bf .bf-form .bf-route .bf-swap {
+    position: absolute !important;
+    top: 50% !important;
+    left: 50% !important;
+    right: auto !important;
+    z-index: 3;
+    margin: 0;
+    transform: translate(-50%, -50%) !important;
+  }
+  .bf .bf-form .bf-route .bf-swap svg {
+    rotate: 90deg;
+  }
+  .bf .bf-form .bf-row {
+    gap: 16px;
+  }
+}
+
+/* Phones: the date and time boxes share the row evenly and never overlap; the icons stay inside the boxes. */
+.bf .bf-form .bf-row > .bf-cell,
+.bf .bf-datewrap {
+  min-width: 0;
+}
+@media (max-width: 560px) {
+  .bf .bf-datewrap .bf-input {
+    width: 100%;
+    min-width: 0;
+    padding-inline: 10px 36px;
+    font-size: 0.9375rem;
+    letter-spacing: 0;
+  }
+  .bf .bf-datewrap::after {
+    right: 10px;
+    width: 22px;
+    height: 22px;
+  }
+  .bf .bf-form .bf-row .bf-time {
+    min-width: 0;
+    padding-inline: 10px 36px;
+    font-size: 0.9375rem;
+  }
+  .bf .bf-form .bf-row .bf-time svg {
+    right: 10px;
+    width: 22px;
+    height: 22px;
+  }
+  .bf .bf-chip {
+    right: 10px;
+  }
+}
+
+/* Desktop hero: a smaller logo and headline, and the booking form pulled up so it is seen without scrolling. */
+@media (min-width: 768px) {
+  .home-hero {
+    justify-content: flex-start;
+    min-height: 0;
+    gap: clamp(8px, 1vw, 14px);
+    padding-top: clamp(10px, 1.4vw, 18px);
+    padding-bottom: clamp(18px, 2vw, 28px);
+  }
+  .hero-logo {
+    margin-bottom: 0;
+  }
+  .hero-logo img {
+    height: clamp(40px, 3.6vw, 54px);
+  }
+  .hero-copy {
+    gap: 4px;
+  }
+  .hero-copy h1 {
+    font-size: clamp(1.5rem, 1rem + 1.3vw, 2.25rem);
+    line-height: 1.12;
+  }
+}
+
+/* Desktop (1000px and up): logo and headline on the left, the booking form on the right as one compact card. */
+@media (min-width: 1000px) {
+  .home-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    align-items: center;
+    align-content: center;
+    justify-content: stretch;
+    column-gap: clamp(32px, 5vw, 88px);
+    row-gap: 0;
+    min-height: min(680px, calc(100svh - var(--nav-h)));
+    padding-inline: max(var(--gutter), calc((100% - 1216px) / 2));
+    padding-block: clamp(24px, 3vw, 44px);
+  }
+  .home-hero > .hero-copy {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+  .hero-logo img {
+    height: clamp(52px, 4.4vw, 68px);
+  }
+  .hero-copy h1 {
+    font-size: clamp(2rem, 1.1rem + 2vw, 3rem);
+    line-height: 1.1;
+  }
+  .home-hero > .bf {
+    justify-self: end;
+    width: 100%;
+    max-width: 420px;
+    margin: 0;
+  }
+  /* In a narrow card the five services sit in rows of three, so none is squeezed. */
+  .home-hero > .bf .bf-services {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+}
+
+/* Desktop form card: wider, with larger text. */
+@media (min-width: 1000px) {
+  .home-hero {
+    grid-template-columns: minmax(0, 1fr) 540px;
+  }
+  .home-hero > .bf {
+    max-width: 540px;
+    padding: 22px;
+  }
+  .home-hero > .bf .bf-service {
+    font-size: 1rem;
+  }
+  .home-hero > .bf .bf-journey.tabs .tab {
+    min-height: 50px;
+    font-size: 1.25rem;
+  }
+  .home-hero > .bf .bf-form .bf-route .bf-field {
+    min-height: 74px;
+    padding: 11px 18px 11px 20px;
+  }
+  .home-hero > .bf .bf-form .bf-route .bf-label,
+  .home-hero > .bf .bf-form .bf-label--out {
+    font-size: 0.875rem;
+  }
+  .home-hero > .bf .bf-form .bf-route .bf-trigger {
+    font-size: 1.3125rem;
+  }
+  .home-hero > .bf .bf-form .bf-route::before {
+    top: 37px;
+    bottom: 37px;
+  }
+  .home-hero > .bf .bf-datewrap .bf-input,
+  .home-hero > .bf .bf-form .bf-row .bf-time {
+    min-height: 56px;
+    font-size: 1.1875rem;
+  }
+  .home-hero > .bf .bf-chip {
+    font-size: 0.75rem;
+  }
+  .home-hero > .bf .bf-submit {
+    min-height: 58px;
+    font-size: 1.25rem;
+  }
+}
+
+/* Desktop form card: the five services in one row, each with the icon above and the name below. */
+@media (min-width: 1000px) {
+  .home-hero > .bf .bf-services {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--brand) 9%, #fff);
+    box-shadow: none;
+  }
+  .home-hero > .bf .bf-service {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 82px;
+    padding: 10px 4px 9px;
+    border-radius: 16px;
+    background: transparent;
+    box-shadow: none;
+    color: var(--ink);
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1.15;
+    text-align: center;
+  }
+  .home-hero > .bf .bf-service > span:not(.bf-service__icon) {
+    display: block;
+    max-width: 100%;
+    white-space: normal;
+  }
+  .home-hero > .bf .bf-service__icon {
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--brand);
+  }
+  .home-hero > .bf .bf-service.is-active {
+    background: var(--brand);
+    box-shadow: none;
+    color: #fff;
+  }
+  .home-hero > .bf .bf-service.is-active .bf-service__icon {
+    background: rgb(255 255 255 / 0.2);
+    color: #fff;
+  }
+}
+
+/* Desktop service bar: a more compact outer size. */
+@media (min-width: 1000px) {
+  .home-hero > .bf .bf-services {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 16px;
+  }
+  .home-hero > .bf .bf-service {
+    min-height: 64px;
+    gap: 4px;
+    padding: 7px 4px 6px;
+    border-radius: 13px;
+    font-size: 0.8125rem;
+  }
+  .home-hero > .bf .bf-service__icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 10px;
+  }
+}
+
+/* Local Rental has a single place field and no dotted line: the green dot sits inside the card, before the text. */
+.bf .bf-form .bf-route.bf-route--single .bf-pin {
+  position: relative;
+  top: auto;
+  left: auto;
+  flex: none;
+  margin: 0 6px 0 4px;
+  translate: none;
+}
+
+/* Desktop and tablet hero: the logo and the headline sit on a white card, so they read clearly over the photo. */
+@media (min-width: 768px) {
+  .home-hero > .hero-copy {
+    justify-self: start;
+    width: fit-content;
+    max-width: 100%;
+    padding: clamp(16px, 1.8vw, 26px) clamp(20px, 2.4vw, 34px);
+    border-radius: 20px;
+    background: #fff;
+  }
+}
+
+/* The upcoming-booking bar lives inside the header now, as a slim row under the main bar (desktop and phone). */
+.topbar:has(> .ride-banner) {
+  display: flex;
+  flex-direction: column;
+}
+.topbar .ride-banner {
+  width: auto;
+  max-width: none;
+  margin: 0 14px 10px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+.topbar .ride-banner > .wrap {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+.topbar .ride-banner__inner {
+  gap: 10px;
+  min-height: 44px;
+  padding: 6px 8px 6px 14px;
+}
+.topbar .ride-banner__inner p {
+  font-size: 0.8125rem;
+}
+.topbar .ride-banner__link {
+  min-height: 34px;
+  padding-inline: 14px;
+}
+
+/* The upcoming-booking chip: one small pill in the middle of the header. It never makes the header taller. */
+.ride-chip {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: min(300px, 100%);
+  margin-inline: auto;
+  padding: 5px 10px 5px 12px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  text-decoration: none;
+}
+.ride-chip--soft {
+  background: var(--brand-soft, #eef3ff);
+  color: var(--ink);
+}
+.ride-chip > svg {
+  flex: none;
+}
+.ride-chip__text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.15;
+}
+.ride-chip__text strong {
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.ride-chip__text small {
+  overflow: hidden;
+  font-size: 0.6875rem;
+  opacity: 0.85;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The upcoming-booking chip only shows while the header logo is hidden (the big logo is in the hero). Once the logo is in the header, the chip steps aside. */
+.ride-chip {
+  display: none;
+}
+html[data-hero-logo='in'] .ride-chip {
+  display: flex;
+}
+
+/* ── Multicity form: the same look as the other booking forms ─────────────────────────────────────────────────
+   Flat white cards with a thin line, a dotted rail from the green start dot down to the red pins, a red map pin on
+   "Add city", and the same date and time boxes. */
+.bf .bf-multicity .bf-section {
+  display: grid;
+  gap: 10px;
+}
+.bf .bf-multicity .bf-section[aria-label='Route and stops'] {
+  position: relative;
+  padding-left: 40px;
+}
+.bf .bf-multicity .bf-section[aria-label='Route and stops']::before {
+  content: '';
+  position: absolute;
+  top: 32px;
+  bottom: 32px;
+  left: 18px;
+  border-left: 2px dashed color-mix(in srgb, var(--muted, #697587) 55%, transparent);
+}
+.bf .bf-multicity .bf-field {
+  position: relative;
+  min-height: 64px;
+  padding: 9px 14px 9px 16px;
+  border: 1px solid var(--bfx-line, #d9dfe9);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: none;
+  overflow: visible;
+}
+.bf .bf-multicity .bf-field:focus-within {
+  border-color: var(--bfx, var(--brand, var(--red)));
+}
+.bf .bf-multicity .bf-field.is-invalid {
+  border-color: var(--danger, #d92d20);
+}
+.bf .bf-multicity .bf-field__main {
+  min-width: 0;
+  padding: 0;
+}
+.bf .bf-multicity .bf-label {
+  color: var(--ink, #20252d);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.bf .bf-multicity .bf-trigger {
+  padding: 1px 0 0 8px;
+  font-size: 1.0625rem;
+  font-weight: 800;
+}
+.bf .bf-multicity .bf-addr {
+  display: none;
+}
+.bf .bf-multicity .bf-chev {
+  color: color-mix(in srgb, var(--muted, #697587) 70%, #fff);
+}
+
+/* Start dot (green, ringed) and red pins for the cities and the drop */
+.bf .bf-multicity .bf-pin {
+  position: absolute;
+  top: 50%;
+  left: -22px;
+  width: 16px;
+  height: 16px;
+  border: 5px solid rgb(34 168 90 / 0.3);
+  border-radius: 50%;
+  background: #22a85a;
+  background-clip: padding-box;
+  box-sizing: content-box;
+  box-shadow: none;
+  translate: -50% -50%;
+}
+.bf .bf-multicity .bf-pin.bf-pin--stop,
+.bf .bf-multicity .bf-pin.bf-pin--drop {
+  left: -22px;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  border: 0;
+  border-radius: 50% 50% 50% 0;
+  background: #e8344c;
+  box-sizing: border-box;
+  rotate: -45deg;
+  translate: -50% -50%;
+}
+.bf .bf-multicity .bf-pin.bf-pin--stop::after,
+.bf .bf-multicity .bf-pin.bf-pin--drop::after {
+  content: '';
+  position: absolute;
+  inset: 5px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* Add city */
+.bf .bf-multicity .bf-add-city {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: 1.5px dashed color-mix(in srgb, var(--bfx, var(--brand, var(--red))) 40%, #cfd6e4);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bfx, var(--brand, var(--red))) 5%, #fff);
+  color: var(--ink, #20252d);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.bf .bf-multicity .bf-add-city svg {
+  flex: none;
+}
+
+/* Date and time: the same as the other forms */
+.bf .bf-multicity .bf-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.bf .bf-multicity .bf-cell {
+  min-width: 0;
+}
+.bf .bf-multicity .bf-label--out {
+  margin-bottom: 6px;
+  text-align: center;
+}
+.bf .bf-multicity .bf-datewrap {
+  position: relative;
+}
+.bf .bf-multicity .bf-datewrap .bf-input {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 46px;
+  border: 1px solid var(--bfx-line, #d9dfe9);
+  border-radius: 18px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+.bf .bf-multicity .bf-datewrap .bf-input::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: auto;
+  height: auto;
+  opacity: 0;
+  cursor: pointer;
+}
+.bf .bf-multicity .bf-datewrap::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  width: 24px;
+  height: 24px;
+  background: var(--ink, #20252d);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='3.5'/%3E%3Cpath d='M8 3v4M16 3v4M3.5 10h17'/%3E%3Cpath d='M8.5 14.2h.01M12 14.2h.01M15.5 14.2h.01M8.5 17.2h.01M12 17.2h.01M15.5 17.2h.01' stroke-width='2.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'%3E%3Crect x='3.5' y='5' width='17' height='15.5' rx='3.5'/%3E%3Cpath d='M8 3v4M16 3v4M3.5 10h17'/%3E%3Cpath d='M8.5 14.2h.01M12 14.2h.01M15.5 14.2h.01M8.5 17.2h.01M12 17.2h.01M15.5 17.2h.01' stroke-width='2.4'/%3E%3C/svg%3E") center / contain no-repeat;
+  translate: 0 -50%;
+  pointer-events: none;
+}
+.bf .bf-multicity .bf-chip {
+  position: absolute;
+  top: -9px;
+  right: 16px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bfx, var(--brand, var(--red))) 14%, #dfe6f1);
+  color: var(--ink, #20252d);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.3;
+  pointer-events: none;
+}
+.bf .bf-multicity .bf-row .bf-time {
+  position: relative;
+  justify-content: center;
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 46px;
+  border: 1px solid var(--bfx-line, #d9dfe9);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: none;
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: center;
+}
+.bf .bf-multicity .bf-row .bf-time svg {
+  position: absolute;
+  top: 50%;
+  right: 14px;
+  color: var(--ink, #20252d);
+  translate: 0 -50%;
+}
+
+/* Ordered intermediate stops on direct round-trip bookings. */
+.bf .bf-form .bf-route > .bf-stop-field { margin-left: 26px; padding-left: 16px; }
+.bf .bf-form .bf-stop-field .bf-field__main { min-width: 0; }
+.bf .bf-form .bf-stop-field .bf-stop-remove { display: grid; place-items: center; flex: 0 0 36px; width: 36px; height: 36px; padding: 0; border: 1px solid color-mix(in srgb, var(--danger, #d92d20) 30%, transparent); border-radius: 50%; background: color-mix(in srgb, var(--danger, #d92d20) 6%, white); color: var(--danger, #d92d20); cursor: pointer; }
+.bf .bf-form .bf-stop-field .bf-stop-remove:hover { background: color-mix(in srgb, var(--danger, #d92d20) 12%, white); }
+.bf .bf-form .bf-round-stop-add { min-height: 46px; margin-left: 26px; border: 1px dashed var(--bfx, #2563eb); border-radius: 18px; background: color-mix(in srgb, var(--bfx, #2563eb) 5%, white); color: var(--ink, #20252d); display: flex; align-items: center; justify-content: center; gap: 8px; font: inherit; cursor: pointer; }
+.bf .bf-form .bf-round-stop-add svg { color: #e8344c; }
+@media (max-width: 560px) {
+  .bf .bf-multicity .bf-datewrap .bf-input,
+  .bf .bf-multicity .bf-row .bf-time {
+    padding-inline: 10px 36px;
+    font-size: 0.9375rem;
+  }
+  .bf .bf-multicity .bf-datewrap::after,
+  .bf .bf-multicity .bf-row .bf-time svg {
+    right: 10px;
+    width: 22px;
+    height: 22px;
+  }
+}
+
+/* Round trip: pickup, every stop, "Add stop" and drop sit in one straight column (same left and right edges),
+   joined by a straight dotted line. One way keeps its curved rail. */
+.bf .bf-form .bf-route.bf-route--round > .bf-stop-field,
+.bf .bf-form .bf-route.bf-route--round > .bf-round-stop-add,
+.bf .bf-form .bf-route.bf-route--round:not(.bf-route--single) > .bf-route__cell:last-of-type {
+  margin-left: 0;
+}
+@container (max-width: 759.98px) {
+  .bf .bf-form .bf-route.bf-route--round::before {
+    top: 32px;
+    bottom: 32px;
+    left: 29px;
+    width: 0;
+    border-left: 2px dashed color-mix(in srgb, var(--muted, #697587) 55%, transparent);
+    background: none;
+  }
+  .bf .bf-form .bf-route.bf-route--round .bf-pin.bf-pin--drop {
+    left: -23px;
+  }
+}
+@media (max-width: 420px) {
+  .bf .bf-form .bf-route.bf-route--round::before {
+    left: 26px;
+  }
+  .bf .bf-form .bf-route.bf-route--round .bf-pin.bf-pin--drop {
+    left: -20px;
+  }
+}
+
+/* Swap button: takes the site's accent (tinted fill, accent arrows and outline). */
+.bf .bf-form .bf-route .bf-swap {
+  border: 1px solid color-mix(in srgb, var(--bfx) 35%, #fff);
+  background: color-mix(in srgb, var(--bfx) 10%, #fff);
+  color: var(--bfx);
+}
+.bf .bf-form .bf-route .bf-swap:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bfx) 18%, #fff);
+  color: var(--bfx);
+}
+
+/* Round trip: a compact "+ Add stop" pill centred in its own row, with the swap button centred on the right of
+   that row (it sits between the stops and the drop). No horizontal rules. */
+.bf .bf-form .bf-route.bf-route--round .bf-route__tools {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 1 / -1;
+  min-height: 44px;
+}
+.bf .bf-form .bf-route .bf-route__tools .bf-round-stop-add {
+  min-height: 38px;
+  margin: 0;
+  padding: 0 18px;
+  gap: 6px;
+  border: 1.5px solid color-mix(in srgb, var(--bfx) 35%, #d9dfe9);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink, #20252d);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+.bf .bf-form .bf-route .bf-route__tools .bf-round-stop-add svg {
+  color: var(--bfx);
+}
+.bf .bf-form .bf-route .bf-route__tools .bf-swap {
+  position: absolute !important;
+  top: 50% !important;
+  right: 0 !important;
+  left: auto !important;
+  margin: 0;
+  transform: translateY(-50%) !important;
+}
+.bf .bf-form .bf-route .bf-route__tools .bf-swap svg {
+  rotate: none;
+}
+
+/* "Choose on map" sits at the top of the location picker, right under the search box. */
+.picker__map-option {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.picker__map-option .place-row {
+  border-bottom: 0;
+}
+
+/* Pick-on-map sheet: slides up from the bottom, takes 80% of the screen height, the map fills what is left under
+   the heading, and it slides back down when closed. */
+.overlay:has(> .pin-sheet) {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.overlay:has(> .pin-sheet.is-closing) {
+  animation: pin-sheet-fade 240ms ease forwards;
+}
+.dialog.pin-sheet {
+  width: min(100%, 640px);
+  height: 80vh;
+  height: 80dvh;
+  max-height: 80dvh;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border: 0;
+  border-radius: 22px 22px 0 0;
+  animation: pin-sheet-up 300ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dialog.pin-sheet.is-closing {
+  animation: pin-sheet-down 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+.dialog.pin-sheet .dialog__body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.dialog.pin-sheet .pinmap {
+  flex: 1 1 0;
+  height: auto;
+  min-height: 0;
+}
+.dialog.pin-sheet .route-map {
+  height: 100%;
+  min-height: 0;
+}
+.dialog.pin-sheet .pin-card {
+  flex: none;
+}
+.dialog.pin-sheet .dialog__foot {
+  flex: none;
+}
+@keyframes pin-sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes pin-sheet-down {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes pin-sheet-fade {
+  to {
+    background-color: transparent;
+    backdrop-filter: none;
+  }
+}
+
+/* Vehicle names on the choose-a-car cards and the selected-car panel: smaller, so a long line like
+   "Dzire / Etios or similar" stays on one or two tidy lines. */
+.cab__info .cab__name,
+.cab .cab__name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: 0;
+}
+.sel-card__car strong,
+.flow-card__car-thumb + div strong {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+/* Location picker options: two clearly different cards, each with its own coloured icon tile. */
+.pick-opts {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 8px;
+}
+.pick-opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px 11px 12px;
+  border: 1px solid var(--pick-line);
+  border-radius: 16px;
+  background: var(--pick-bg);
+  color: var(--ink, #20252d);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.pick-opt:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgb(20 33 61 / 0.1);
+}
+.pick-opt:disabled {
+  opacity: 0.7;
+  cursor: progress;
+}
+.pick-opt--map {
+  --pick-line: #fbd9a0;
+  --pick-bg: #fffaf1;
+  --pick-tile: #ffe3b0;
+  --pick-ink: #d9730d;
+}
+.pick-opt--here {
+  --pick-line: #b9e6cb;
+  --pick-bg: #f2fbf6;
+  --pick-tile: #c9f0da;
+  --pick-ink: #16a34a;
+}
+.pick-opt__icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--pick-tile);
+  color: var(--pick-ink);
+}
+.pick-opt__text {
+  display: grid;
+  min-width: 0;
+  gap: 1px;
+}
+.pick-opt__text strong {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.25;
+}
+.pick-opt__text small {
+  color: var(--muted, #697587);
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.pick-opt__chev {
+  flex: none;
+  margin-left: auto;
+  color: var(--pick-ink);
+}
+
+/* Review: the coupon sits inside the Payment Method card; fare details is a small "i" beside the total. */
+.rv-pay-promo {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line, #e2e6ec);
+}
+.rv-pay-promo .promo {
+  display: flex;
+  justify-content: center;
+}
+.rv-pay-promo .promo .btn--text {
+  min-height: 0;
+  padding: 2px 6px;
+  gap: 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.rv-pay-promo .promo .btn--text svg {
+  width: 11px;
+  height: 11px;
+}
+.rv-pay-promo .promo-form {
+  gap: 6px;
+  padding: 4px 0 2px;
+}
+.rv-pay-promo .promo-form .input {
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+.rv-pay-promo .promo-chip {
+  padding: 2px 8px;
+  font-size: 0.6875rem;
+}
+.rv-total-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.rv-info-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--brand, #1665e8) 35%, #fff);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--brand, #1665e8) 8%, #fff);
+  color: var(--brand, #1665e8);
+  cursor: pointer;
+}
+.rv-info-btn:hover {
+  background: color-mix(in srgb, var(--brand, #1665e8) 16%, #fff);
+}
+
+/* Confirmation page: Home and View Booking in one compact row. */
+.flow-page--done .done-actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px var(--gutter, 16px) calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.flow-page--done .done-actions .btn,
+.flow-page--done .done-actions .btn--primary {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: 220px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: 0.875rem;
+}
+
+/* Local Rental: a short line under the pickup field saying how to set it. */
+.bf-hint {
+  margin: 6px 4px 0;
+  color: var(--muted, #697587);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Multicity "Add stop": the same compact pill as the Round Trip form. */
+.bf .bf-multicity .bf-route__tools {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+}
+.bf .bf-multicity .bf-round-stop-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  margin: 0;
+  padding: 0 18px;
+  border: 1.5px solid color-mix(in srgb, var(--bfx, var(--brand, #1665e8)) 35%, #d9dfe9);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink, #20252d);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.bf .bf-multicity .bf-round-stop-add svg {
+  color: var(--bfx, var(--brand, #1665e8));
+}
+.bf .bf-multicity .bf-round-stop-add.is-invalid {
+  border-color: var(--danger, #d92d20);
+}
+
+/* Fuel choice above the cab list: Diesel / Petrol or CNG, two clear buttons. */
+.cabx-fuelbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 10px;
+}
+.cabx-fuelbar__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1.5px solid #d9dfe9;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink, #20252d);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.cabx-fuelbar__btn--diesel.is-on {
+  border-color: #e07b00;
+  background: #fff4e0;
+  color: #a85a00;
+}
+.cabx-fuelbar__btn--cng.is-on {
+  border-color: #16a34a;
+  background: #e8f8ee;
+  color: #11773a;
+}
+.cabx-fuelbar__btn:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--brand, #1665e8) 40%, transparent);
+  outline-offset: 2px;
+}
+
+/* Struck-out higher price above the real fare (display only; set in admin → Pricing → Base rates). */
+.cab__strike {
+  display: block;
+  color: var(--muted, #697587);
+  opacity: 0.55;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: line-through;
+  text-decoration-thickness: 1.5px;
+}

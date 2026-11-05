@@ -1,0 +1,14 @@
+# People Taxi — https://www.peopletaxi.in
+# Account, trip and checkout screens are private; everything else may be crawled.
+
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /trips
+Disallow: /ride/
+Disallow: /notifications
+Disallow: /book/ride
+Disallow: /book/confirm
+Disallow: /book/done/
+
+Sitemap: https://www.peopletaxi.in/sitemap.xml

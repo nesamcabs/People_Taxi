@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en-IN" prefix="og: https://ogp.me/ns#">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content" />
+
+    <!-- Per-page title, description, robots, canonical, share tags and JSON-LD.
+         Filled from src/seo/ by scripts/seo-prerender.ts (dev server and build) — edit there, not here. -->
+    <!--seo:head--><!--/seo:head-->
+    <meta name="author" content="NESAM Tours and Travels Private Limited" />
+    <meta name="theme-color" content="#1E6CE3" />
+    <meta name="color-scheme" content="light" />
+
+    <!-- Local & Geo Targeting Meta Tags (Tamil Nadu, South India) -->
+    <meta name="geo.region" content="IN-TN" />
+    <meta name="geo.placename" content="Theni, Tamil Nadu, India" />
+    <meta name="geo.position" content="10.0104;77.4768" />
+    <meta name="ICBM" content="10.0104, 77.4768" />
+    <meta name="coverage" content="Tamil Nadu, Puducherry, Karnataka, Kerala, Andhra Pradesh" />
+    <meta name="distribution" content="Global" />
+    <meta name="rating" content="General" />
+
+    <!-- Mobile App & PWA Settings -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="People Taxi" />
+    <meta name="application-name" content="People Taxi" />
+    <meta name="format-detection" content="telephone=no" />
+
+    <!-- Share cards: the per-page parts are in the seo:head block above -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="People Taxi" />
+    <meta property="og:locale" content="en_IN" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <!-- Favicons, Apple Touch, Android & Microsoft Application Icons -->
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16x16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/icons/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/android-icon-192x192.png" />
+    <link rel="apple-touch-icon" sizes="57x57" href="/icons/apple-icon-57x57.png" />
+    <link rel="apple-touch-icon" sizes="60x60" href="/icons/apple-icon-60x60.png" />
+    <link rel="apple-touch-icon" sizes="72x72" href="/icons/apple-icon-72x72.png" />
+    <link rel="apple-touch-icon" sizes="76x76" href="/icons/apple-icon-76x76.png" />
+    <link rel="apple-touch-icon" sizes="114x114" href="/icons/apple-icon-114x114.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-icon-120x120.png" />
+    <link rel="apple-touch-icon" sizes="144x144" href="/icons/apple-icon-144x144.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-icon-180x180.png" />
+    <link rel="apple-touch-icon-precomposed" href="/icons/apple-icon-precomposed.png" />
+    <meta name="msapplication-TileColor" content="#1E6CE3" />
+    <meta name="msapplication-TileImage" content="/icons/ms-icon-144x144.png" />
+    <meta name="msapplication-square70x70logo" content="/icons/ms-icon-70x70.png" />
+    <meta name="msapplication-square150x150logo" content="/icons/ms-icon-150x150.png" />
+    <meta name="msapplication-square310x310logo" content="/icons/ms-icon-310x310.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+
+    <!-- Preconnect & DNS-Prefetch for Speed / Core Web Vitals -->
+    <link rel="preconnect" href="https://router.project-osrm.org" crossorigin />
+    <link rel="preconnect" href="https://photon.komoot.io" crossorigin />
+    <link rel="dns-prefetch" href="https://router.project-osrm.org" />
+    <link rel="dns-prefetch" href="https://photon.komoot.io" />
+
+    <style>
+      /* Available before the app bundle; React replaces this root content on its first render. */
+      #app-startup {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        gap: 12px;
+        text-align: center;
+        background: #fff;
+        color: #475569;
+        font: 16px/1.5 system-ui, sans-serif;
+      }
+      #app-startup strong { color: #1e6ce3; font-size: 24px; }
+      /* Plain-HTML page summary shown when JavaScript is off (filled by the build per page) */
+      .seo-js-note {
+        margin: 0;
+        padding: 16px;
+        background: #e8effd;
+        color: #1e3a8a;
+        font-weight: 500;
+        text-align: center;
+      }
+      .seo-static {
+        max-width: 1140px;
+        margin: 0 auto;
+        padding: 32px 24px 48px;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+        color: #1a1a1a;
+        line-height: 1.6;
+      }
+      .seo-static nav ul {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 20px;
+        padding: 0;
+        list-style: none;
+      }
+      .seo-static a { color: #1e6ce3; }
+      .seo-static h1 { font-size: 2.2rem; line-height: 1.25; }
+      .seo-static h2 { margin-top: 32px; font-size: 1.5rem; }
+      .seo-static h3 { margin-top: 20px; font-size: 1.15rem; }
+      .seo-static li { margin-bottom: 8px; }
+    </style>
+  </head>
+  <body>
+    <!-- Readable page summary for visitors and crawlers without JavaScript (filled per page at build) -->
+    <noscript><style>#app-startup { display: none; }</style><!--seo:body--><!--/seo:body--></noscript>
+
+    <!-- React root container -->
+    <div id="root"><div id="app-startup" role="status"><strong>People Taxi</strong><span>Loading…</span></div></div>
+
+    <!-- reCAPTCHA container for phone auth -->
+    <div id="recaptcha-container"></div>
+
+    <!-- Main JavaScript entry point -->
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
