@@ -1,3 +1,5 @@
+import { LeafletZoneMapView } from './LeafletZoneMapView';
+import { onGoogleMapsFailure } from '@/lib/googleMaps';
 // The Local Taxi map (Google Maps): the active service areas (so the rider sees what the server enforces), the pickup and
 // drop as tappable name tags, the road route as a dashed line, and the driver. Used for choosing a ride and for the live ride.
 import { useEffect, useRef, useState } from 'react';
@@ -95,6 +97,7 @@ export function ZoneMapView({
   useEffect(() => {
     if (!hasGoogleMapsWebKey || !host.current) return undefined;
     let alive = true;
+    const stopFailureListener = onGoogleMapsFailure(() => { if (alive) setFailed(true); });
     loadGoogleMaps().then((maps) => {
       if (!alive || !host.current) return;
       map.current = new maps.Map(host.current, {
@@ -105,6 +108,7 @@ export function ZoneMapView({
     }).catch(() => { if (alive) setFailed(true); });
     return () => {
       alive = false;
+      stopFailureListener();
       overlays.current.forEach((o) => o.setMap?.(null));
       overlays.current = [];
       map.current = null;
@@ -174,6 +178,8 @@ export function ZoneMapView({
       maps.event.addListenerOnce(m, 'idle', () => { if (m.getZoom() > 16) m.setZoom(16); });
     }
   }, [ready, zones, route, pickup?.lat, pickup?.lng, pickup?.name, drop?.lat, drop?.lng, drop?.name, driver?.lat, driver?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  if (failed) return <LeafletZoneMapView pickup={pickup} drop={drop} driver={driver} route={route} label={label} fill={fill} onPickupClick={onPickupClick} onDropClick={onDropClick} />;
 
   return (
     <div className={`lt-map ${fill ? 'lt-map--fill' : ''}`} role="img" aria-label={label}>
