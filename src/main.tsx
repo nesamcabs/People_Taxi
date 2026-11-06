@@ -26,6 +26,7 @@ import './styles/theme.css';
 import './styles/bottom-nav.css';
 import './styles/desktop-controls.css';
 import './styles/scroll-header.css';
+import './styles/contact-controls.css';
 import { keepHomeBehindEveryScreen } from './lib/homeNav';
 import { installStaleVersionReload, installVersionCheck } from '@/shared/components/RouteErrorBoundary';
 import { App } from './App';

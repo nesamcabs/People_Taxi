@@ -1,3 +1,4 @@
+import { serviceSlogan } from '@/lib/serviceSlogan';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 // Local Rentals: a full-screen map and a sheet that rises from the bottom, one question at a time.
@@ -499,6 +500,10 @@ export function LocalRentalsPage() {
           <button type="button" role="tab" aria-selected={mode === 'hourly'} onClick={() => switchMode('hourly')}>Hourly Rental</button>
           <button type="button" role="tab" aria-selected={mode === 'pickup'} onClick={() => switchMode('pickup')}>Pickup &amp; Drop</button>
         </div>
+        <p className="lr-slogan" aria-live="polite">
+          {serviceSlogan(mode === 'hourly' ? 'rental' : 'pickup')[0]}
+          <span>{serviceSlogan(mode === 'hourly' ? 'rental' : 'pickup')[1]}</span>
+        </p>
       </header>
 
       {picking ? (
