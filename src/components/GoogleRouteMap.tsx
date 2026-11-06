@@ -9,7 +9,7 @@ declare global { interface Window { google?: any; __nesamGoogleMapsPromise?: Pro
 
 const apiKey = (import.meta.env.VITE_GOOGLE_MAPS_API_KEY as string | undefined)?.trim() ?? '';
 
-function loadGoogleMaps(): Promise<any> {
+export function loadGoogleMaps(): Promise<any> {
   if (window.google?.maps) return Promise.resolve(window.google.maps);
   if (window.__nesamGoogleMapsPromise) return window.__nesamGoogleMapsPromise;
   window.__nesamGoogleMapsPromise = new Promise((resolve, reject) => {
