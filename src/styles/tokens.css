@@ -134,7 +134,7 @@
   /* Narrow reading / form column (legal text, single-card pages). */
   --measure: 760px;
   --nav-h: 84px;
-  --tabbar-h: 80px;
+  --tabbar-h: 64px;
   --tabbar-gap: 12px;
   --tap: 48px;
   /* Height currently covered at the bottom of the viewport (tab bar, flow bar, sheets); published by Shell. */
