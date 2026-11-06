@@ -532,3 +532,8 @@
   .lr__map--google { bottom: 0; }
   .lr-pin { top: 50%; }
 }
+
+/* The place and its confirm button share one small horizontal row. */
+.lr-row { display: flex; align-items: center; gap: 10px; }
+.lr-row > .lr-addr { flex: 1; min-width: 0; }
+.lr-row > .lr-cta { width: auto; flex: 0 0 auto; margin: 0; padding: 10px 14px; font-size: 0.875rem; white-space: nowrap; }
