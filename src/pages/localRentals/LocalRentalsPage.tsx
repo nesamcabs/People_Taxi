@@ -342,10 +342,8 @@ export function LocalRentalsPage() {
     if (stage === 'when') return;
     enter(stage);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const locatedInitially = useRef(false);
   useEffect(() => {
-    if (locatedInitially.current || stage !== 'pickup' || userMoved.current || !position) return;
-    locatedInitially.current = true;
+    if (stage !== 'pickup' || userMoved.current || !position) return;
     flyTo({ lat: position.lat, lng: position.lng });
     resolveAt({ lat: position.lat, lng: position.lng });
   }, [position?.lat, position?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
