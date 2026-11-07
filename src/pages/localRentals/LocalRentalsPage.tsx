@@ -267,7 +267,8 @@ export function LocalRentalsPage() {
   const [params] = useSearchParams();
   const { draft, update } = useBooking();
   const { state: auth, openLoginModal } = useAuth();
-  const { position, locate, locating } = useDeviceLocation(true);
+  const { position, locate, locating, error: locationError } = useDeviceLocation(true);
+  useEffect(() => { void locate(); }, [locate]);
   const { online } = useOnline();
 
   const real = (p: GeoPlace | null) => (p && p.id !== DISPOSAL_ID ? p : null);
@@ -276,12 +277,12 @@ export function LocalRentalsPage() {
   // service's search (an outstation drop is not a city drop), and the pickup is always asked first.
   const savedRental = draft.tripType === 'Local Rental' && !!draft.rentalHours && !!real(draft.pickup) && !!draft.scheduledAt && draft.scheduledAt.getTime() > Date.now();
   const future = draft.scheduledAt && draft.scheduledAt.getTime() > Date.now() ? draft.scheduledAt : null;
-  const [pickup, setPickup] = useState<GeoPlace | null>(() => real(draft.pickup));
+  const [pickup, setPickup] = useState<GeoPlace | null>(null);
   const [drop, setDrop] = useState<GeoPlace | null>(null);
   const [hours, setHours] = useState<number | null>(draft.tripType === 'Local Rental' ? draft.rentalHours ?? null : null);
   const [date, setDate] = useState(() => toDateInput(future ?? new Date()));
   const [time, setTime] = useState(() => (future ? toTimeInput(future) : ''));
-  const [stage, setStage] = useState<Stage>(() => (params.get('mode') !== 'pickup' && savedRental ? 'when' : 'pickup'));
+  const [stage, setStage] = useState<Stage>('pickup');
   const [cand, setCand] = useState<GeoPlace | null>(null);
   const [resolving, setResolving] = useState(false);
   const [target, setTarget] = useState<Target | null>(null);
@@ -341,8 +342,10 @@ export function LocalRentalsPage() {
     if (stage === 'when') return;
     enter(stage);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const locatedInitially = useRef(false);
   useEffect(() => {
-    if (stage !== 'pickup' || pickup || cand || userMoved.current || !position) return;
+    if (locatedInitially.current || stage !== 'pickup' || userMoved.current || !position) return;
+    locatedInitially.current = true;
     flyTo({ lat: position.lat, lng: position.lng });
     resolveAt({ lat: position.lat, lng: position.lng });
   }, [position?.lat, position?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -414,7 +417,7 @@ export function LocalRentalsPage() {
     flyTo(p, 16);
   };
   const useMyLocation = async () => {
-    const p = position ?? (await locate());
+    const p = await locate();
     if (!p) return;
     userMoved.current = true;
     flyTo({ lat: p.lat, lng: p.lng });
@@ -559,6 +562,7 @@ export function LocalRentalsPage() {
           <section key={stage} className="lr-sheet" aria-label={stage === 'drop' ? 'Set drop location' : 'Set pickup location'}>
             <span className="lr-grip" aria-hidden="true" />
             <p className="lr-step">Step {stepNo} of {steps}</p>
+            {locating ? <p className="lr-hint" role="status">Finding your current location…</p> : locationError ? <p className="lr-warn" role="alert">Couldn’t get your current location. Allow location access in your browser, then tap the location arrow to retry.</p> : null}
             <h2>{stage === 'drop' ? 'Where should we drop you?' : mode === 'hourly' ? 'Where should the car meet you?' : 'Where should we pick you up?'}</h2>
             <div className="lr-row">
             <div className={`lr-addr ${resolving ? 'is-busy' : ''}`}>
