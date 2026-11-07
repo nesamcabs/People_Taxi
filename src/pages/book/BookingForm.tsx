@@ -187,8 +187,6 @@ export function BookingForm({
     }
     if (isRound && (!days || days < 1 || days > RT_MAX_DAYS)) e.retDate = `Choose 1 to ${RT_MAX_DAYS} days.`;
     const at = combineDateTime(date, time);
-    // Local Taxi is on demand: it has no pickup date or time to check.
-    if (service === 'local') return e;
     if (!date) e.date = 'Choose a pickup date.';
     else if (!time) e.time = 'Choose a pickup time.';
     else {
@@ -413,9 +411,8 @@ export function BookingForm({
             </>
           ) : null}
 
-          {service !== 'local' ? (
           <div className={isRound ? 'bf-row bf-row--trio' : 'bf-row'}>
-            <div className="bf-cell">
+            <div className="bf-cell bf-cell--schedule">
               <label className="bf-label bf-label--out" htmlFor="bf-date">
                 Pickup date
               </label>
@@ -441,7 +438,7 @@ export function BookingForm({
               </div>
               {fieldErr('date')}
             </div>
-            <div className="bf-cell">
+            <div className="bf-cell bf-cell--schedule">
               <span className="bf-label bf-label--out" id="bf-time-label">
                 Pickup time
               </span>
@@ -487,7 +484,6 @@ export function BookingForm({
               </div>
             ) : null}
           </div>
-          ) : null}
 
 
           {errors.form ? (

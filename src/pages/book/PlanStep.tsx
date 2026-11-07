@@ -419,7 +419,7 @@ export function PlanStep({ ui, setUi, intent }: { ui: PlanUi; setUi: Dispatch<Se
             <input type="date" value={whenDate} min={toDateInput(new Date())} max={toDateInput(latestPickup())} onChange={(e) => setWhenDate(e.target.value)} />
           </label>
           <label className="when__item">
-            <span>Time</span>
+            <span>Pickup time</span>
             <input type="time" value={whenTime} step={300} onChange={(e) => setWhenTime(e.target.value)} />
           </label>
         </div>

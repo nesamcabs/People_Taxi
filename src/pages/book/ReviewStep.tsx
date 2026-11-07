@@ -5,8 +5,8 @@ import type { FareBreakdown as Fare } from '@core/types';
 import { useCustomerData } from '@/state/customer';
 import { createRideRequest } from '@core/services/rideService';
 import { buildFareBreakup } from '@core/utils/fareBreakup';
-import { scheduleProblem, whatsappProblem } from '@core/utils/bookingRules';
-import { formatDate, formatDistance, formatDuration, formatINR, formatPhone, formatTime, isValidEmail, isValidIndianMobile } from '@core/utils/format';
+import { scheduleProblem } from '@core/utils/bookingRules';
+import { formatDate, formatDistance, formatDuration, formatINR, formatTime, isValidEmail, isValidIndianMobile } from '@core/utils/format';
 import { describeError } from '@core/utils/retry';
 import { BackButton, Button, Checkbox, Notice, PageHead, TextField } from '@/components/ui';
 import { Icon } from '@/components/Icon';
@@ -17,6 +17,8 @@ import { composeNotes, notesRoom } from '@/lib/notes';
 import { PolicyLinks } from '@/pages/PolicySections';
 import { categoryName, categoryPhoto } from '@/lib/categories';
 import { FareDialog, FlowBar, PaymentChoice, PromoControl } from './parts';
+import { CountryCodeSelect } from '@/components/CountryCodeSelect';
+import { splitPhone } from '@/lib/countryCodes';
 
 export function ReviewStep() {
   const navigate = useNavigate();
@@ -32,6 +34,9 @@ export function ReviewStep() {
   const [serverQuote, setServerQuote] = useState<{ key: string; fare: Fare } | null>(null);
   const [showFare, setShowFare] = useState(false);
   const [justSignedIn, setJustSignedIn] = useState(false);
+  const initialPhone = splitPhone(profile?.phone ?? '');
+  const [contactCode, setContactCode] = useState(initialPhone.code);
+  const [contactNumber, setContactNumber] = useState(initialPhone.local);
   const submittingRef = useRef(false);
   const termsRef = useRef<HTMLDivElement>(null);
 
@@ -43,9 +48,6 @@ export function ReviewStep() {
     tripEndAt,
     payment,
     notes,
-    waSame,
-    waCode,
-    waNumber,
     email,
     forOther,
     passengerName,
@@ -59,6 +61,12 @@ export function ReviewStep() {
     if (profile && !hadProfile.current) setJustSignedIn(true);
     hadProfile.current = !!profile;
   }, [profile]);
+  useEffect(() => {
+    if (!profile?.phone) return;
+    const phone = splitPhone(profile.phone);
+    setContactCode(phone.code);
+    setContactNumber(phone.local);
+  }, [profile?.phone]);
 
   if (!pickup || !drop || !category || !q.quote) {
     return (
@@ -109,7 +117,7 @@ export function ReviewStep() {
 
   const addOnsConfirmed = (!draft.roofCarrier || quote.addOns?.roofCarrier === true) && (!draft.pets || quote.addOns?.pets === true);
   const emailError = email.trim() && !isValidEmail(email) ? 'Enter a valid email address or leave it blank.' : '';
-  const waError = whatsappProblem(waSame, waCode, waNumber);
+  const contactError = contactNumber.length < 6 || contactNumber.length > 14 ? 'Enter a valid mobile number.' : '';
   const passengerError = forOther
     ? !passengerName.trim()
       ? 'Enter the passenger’s name.'
@@ -131,7 +139,7 @@ export function ReviewStep() {
           ? 'Confirming fare with People Taxi…'
           : q.quoteError || 'Fare confirmation required.'
         : '') ||
-      (!addOnsConfirmed ? 'Confirming carrier and pet charges. Please retry if pricing is unavailable.' : waError || emailError || passengerError ? 'Check your contact details below.' : '');
+      (!addOnsConfirmed ? 'Confirming carrier and pet charges. Please retry if pricing is unavailable.' : contactError || emailError || passengerError ? 'Check your contact details below.' : '');
 
   const submit = async () => {
     setTried(true);
@@ -178,7 +186,7 @@ export function ReviewStep() {
         rentalHours: tripType === 'Local Rental' ? draft.rentalHours : null,
         termsAccepted,
         addOns: { roofCarrier: draft.roofCarrier, pets: draft.pets },
-        whatsapp: waSame ? { sameAsMobile: true } : { sameAsMobile: false, countryCode: waCode.trim(), number: waNumber.replace(/[\s()-]/g, '') },
+        whatsapp: { sameAsMobile: false, countryCode: contactCode, number: contactNumber },
         email: email.trim(),
         source: 'people_taxi',
         bookingSource: 'peopletaxi',
@@ -212,48 +220,9 @@ export function ReviewStep() {
               <h2 id="rv-who-head">Passenger &amp; Contact Details</h2>
 
               <div className="rv-grid">
-                <div>
-                  <TextField
-                    label="Mobile number"
-                    value={profile?.phone ? formatPhone(profile.phone) : 'Sign in on booking'}
-                    readOnly
-                    disabled
-                  />
-                  <div style={{ marginTop: 12 }}>
-                    <Checkbox
-                      className="check--whatsapp"
-                      label="Same WhatsApp number"
-                      checked={waSame}
-                      onChange={(checked) => update({ waSame: checked })}
-                    />
-                  </div>
-                  {!waSame ? (
-                    <div style={{ marginTop: 12 }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '88px minmax(0, 1fr)', gap: 10 }}>
-                        <TextField
-                          label="Country code"
-                          type="tel"
-                          autoComplete="tel-country-code"
-                          placeholder="+91"
-                          value={waCode}
-                          maxLength={4}
-                          required
-                          onChange={(e) => update({ waCode: e.target.value.replace(/[^\d+]/g, '') })}
-                        />
-                        <TextField
-                          label="WhatsApp number"
-                          type="tel"
-                          autoComplete="tel-national"
-                          placeholder="Enter WhatsApp number"
-                          value={waNumber}
-                          error={waError}
-                          required
-                          onChange={(e) => update({ waNumber: e.target.value })}
-                        />
-                      </div>
-                      <PolicyLinks lead="Use another person's WhatsApp number only with their permission." ids={['privacy']} newTab />
-                    </div>
-                  ) : null}
+                <div className="contact-phone">
+                  <CountryCodeSelect id="booking-country-code" value={contactCode} onChange={setContactCode} />
+                  <TextField label="Mobile number" type="tel" inputMode="numeric" autoComplete="tel-national" placeholder="Mobile number" value={contactNumber} error={contactError} required onChange={(e) => setContactNumber(e.target.value.replace(/\D/g, '').slice(0, 14))} />
                 </div>
                 <TextField
                   label="Email Address"
@@ -271,7 +240,7 @@ export function ReviewStep() {
                   checked={forOther}
                   onChange={(checked) => update({ forOther: checked })}
                 />
-                {forOther ? <PolicyLinks lead="Add a passenger’s or another WhatsApp number only with their permission." ids={['privacy']} newTab /> : null}
+                {forOther ? <PolicyLinks lead="Add another passenger’s mobile number only with their permission." ids={['privacy']} newTab /> : null}
                 {forOther ? (
                   <div className="rv-grid" style={{ marginTop: 10 }}>
                     <TextField
@@ -292,21 +261,26 @@ export function ReviewStep() {
                 ) : null}
               </div>
 
-              <div className="rv-fold">
-                <h3 style={{ margin: '0 0 12px', fontSize: '1rem' }}>Travel add-ons</h3>
-                <Checkbox
-                  label={`Roof carrier (+${formatINR(category.fare.extras?.carrierCharge ?? 0)} per trip)`}
-                  checked={draft.roofCarrier}
-                  onChange={(checked) => update({ roofCarrier: checked })}
-                />
-                <div style={{ marginTop: 12 }}>
-                  <Checkbox
-                    label={`Travelling with pets (+${formatINR(q.entries.get(category.id)?.addOnRates?.petCharge ?? 0)} per trip)`}
-                    checked={draft.pets}
-                    onChange={(checked) => update({ pets: checked })}
-                  />
+              <div className="rv-fold rv-addons">
+                <div className="rv-addons__head">
+                  <div>
+                    <h3>Travel add-ons</h3>
+                    <p>Make your ride more comfortable</p>
+                  </div>
                 </div>
-                <p className="muted" style={{ marginTop: 8, fontSize: '0.8125rem' }}>Selected charges are included in your total and bill. GST follows the fare settings shown in the breakdown.</p>
+                <div className="rv-addons__list">
+                  <Checkbox className="rv-addon" checked={draft.roofCarrier} onChange={(checked) => update({ roofCarrier: checked })}>
+                    <span className="rv-addon__icon" aria-hidden="true">▣</span>
+                    <span className="rv-addon__copy"><strong>Roof carrier</strong></span>
+                    <span className="rv-addon__price">+{formatINR(category.fare.extras?.carrierCharge ?? 0)}</span>
+                  </Checkbox>
+                  <Checkbox className="rv-addon" checked={draft.pets} onChange={(checked) => update({ pets: checked })}>
+                    <span className="rv-addon__icon" aria-hidden="true">●</span>
+                    <span className="rv-addon__copy"><strong>Travelling with pets</strong></span>
+                    <span className="rv-addon__price">+{formatINR(q.entries.get(category.id)?.addOnRates?.petCharge ?? 0)}</span>
+                  </Checkbox>
+                </div>
+                <p className="rv-addons__note">Charges are added once per trip and included in your final bill.</p>
               </div>
 
               {airport ? (

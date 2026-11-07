@@ -333,7 +333,7 @@ export function MulticityForm() {
       {/* ── Schedule Section ── */}
       <div className="bf-section" role="group" aria-label="Trip schedule">
         <div className="bf-row">
-          <div className="bf-cell">
+          <div className="bf-cell bf-cell--schedule">
             <label className="bf-label bf-label--out" htmlFor="mc-date">
               Pickup date
             </label>
@@ -356,7 +356,7 @@ export function MulticityForm() {
             {errors.date ? <p className="bf-error">{errors.date}</p> : null}
           </div>
 
-          <div className="bf-cell">
+          <div className="bf-cell bf-cell--schedule">
             <span className="bf-label bf-label--out" id="mc-time-label">
               Pickup time
             </span>

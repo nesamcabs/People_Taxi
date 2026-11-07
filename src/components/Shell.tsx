@@ -22,7 +22,7 @@ export function Brand({ compact = false, light = false }: { compact?: boolean; l
   return (
     <Link to="/" className={`brand ${compact ? 'brand--compact' : ''} ${light ? 'brand--light' : ''}`} aria-label="People Taxi — book a ride">
       <img
-        src={compact ? '/brand/peopletaxi-symbol.png' : '/brand/peopletaxi-logo.png'}
+        src={compact ? '/brand/peopletaxi-symbol.png' : '/brand/peopletaxi-transparent.png'}
         alt="People Taxi"
         width={compact ? 44 : 192}
         height={compact ? 44 : 44}

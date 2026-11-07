@@ -67,9 +67,9 @@ function HeroCopy({ service, trip }: { service: ServiceId; trip: 'One Way' | 'Ro
   return (
     <div className="hero-copy">
       <div className="hero-logo" ref={logo}>
-        <img src="/brand/peopletaxi-logo.png" alt="People Taxi" width={224} height={52} />
+        <img className="people-wordmark" src="/brand/peopletaxi-transparent.png" alt="People Taxi" width={2191} height={718} />
       </div>
-      <h1 aria-live="polite" style={{ textTransform: 'none' }}>
+      <h1 key={`${service}-${trip}`} className={service === 'multicity' ? 'multicity-slogan' : service === 'outstation' || service === 'airport' ? 'journey-slogan' : undefined} aria-live="polite" style={{ textTransform: 'none' }}>
         {headline} <span className="hero-accent">{subtitle}</span>
       </h1>
       {/* Decoration for tablets and wider: a route that runs around the booking card, pickup to drop. */}
@@ -164,13 +164,6 @@ function Home() {
       writeOutstation('Round Trip');
     } else if (tripParam === 'one-way' || rawService === 'one-way') {
       writeOutstation('One Way');
-    }
-    if (rawService || tripParam) {
-      scrollToConsole();
-      const timer = window.setTimeout(() => {
-        scrollToConsole();
-      }, 120);
-      return () => window.clearTimeout(timer);
     }
   }, [rawService, tripParam, scrollToConsole]);
 

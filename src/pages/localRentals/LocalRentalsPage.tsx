@@ -1,4 +1,3 @@
-import { serviceSlogan } from '@/lib/serviceSlogan';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 // Local Rentals: a full-screen map and a sheet that rises from the bottom, one question at a time.
@@ -272,7 +271,7 @@ export function LocalRentalsPage() {
   const { online } = useOnline();
 
   const real = (p: GeoPlace | null) => (p && p.id !== DISPOSAL_ID ? p : null);
-  const [mode, setMode] = useState<Mode>(params.get('mode') === 'pickup' ? 'pickup' : 'hourly');
+  const [mode, setMode] = useState<Mode>(params.get('mode') === 'hourly' ? 'hourly' : 'pickup');
   // A saved hourly rental that is still in the future can be edited; anything else starts fresh. A drop is never taken from another
   // service's search (an outstation drop is not a city drop), and the pickup is always asked first.
   const savedRental = draft.tripType === 'Local Rental' && !!draft.rentalHours && !!real(draft.pickup) && !!draft.scheduledAt && draft.scheduledAt.getTime() > Date.now();
@@ -475,6 +474,32 @@ export function LocalRentalsPage() {
       onSelect={onSearchPick}
     />
   ) : null;
+  const scheduleFields = (
+    <>
+      <label className="lr-field lr-field--schedule">
+        <span>Pickup Date</span>
+        <input type="date" className="lr-date" value={date} min={toDateInput(new Date())} max={lastDay} onChange={(e) => { if (e.target.value) pickDate(e.target.value); }} />
+      </label>
+      <label className="lr-field lr-field--schedule">
+        <span>Pickup Time</span>
+        <div className="lr-select">
+          <select
+            value={time}
+            onChange={(e) => {
+              if (e.target.value === '__other') { setTimeOpen(true); return; }
+              setTime(e.target.value);
+              setError('');
+            }}
+          >
+            <option value="">Select</option>
+            {time && !TIME_SLOTS.includes(time) ? <option value={time}>{formatTime12(time)}</option> : null}
+            {TIME_SLOTS.map((t) => <option key={t} value={t} disabled={!timeOk(t)}>{formatTime12(t)}</option>)}
+            <option value="__other">Other time…</option>
+          </select>
+        </div>
+      </label>
+    </>
+  );
 
   return (
     <div className="lr" style={style} role="dialog" aria-label="Local Rentals">
@@ -497,13 +522,9 @@ export function LocalRentalsPage() {
         </div>
         <div className="lr-seg" role="tablist" aria-label="Local Rentals" data-mode={mode}>
           <span className="lr-seg__thumb" aria-hidden="true" />
-          <button type="button" role="tab" aria-selected={mode === 'hourly'} onClick={() => switchMode('hourly')}>Hourly Rental</button>
           <button type="button" role="tab" aria-selected={mode === 'pickup'} onClick={() => switchMode('pickup')}>Pickup &amp; Drop</button>
+          <button type="button" role="tab" aria-selected={mode === 'hourly'} onClick={() => switchMode('hourly')}>Hourly Rental</button>
         </div>
-        <p className="lr-slogan" aria-live="polite">
-          {serviceSlogan(mode === 'hourly' ? 'rental' : 'pickup')[0]}
-          <span>{serviceSlogan(mode === 'hourly' ? 'rental' : 'pickup')[1]}</span>
-        </p>
       </header>
 
       {picking ? (
@@ -584,46 +605,31 @@ export function LocalRentalsPage() {
               ) : null}
             </div>
 
-            <div className={`lr-pair ${mode === 'hourly' ? '' : 'lr-pair--two'}`}>
-              {mode === 'hourly' ? (
-                <label className="lr-field">
-                  <span>Hours</span>
+            {mode === 'hourly' ? (
+              <div className="lr-hourly-plan">
+                <label className="lr-field lr-field--duration">
+                  <span>Rental Duration</span>
                   <div className="lr-select">
                     <select value={hours ?? ''} onChange={(e) => { setHours(e.target.value ? Number(e.target.value) : null); setError(''); }}>
-                      <option value="">Select</option>
+                      <option value="">Select duration</option>
                       {RENTAL_PACKAGE_HOURS.map((h) => <option key={h} value={h}>{h} hours</option>)}
                     </select>
                   </div>
                 </label>
-              ) : null}
-              <label className="lr-field">
-                <span>Pickup date</span>
-                <input type="date" className="lr-date" value={date} min={toDateInput(new Date())} max={lastDay} onChange={(e) => { if (e.target.value) pickDate(e.target.value); }} />
-              </label>
-              <label className="lr-field">
-                <span>Pickup time</span>
-                <div className="lr-select">
-                  <select
-                    value={time}
-                    onChange={(e) => {
-                      if (e.target.value === '__other') { setTimeOpen(true); return; }
-                      setTime(e.target.value);
-                      setError('');
-                    }}
-                  >
-                    <option value="">Select</option>
-                    {time && !TIME_SLOTS.includes(time) ? <option value={time}>{formatTime12(time)}</option> : null}
-                    {TIME_SLOTS.map((t) => <option key={t} value={t} disabled={!timeOk(t)}>{formatTime12(t)}</option>)}
-                    <option value="__other">Other time…</option>
-                  </select>
+                <div className="lr-pair lr-pair--two">
+                  {scheduleFields}
                 </div>
-              </label>
-            </div>
+              </div>
+            ) : (
+              <div className="lr-pair lr-pair--two">
+                {scheduleFields}
+              </div>
+            )}
             </div>
             <div className="lr-foot">
               {error ? <p className="lr-warn" role="alert">{error}</p> : null}
               {!online ? <p className="lr-warn" role="alert">You’re offline. Reconnect to see fares.</p> : null}
-              <button type="button" className="lr-cta" onClick={submit}>See vehicles &amp; fares</button>
+              <button type="button" className="lr-cta" onClick={submit}>{mode === 'hourly' ? 'View cabs & fares →' : 'See vehicles & fares'}</button>
             </div>
           </section>
         )}
