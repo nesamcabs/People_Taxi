@@ -61,7 +61,19 @@ export interface QuoteRequest {
   brand?: string;
 }
 
-export const fetchQuotes = (req: QuoteRequest): Promise<ServerQuoteResponse> => callFunction<QuoteRequest, ServerQuoteResponse>('quoteBooking', req, 30000);
+/** Requests still waiting for the server, by trip: asking again for the same trip meanwhile shares the one answer. */
+const pending = new Map<string, Promise<ServerQuoteResponse>>();
+
+export function fetchQuotes(req: QuoteRequest): Promise<ServerQuoteResponse> {
+  const key = quoteKeyOf(req);
+  const running = pending.get(key);
+  if (running) return running;
+  const call = callFunction<QuoteRequest, ServerQuoteResponse>('quoteBooking', req, 30000);
+  pending.set(key, call);
+  const done = () => { if (pending.get(key) === call) pending.delete(key); };
+  call.then(done, done);
+  return call;
+}
 
 /** Identity of a request, so a stale answer is never used for a changed trip. */
 export const quoteKeyOf = (r: QuoteRequest | null): string => (r ? JSON.stringify([r.pickup.id ?? '', r.pickup.lat, r.pickup.lng, ...(r.stops ?? []).flatMap((p) => [p.id ?? '', p.lat, p.lng]), r.drop.id ?? '', r.drop.lat, r.drop.lng, r.tripType, r.scheduledAt, r.tripEndAt ?? '', r.couponCode ?? '', r.brand ?? '', r.rentalHours ?? '', r.addOns?.roofCarrier === true, r.addOns?.pets === true]) : '');

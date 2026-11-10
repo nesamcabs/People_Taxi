@@ -11,7 +11,7 @@ import type { TripRecord, TripType } from '@core/types';
 import { BookingConfirmedOverlay } from '@/components/BookingConfirmedOverlay';
 import './done.css';
 
-const BRAND_LOGO = { src: '/brand/peopletaxi-logo.png', alt: 'People Taxi' };
+const BRAND_LOGO = { src: '/brand/peopletaxi-logo.webp', alt: 'People Taxi' };
 
 function JourneyArt({ done }: { done: boolean }) {
   return (

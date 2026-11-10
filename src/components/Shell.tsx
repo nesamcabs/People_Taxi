@@ -21,7 +21,7 @@ export function Brand({ compact = false, light = false }: { compact?: boolean; l
   return (
     <Link to="/" className={`brand ${compact ? 'brand--compact' : ''} ${light ? 'brand--light' : ''}`} aria-label="People Taxi — book a ride">
       <img
-        src={compact ? '/brand/peopletaxi-symbol.png' : '/brand/peopletaxi-transparent.png'}
+        src={compact ? '/brand/peopletaxi-symbol.png' : '/brand/peopletaxi-transparent.webp'}
         alt="People Taxi"
         width={compact ? 44 : 192}
         height={compact ? 44 : 44}
@@ -37,11 +37,11 @@ const NAV = [
   { to: '/notifications', label: 'Notifications', short: 'Alerts', icon: 'notifications' },
 ] as const;
 
-import airportIcon from '@/assets/nav/airport-taxi.png';
-import multicityIcon from '@/assets/nav/multicity.png';
-import outstationIcon from '@/assets/nav/outstation.png';
-import rentalIcon from '@/assets/nav/local-rentals.png';
-import profileIcon from '@/assets/nav/profile.png';
+import airportIcon from '@/assets/nav/airport-taxi.webp';
+import multicityIcon from '@/assets/nav/multicity.webp';
+import outstationIcon from '@/assets/nav/outstation.webp';
+import rentalIcon from '@/assets/nav/local-rentals.webp';
+import profileIcon from '@/assets/nav/profile.webp';
 
 /** Desktop header links. Account lives in the profile menu there. On phones the bottom bar holds the four
     services, and the header holds Notifications. Account and My trips are in the side menu. */

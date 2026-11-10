@@ -19,7 +19,7 @@ import { useAuth } from '@/state/Auth';
 import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
 import { setPendingReturn } from '@/lib/pendingReturn';
 import { useDeviceLocation, useOnline } from '@/lib/hooks';
-import { combineDateTime, latestPickup, toDateInput, toTimeInput } from '@/lib/schedule';
+import { combineDateTime, earliestSlot, latestPickup, pickupTimeOptions, toDateInput, toTimeInput } from '@/lib/schedule';
 import { useSeo } from '@/lib/seo';
 import { QUICK_CITIES } from '@/pages/book/content';
 import { SERVICES, serviceHref } from '@/lib/services';
@@ -280,8 +280,10 @@ export function LocalRentalsPage() {
   const [pickup, setPickup] = useState<GeoPlace | null>(null);
   const [drop, setDrop] = useState<GeoPlace | null>(null);
   const [hours, setHours] = useState<number | null>(draft.tripType === 'Local Rental' ? draft.rentalHours ?? null : null);
-  const [date, setDate] = useState(() => toDateInput(future ?? new Date()));
-  const [time, setTime] = useState(() => (future ? toTimeInput(future) : ''));
+  // The pickup starts at the earliest time a rider may book: 30 minutes after the device clock, rounded up to 5 minutes.
+  const [date, setDate] = useState(() => toDateInput(future ?? earliestSlot()));
+  const [time, setTime] = useState(() => toTimeInput(future ?? earliestSlot()));
+  const [nowMs, setNowMs] = useState(() => Date.now());
   const [stage, setStage] = useState<Stage>('pickup');
   const [cand, setCand] = useState<GeoPlace | null>(null);
   const [resolving, setResolving] = useState(false);
@@ -424,8 +426,26 @@ export function LocalRentalsPage() {
 
   // ── When: day, time, hours ──
   const lastDay = toDateInput(latestPickup());
-  const timeOk = (t: string) => !scheduleProblem(combineDateTime(date, t));
-  const pickDate = (iso: string) => { setDate(iso); setError(''); if (time && scheduleProblem(combineDateTime(iso, time))) setTime(''); };
+  const first = earliestSlot(nowMs);
+  const firstDay = toDateInput(first);
+  const firstTime = toTimeInput(first);
+  // Only times that can still be booked are offered, so there is nothing to scroll past.
+  const timeOptions = useMemo(() => pickupTimeOptions(date, TIME_SLOTS, nowMs), [date, nowMs]);
+  const timeOk = (t: string) => !scheduleProblem(combineDateTime(date, t), nowMs);
+  const pickDate = (iso: string) => {
+    setDate(iso);
+    setError('');
+    if (time && scheduleProblem(combineDateTime(iso, time))) setTime(iso === firstDay ? firstTime : '');
+  };
+  // Keep the clock moving: a time that has become too soon is replaced by the new earliest one (never an error at the button).
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 15000);
+    return () => window.clearInterval(id);
+  }, []);
+  useEffect(() => {
+    if (date < firstDay) { setDate(firstDay); setTime(firstTime); return; } // no times left today
+    if (date === firstDay && (!time || !timeOk(time))) setTime(firstTime);
+  }, [nowMs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = () => {
     if (!online) return setError('You’re offline. Reconnect to see fares.');
@@ -436,7 +456,10 @@ export function LocalRentalsPage() {
     if (!time) return setError('Choose a pickup time.');
     const at = combineDateTime(date, time);
     const problem = scheduleProblem(at);
-    if (problem) return setError(problem);
+    if (problem) {
+      if (date === firstDay) { setTime(firstTime); return setError(`That time has passed. Pickup moved to the earliest time, ${formatTime12(firstTime)}. Tap again to continue.`); }
+      return setError(problem);
+    }
     if (mode === 'pickup' && pickup && drop && haversineKm(pickup, drop) > CITY_LIMIT_KM) return setError('Pickup & Drop is for trips inside one city. For a longer trip choose Outstation.');
     const patch =
       mode === 'hourly'
@@ -479,7 +502,7 @@ export function LocalRentalsPage() {
     <>
       <label className="lr-field lr-field--schedule">
         <span>Pickup Date</span>
-        <input type="date" className="lr-date" value={date} min={toDateInput(new Date())} max={lastDay} onChange={(e) => { if (e.target.value) pickDate(e.target.value); }} />
+        <input type="date" className="lr-date" value={date} min={firstDay} max={lastDay} onChange={(e) => { if (e.target.value) pickDate(e.target.value); }} />
       </label>
       <label className="lr-field lr-field--schedule">
         <span>Pickup Time</span>
@@ -493,8 +516,8 @@ export function LocalRentalsPage() {
             }}
           >
             <option value="">Select</option>
-            {time && !TIME_SLOTS.includes(time) ? <option value={time}>{formatTime12(time)}</option> : null}
-            {TIME_SLOTS.map((t) => <option key={t} value={t} disabled={!timeOk(t)}>{formatTime12(t)}</option>)}
+            {time && !timeOptions.includes(time) ? <option value={time}>{formatTime12(time)}</option> : null}
+            {timeOptions.map((t) => <option key={t} value={t}>{formatTime12(t)}</option>)}
             <option value="__other">Other time…</option>
           </select>
         </div>

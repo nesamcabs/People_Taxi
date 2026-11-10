@@ -35,6 +35,20 @@ function vehicleTypeAliases(...labels: string[]): string[] {
   return [...out];
 }
 
+/** This site's brand: a category can carry a car image of its own per brand (admin → Vehicle categories). */
+const SITE_BRAND = 'people_taxi';
+const brandImage = (d: DocumentData): string => {
+  const images = d.brandImages;
+  return images && typeof images === 'object' ? str((images as Record<string, unknown>)[SITE_BRAND]) : '';
+};
+
+/** Admin → Vehicle categories decides per brand which categories this site offers (older records without the list are offered everywhere). */
+const offeredOnThisSite = (d: DocumentData): boolean => {
+  if (Array.isArray(d.brands) && !d.brands.includes(SITE_BRAND)) return false;
+  const status = d.brandStatus;
+  return !(status && typeof status === 'object' && (status as Record<string, unknown>)[SITE_BRAND] === 'Inactive');
+};
+
 /** Exported for the server-parity test. */
 export function mapCategory(id: string, d: DocumentData): RideCategory | null {
   const f = d.fare && typeof d.fare === 'object' ? d.fare : {};
@@ -48,7 +62,7 @@ export function mapCategory(id: string, d: DocumentData): RideCategory | null {
     name: str(d.name),
     description: str(d.description),
     seats: num(d.seatingCapacity) || num(d.recommendedPassengers) || 4,
-    imageUrl: str(d.imageUrl) || undefined,
+    imageUrl: brandImage(d) || str(d.imageUrl) || undefined,
     iconUrl: str(d.iconUrl) || undefined,
     matchVehicleTypes: vehicleTypeAliases(str(d.name), str(d.code)),
     fare: {
@@ -182,6 +196,7 @@ export function subscribeToRideCategories(cb: (cats: RideCategory[], status: Rid
     query(collection(db, 'vehicle_categories'), where('status', '==', 'Active')),
     (snap) => {
       const cats = snap.docs
+        .filter((d) => offeredOnThisSite(d.data()))
         .map((d) => mapCategory(d.id, d.data()))
         .filter((c): c is RideCategory => !!c)
         .sort((a, b) => a.displayOrder - b.displayOrder || a.name.localeCompare(b.name));
