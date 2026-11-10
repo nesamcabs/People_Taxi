@@ -618,3 +618,50 @@
 
 .lr-slogan { margin: 8px 0 0; text-align: center; font-size: 14px; font-weight: 700; line-height: 1.4; }
 .lr-slogan span { display: block; color: var(--brand); font-weight: 500; }
+
+/* The Pickup & Drop / Hourly Rental switch sits at the top of the bottom card, above the step line. */
+.lr-sheet .lr-seg {
+  flex: none;
+  max-width: none;
+  margin: 10px 0 4px;
+  background: var(--sunken, #f1f4f9);
+  box-shadow: none;
+}
+.lr-sheet .lr-seg button { min-height: 36px; }
+
+/* ── Phones: content starts at the very top, and the bottom card is smaller, cleaner and simpler ── */
+@media (max-width: 899.98px) {
+  .lr-find { top: calc(10px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; gap: 6px; }
+  .lr-search { min-height: 42px; padding: 0 14px; border-radius: 12px; font-size: 0.875rem; box-shadow: 0 4px 14px rgb(15 23 42 / 0.14); }
+  .lr-chip { min-height: 30px; padding: 0 12px; font-size: 0.78rem; }
+
+  .lr-sheet { padding: 6px 14px 12px; border-radius: 20px; box-shadow: 0 8px 26px rgb(15 23 42 / 0.22); }
+  .lr-grip { height: 4px; margin: 0 auto 6px; }
+  .lr-gripbtn { height: 14px; }
+  .lr-gripbtn::before { top: 4px; height: 4px; }
+
+  .lr-sheet .lr-seg { margin: 8px 0 2px; padding: 3px; }
+  .lr-sheet .lr-seg button { min-height: 30px; font-size: 0.78rem; }
+  .lr-seg__thumb { top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); box-shadow: 0 2px 8px rgb(var(--brand-rgb, 22 101 232) / 0.35); }
+
+  .lr-step { font-size: 0.62rem; letter-spacing: 0.06em; }
+  .lr-sheet--tall > .lr-step { position: static; color: var(--brand-ink, var(--brand, #1665e8)); letter-spacing: 0.06em; text-transform: uppercase; }
+  .lr-sheet h2 { margin: 1px 0 8px; font-size: 0.95rem; }
+
+  .lr-row { gap: 8px; margin: 6px 0 2px; }
+  .lr-row > .lr-addr, .lr-row > .lr-cta { min-height: 46px; border-radius: 12px; }
+  .lr-row > .lr-cta { padding: 0 14px; font-size: 0.85rem; }
+  .lr-addr { gap: 9px; padding: 6px 11px; }
+  .lr-addr strong { font-size: 0.875rem; }
+  .lr-addr small { font-size: 0.7rem; }
+  .lr-dot { width: 11px; height: 11px; border-width: 2px; }
+  .lr-hint, .lr-warn { margin-top: 6px; font-size: 0.72rem; }
+
+  .lr-trip button { min-height: 40px; }
+  .lr-field--schedule .lr-date,
+  .lr-field--schedule .lr-select select,
+  .lr-hourly-plan .lr-field--schedule .lr-date,
+  .lr-hourly-plan .lr-field--schedule .lr-select select,
+  .lr-field--duration .lr-select select { min-height: 46px; font-size: 0.875rem; }
+  .lr-sheet--tall .lr-foot .lr-cta { min-height: 46px; font-size: 0.9rem; }
+}

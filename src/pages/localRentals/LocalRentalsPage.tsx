@@ -502,6 +502,15 @@ export function LocalRentalsPage() {
     </>
   );
 
+  // Pickup & Drop / Hourly Rental: lives in the bottom card (the top of the map can sit under the site header).
+  const modeSeg = (
+    <div className="lr-seg" role="tablist" aria-label="Local Rentals" data-mode={mode}>
+      <span className="lr-seg__thumb" aria-hidden="true" />
+      <button type="button" role="tab" aria-selected={mode === 'pickup'} onClick={() => switchMode('pickup')}>Pickup &amp; Drop</button>
+      <button type="button" role="tab" aria-selected={mode === 'hourly'} onClick={() => switchMode('hourly')}>Hourly Rental</button>
+    </div>
+  );
+
   return (
     <div className="lr" style={style} role="dialog" aria-label="Local Rentals">
       <PinMap picking={picking} target={target} pins={pins} sheetH={sheetH} onPick={onPick} />
@@ -520,11 +529,6 @@ export function LocalRentalsPage() {
               );
             })}
           </nav>
-        </div>
-        <div className="lr-seg" role="tablist" aria-label="Local Rentals" data-mode={mode}>
-          <span className="lr-seg__thumb" aria-hidden="true" />
-          <button type="button" role="tab" aria-selected={mode === 'pickup'} onClick={() => switchMode('pickup')}>Pickup &amp; Drop</button>
-          <button type="button" role="tab" aria-selected={mode === 'hourly'} onClick={() => switchMode('hourly')}>Hourly Rental</button>
         </div>
       </header>
 
@@ -582,6 +586,7 @@ export function LocalRentalsPage() {
               {resolving ? 'Finding address…' : stage === 'drop' ? 'Confirm drop' : 'Confirm pickup'}
             </button>
             </div>
+            {modeSeg}
             {farApart ? <p className="lr-warn" role="alert">Pickup &amp; Drop is for trips inside one city. For a longer trip choose Outstation.</p> : null}
             {stage === 'drop' ? <button type="button" className="lr-link" onClick={() => enter('pickup')}>Change pickup</button> : null}
           </section>
@@ -606,6 +611,7 @@ export function LocalRentalsPage() {
                 </button>
               ) : null}
             </div>
+            {modeSeg}
 
             {mode === 'hourly' ? (
               <div className="lr-hourly-plan">
