@@ -27,7 +27,12 @@ export function ReviewStep() {
   const { profile } = useCustomerData();
   const { openLoginModal } = useAuth();
   const { draft, update, reset, route, adjustment } = useBooking();
-  const q = useBookingQuote();
+  const liveQ = useBookingQuote();
+  // Changing an add-on or coupon re-prices on the server, and the quote is empty while that loads. Keep showing the
+  // last confirmed quote meanwhile (the form must not vanish); it is not authoritative, so booking stays blocked until the new fare arrives.
+  const lastQ = useRef(liveQ);
+  if (liveQ.quote) lastQ.current = liveQ;
+  const q = !liveQ.quote && liveQ.quoteLoading && lastQ.current.quote ? { ...lastQ.current, quoteLoading: true, authoritative: false } : liveQ;
   const { online } = useOnline();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -37,8 +42,6 @@ export function ReviewStep() {
   const [showFare, setShowFare] = useState(false);
   const [justSignedIn, setJustSignedIn] = useState(false);
   const [couponText, setCouponText] = useState('');
-  // The add-ons list is hidden until the rider switches it on (open from the start if a draft already holds one).
-  const [addOnsOpen, setAddOnsOpen] = useState(draft.roofCarrier || draft.pets);
   const initialPhone = splitPhone(profile?.phone ?? '');
   const [contactCode, setContactCode] = useState(initialPhone.code);
   const [contactNumber, setContactNumber] = useState(initialPhone.local);
@@ -61,6 +64,20 @@ export function ReviewStep() {
     flight,
   } = draft;
   const category = q.category;
+
+  // An add-on is offered only when this vehicle has a price for it (admin → vehicle specs). No price, no option.
+  const rates = q.category ? q.entries.get(q.category.id)?.addOnRates : undefined;
+  const carrierCharge = rates?.carrierCharge ?? q.category?.fare.extras?.carrierCharge ?? 0;
+  const petCharge = rates?.petCharge ?? 0;
+  const hasCarrier = carrierCharge > 0;
+  const hasPets = petCharge > 0;
+  useEffect(() => {
+    if (!q.quote) return;
+    const patch: { roofCarrier?: boolean; pets?: boolean } = {};
+    if (!hasCarrier && draft.roofCarrier) patch.roofCarrier = false;
+    if (!hasPets && draft.pets) patch.pets = false;
+    if (patch.roofCarrier !== undefined || patch.pets !== undefined) update(patch);
+  }, [hasCarrier, hasPets, !!q.quote]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const hadProfile = useRef(!!profile);
   useEffect(() => {
@@ -230,14 +247,12 @@ export function ReviewStep() {
 
 
   const applied = quote.discount > 0 && !!draft.promoCode;
-  const petCharge = q.entries.get(category.id)?.addOnRates?.petCharge ?? 0;
-  const carrierCharge = category.fare.extras?.carrierCharge ?? 0;
   const showBlocker = tried && !!blocker && !submitting;
 
   return (
     <div className="flow-page flow-page--review cb">
       <div className="cb__wrap">
-        <h1 className="cb__title">Complete your booking</h1>
+        <h1 className="sr-only">Complete your booking</h1>
 
         <section className="cb__section" aria-label="Passenger & Contact Details">
           <div className={`cb-field${nameError && tried ? ' is-invalid' : ''}`}>
@@ -247,6 +262,7 @@ export function ReviewStep() {
               className="cb-input"
               type="text"
               autoComplete="name"
+              autoCapitalize="words"
               placeholder="Your full name"
               maxLength={60}
               value={customerName}
@@ -257,33 +273,37 @@ export function ReviewStep() {
           {tried && nameError ? <p className="cb-error">{nameError}</p> : null}
 
           <div className={`cb-field${contactError && tried ? ' is-invalid' : ''}`}>
-            <label className="cb-field__label" htmlFor="booking-mobile">Mobile number</label>
             <div className="cb-phone">
-              <label className="cb-phone__code">
-                <span className="sr-only">Country code</span>
-                <select id="booking-country-code" value={contactCode} onChange={(e) => setContactCode(e.target.value)}>
-                  {UNIQUE_DIAL_CODES.map((code) => <option key={code} value={code}>{code}</option>)}
-                </select>
-                <Icon name="chevron-down" size={16} />
-              </label>
+              <div className="cb-phone__cell cb-phone__cell--code">
+                <label className="cb-field__label" htmlFor="booking-country-code">Country code</label>
+                <div className="cb-phone__code">
+                  <select id="booking-country-code" value={contactCode} onChange={(e) => setContactCode(e.target.value)}>
+                    {UNIQUE_DIAL_CODES.map((code) => <option key={code} value={code}>{code}</option>)}
+                  </select>
+                  <Icon name="chevron-down" size={16} />
+                </div>
+              </div>
               <span className="cb-phone__sep" aria-hidden="true" />
-              <input
-                id="booking-mobile"
-                className="cb-input"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder="Mobile number"
-                value={contactNumber}
-                aria-invalid={!!contactError && tried}
-                onChange={(e) => setContactNumber(e.target.value.replace(/\D/g, '').slice(0, 14))}
-              />
+              <div className="cb-phone__cell cb-phone__cell--num">
+                <label className="cb-field__label" htmlFor="booking-mobile">Mobile number</label>
+                <input
+                  id="booking-mobile"
+                  className="cb-input"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  placeholder="Mobile number"
+                  value={contactNumber}
+                  aria-invalid={!!contactError && tried}
+                  onChange={(e) => setContactNumber(e.target.value.replace(/\D/g, '').slice(0, 14))}
+                />
+              </div>
             </div>
           </div>
           {tried && contactError ? <p className="cb-error">{contactError}</p> : null}
 
           <div className={`cb-field${emailError ? ' is-invalid' : ''}`}>
-            <label className="cb-field__label" htmlFor="booking-email">Email address · optional</label>
+            <label className="cb-field__label" htmlFor="booking-email">Email address (optional)</label>
             <input
               id="booking-email"
               className="cb-input"
@@ -328,7 +348,7 @@ export function ReviewStep() {
 
           {airport ? (
             <div className="cb-field">
-              <label className="cb-field__label" htmlFor="booking-flight">Flight number · optional</label>
+              <label className="cb-field__label" htmlFor="booking-flight">Flight number (optional)</label>
               <input id="booking-flight" className="cb-input" placeholder="e.g. 6E 214" value={flight} onChange={(e) => update({ flight: e.target.value.toUpperCase() })} />
               <p className="cb-field__hint">Our driver will track flight delays and adjust pickup time automatically.</p>
             </div>
@@ -337,49 +357,30 @@ export function ReviewStep() {
 
         <hr className="cb__rule" />
 
-        <section className="cb__section cb__section--addons" aria-labelledby="cb-addons-head">
-          <div className="cb-switch-row cb-switch-row--head">
-            <h2 id="cb-addons-head" className="cb__h2">Travel add-ons</h2>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={addOnsOpen}
-              aria-labelledby="cb-addons-head"
-              aria-controls="cb-addons-body"
-              className="cb-switch"
-              onClick={() => {
-                // Switching off clears both choices, so a hidden add-on is never charged.
-                if (addOnsOpen && (draft.roofCarrier || draft.pets)) update({ roofCarrier: false, pets: false });
-                setAddOnsOpen(!addOnsOpen);
-              }}
-            >
-              <span className="cb-switch__thumb" />
-            </button>
-          </div>
-          <div id="cb-addons-body" className={`cb-collapse${addOnsOpen ? ' is-open' : ''}`} inert={!addOnsOpen}>
-           <div className="cb-collapse__in">
-          <label className="cb-addon">
-            <span className="cb-addon__icon" aria-hidden="true"><RoofCarrierIcon /></span>
-            <span className="cb-addon__sep" aria-hidden="true" />
-            <span className="cb-addon__name">Roof carrier</span>
-            <span className="cb-addon__price">+{formatINR(carrierCharge)}</span>
-            <input type="checkbox" className="cb-tick" checked={draft.roofCarrier} onChange={(e) => update({ roofCarrier: e.target.checked })} />
-          </label>
-          <label className="cb-addon">
-            <span className="cb-addon__icon" aria-hidden="true">
-              <PawIcon />
-            </span>
-            <span className="cb-addon__sep" aria-hidden="true" />
-            <span className="cb-addon__name">Travelling with pets</span>
-            <span className="cb-addon__price">+{formatINR(petCharge)}</span>
-            <input type="checkbox" className="cb-tick" checked={draft.pets} onChange={(e) => update({ pets: e.target.checked })} />
-          </label>
-          <p className="cb__note">Charges are added once per trip and included in your final bill.</p>
-           </div>
-          </div>
-        </section>
+        {hasCarrier || hasPets ? (
+          <>
+            <section className="cb__section cb__section--addons" aria-labelledby="cb-addons-head">
+              <h2 id="cb-addons-head" className="cb__h2">Travel add-ons</h2>
+              {hasCarrier ? (
+                <label className="cb-addon">
+                  <input type="checkbox" role="switch" className="cb-mini" checked={draft.roofCarrier} onChange={(e) => update({ roofCarrier: e.target.checked })} />
+                  <span className="cb-addon__name">Roof carrier</span>
+                  <span className="cb-addon__price">+{formatINR(carrierCharge)}</span>
+                </label>
+              ) : null}
+              {hasPets ? (
+                <label className="cb-addon">
+                  <input type="checkbox" role="switch" className="cb-mini" checked={draft.pets} onChange={(e) => update({ pets: e.target.checked })} />
+                  <span className="cb-addon__name">Travelling with pets</span>
+                  <span className="cb-addon__price">+{formatINR(petCharge)}</span>
+                </label>
+              ) : null}
+              <p className="cb__note">Charges are added once per trip and included in your final bill.</p>
+            </section>
 
-        <hr className="cb__rule" />
+            <hr className="cb__rule" />
+          </>
+        ) : null}
 
         <section className="cb__section" aria-label="Payment">
           <div className="cb-pay" role="radiogroup" aria-label="Payment mode">
@@ -414,11 +415,11 @@ export function ReviewStep() {
             </form>
           )}
 
-          <ul className="cb__notes">
-            {draft.fuelType === 'cng' ? <li>Fuel type: CNG</li> : null}
-            <li>Includes base fare, driver bata &amp; discounts</li>
-            <li>Toll, State Tax &amp; Parking extra (as per actuals)</li>
-          </ul>
+          {draft.fuelType === 'cng' ? (
+            <ul className="cb__notes">
+              <li>Fuel type: CNG</li>
+            </ul>
+          ) : null}
 
           {showBlocker ? <p className="cb-error cb-error--block" role="alert">{blocker}</p> : null}
           {submitError ? (
@@ -445,7 +446,7 @@ export function ReviewStep() {
             <button type="button" className="cb-iconbtn" aria-label="Back to vehicles" title="Back to vehicles" onClick={() => navigate('/book/ride')}>
               <Icon name="arrow-left" size={22} />
             </button>
-            <button type="button" className="cb-total" onClick={() => setShowFare(true)} aria-label={`Total ${formatINR(quote.total)}. View fare details`}>
+            <button type="button" className={`cb-total${q.quoteLoading ? ' is-loading' : ''}`} aria-busy={q.quoteLoading} onClick={() => setShowFare(true)} aria-label={`Total ${formatINR(quote.total)}. View fare details`}>
               <small>Total <Icon name="info" size={13} /></small>
               <strong key={quote.total} className="num">{formatINR(quote.total)}</strong>
               {strikeOf > 0 ? <s>{formatINR(strikeOf)}</s> : null}
@@ -454,9 +455,6 @@ export function ReviewStep() {
               {submitting ? <span className="cb-confirm__spin" aria-hidden="true" /> : null}
               <span>{profile ? 'Confirm' : 'Sign in'}</span>
               <span className="cb-confirm__arrow" aria-hidden="true"><Icon name="arrow-right" size={20} /></span>
-            </button>
-            <button type="button" className="cb-iconbtn" aria-label="Home" title="Home" onClick={() => navigate('/')}>
-              <Icon name="home" size={22} />
             </button>
           </div>
         </div>
@@ -468,32 +466,6 @@ export function ReviewStep() {
 }
 
 const iconProps = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round' } as const;
-
-/** A small car with a luggage box on its roof. */
-function RoofCarrierIcon() {
-  return (
-    <svg {...iconProps}>
-      <rect x="8.5" y="3" width="7" height="2.8" rx="1.1" />
-      <path d="M10 5.8V8M14 5.8V8" />
-      <path d="M5.6 17.2H4.1a.6.6 0 0 1-.6-.6V13.3a2.1 2.1 0 0 1 1.45-2L8 10.2l1.3-2.2h5.4l1.3 2.2 3.05 1.1a2.1 2.1 0 0 1 1.45 2v3.3a.6.6 0 0 1-.6.6h-1.5M9.6 17.2h4.8" />
-      <circle cx="7.6" cy="17.2" r="2" />
-      <circle cx="16.4" cy="17.2" r="2" />
-    </svg>
-  );
-}
-
-/** A paw print: four toes above a wide pad. */
-function PawIcon() {
-  return (
-    <svg {...iconProps}>
-      <circle cx="6.3" cy="11.2" r="1.9" />
-      <circle cx="9.9" cy="6.2" r="1.9" />
-      <circle cx="14.1" cy="6.2" r="1.9" />
-      <circle cx="17.7" cy="11.2" r="1.9" />
-      <path d="M12 12c-2.9 0-5.4 3-5.4 5.4 0 1.7 1.3 2.6 2.8 2.6 1 0 1.6-.5 2.6-.5s1.6.5 2.6.5c1.5 0 2.8-.9 2.8-2.6 0-2.4-2.5-5.4-5.4-5.4Z" />
-    </svg>
-  );
-}
 
 function TicketIcon() {
   return (

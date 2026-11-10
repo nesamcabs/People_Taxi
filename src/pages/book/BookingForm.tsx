@@ -429,6 +429,14 @@ export function BookingForm({
                   max={toDateInput(latestPickup())}
                   aria-invalid={!!errors.date || undefined}
                   aria-describedby={errors.date ? 'bf-date-err' : undefined}
+                  onClick={(e) => {
+                    // With the native arrow gone, tapping anywhere on the field opens the calendar.
+                    try {
+                      e.currentTarget.showPicker?.();
+                    } catch {
+                      /* the browser opens it itself */
+                    }
+                  }}
                   onChange={(e) => {
                     setDate(e.target.value);
                     setErrors((x) => ({ ...x, date: '', time: '' }));

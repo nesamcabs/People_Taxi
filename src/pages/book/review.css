@@ -16,7 +16,7 @@
   width: 100%;
   max-width: 520px;
   margin: 0 auto;
-  padding: 22px 16px 28px;
+  padding: 20px 16px 28px;
 }
 .cb__title {
   position: relative;
@@ -85,10 +85,10 @@
 }
 .cb-field__label {
   color: var(--muted);
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .cb-field__hint {
   margin: 2px 0 0;
@@ -130,8 +130,19 @@
 /* Mobile number: country code | divider | number */
 .cb-phone {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   gap: 14px;
+}
+.cb-phone__cell {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.cb-phone__cell--code {
+  flex: none;
+}
+.cb-phone__cell--num {
+  flex: 1;
 }
 .cb-phone__code {
   position: relative;
@@ -159,8 +170,9 @@
 }
 .cb-phone__sep {
   flex: none;
+  align-self: stretch;
   width: 1px;
-  height: 28px;
+  margin: 2px 0;
   background: var(--cb-line);
 }
 
@@ -253,6 +265,7 @@
 .cb-addon__name {
   flex: 1;
   min-width: 0;
+  font-weight: 700;
   color: var(--cb-ink);
   font-size: 0.95rem;
   font-weight: 600;
@@ -396,29 +409,23 @@
 }
 .cb-bar__in {
   display: grid;
-  gap: 12px;
+  gap: 10px;
   max-width: 520px;
   margin: 0 auto;
-  padding: 14px 16px 16px;
+  padding: 12px 16px 14px;
 }
 @keyframes cb-bar-in {
   from { transform: translateY(100%); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
 
-/* Terms: a soft pill that turns blue when accepted */
+/* Terms: one compact line (tick box + text), the text scales with the row so it never wraps on a phone */
 .cb-terms {
-  border: 1px solid var(--cb-line);
-  border-radius: 14px;
-  background: #f6f9ff;
-  transition: background 200ms ease, border-color 200ms ease;
-}
-.cb-terms.is-on {
-  border-color: var(--brand-line);
-  background: var(--brand-soft);
+  container-type: inline-size;
+  border-radius: 10px;
+  transition: background 200ms ease;
 }
 .cb-terms.is-error {
-  border-color: var(--danger);
   background: var(--danger-soft);
   animation: cb-shake 380ms ease;
 }
@@ -429,25 +436,36 @@
 .cb-terms__row {
   display: flex;
   align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 8px 14px;
+  gap: 8px;
+  min-height: 30px;
+  padding: 2px 4px;
   color: var(--cb-ink);
-  font-size: 0.875rem;
+  font-size: clamp(0.625rem, 3.1cqw, 0.8125rem);
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.3;
+  white-space: nowrap;
   cursor: pointer;
+}
+.cb-terms__row input.cb-tick {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  background-size: 12px;
 }
 .cb-terms__text a {
   color: var(--brand);
   font-weight: 700;
   text-decoration: underline;
   text-decoration-color: var(--brand-line);
-  text-underline-offset: 3px;
+  text-underline-offset: 2px;
 }
 .cb-terms .cb-error {
   margin: 0;
-  padding: 0 14px 10px 46px;
+  padding: 0 4px 4px 30px;
+  font-size: 0.75rem;
+}
+@media (max-width: 319.98px) {
+  .cb-terms__row { white-space: normal; }
 }
 .cb input.cb-tick:checked {
   animation: cb-pop 260ms cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -486,7 +504,8 @@
 }
 .cb-total {
   display: grid;
-  flex: none;
+  flex: 1;
+  justify-items: center;
   align-content: center;
   gap: 1px;
   height: 52px;
@@ -494,7 +513,7 @@
   border: 0;
   background: none;
   color: var(--cb-ink);
-  text-align: left;
+  text-align: center;
 }
 .cb-total small {
   display: flex;
@@ -530,7 +549,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 1;
+  flex: 0 0 auto;
+  min-width: 142px;
   gap: 8px;
   min-width: 0;
   height: 52px;
@@ -613,39 +633,100 @@
   .cb-confirm__spin { animation-duration: 2s; }
 }
 
-/* ── Travel add-ons: heading with a sliding switch that reveals the list ── */
+/* ── Travel add-ons: always visible; a clean list, one small switch per row ── */
 .cb__section--addons {
-  gap: 0;
+  gap: 8px;
 }
-.cb-switch-row--head {
-  padding: 0 2px;
+.cb__section--addons .cb__h2 {
+  margin: 0 0 2px;
+  font-size: 0.95rem;
+  font-weight: 700;
 }
-.cb-switch-row--head .cb__h2 {
-  margin: 0;
-}
-.cb-collapse {
-  display: grid;
-  grid-template-rows: 0fr;
-  opacity: 0;
-  transition: grid-template-rows 240ms ease, opacity 200ms ease;
-}
-.cb-collapse.is-open {
-  grid-template-rows: 1fr;
-  opacity: 1;
-}
-.cb-collapse__in {
-  display: grid;
+.cb-addon {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  min-height: 0;
-  overflow: hidden;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1px solid var(--cb-line);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
 }
-.cb-collapse.is-open .cb-collapse__in {
-  padding-top: 14px;
+.cb-addon:hover {
+  border-color: var(--cb-line-strong);
+}
+.cb-addon:has(.cb-mini:checked) {
+  border-color: var(--brand-line);
+  background: var(--brand-soft);
+}
+.cb-addon__name {
+  flex: 1;
+  min-width: 0;
+  color: var(--cb-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.cb-addon__price {
+  margin-left: auto;
+  color: var(--cb-ink);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.cb__section--addons .cb__note {
+  font-size: 0.72rem;
+}
+
+/* Small slide switch */
+.cb input.cb-mini {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  flex: none;
+  box-sizing: border-box;
+  width: 34px;
+  height: 20px;
+  margin: 0;
+  border: 0;
+  border-radius: 999px;
+  background: #d5dcea;
+  cursor: pointer;
+  transition: background 180ms ease;
+}
+.cb input.cb-mini::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(15 31 77 / 0.3);
+  transition: transform 180ms ease;
+}
+.cb input.cb-mini:checked {
+  background: var(--brand);
+}
+.cb input.cb-mini:checked::before {
+  transform: translateX(14px);
+}
+.cb input.cb-mini:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
 }
 @media (prefers-reduced-motion: reduce) {
-  .cb-collapse,
-  .cb-switch,
-  .cb-switch__thumb {
+  .cb input.cb-mini,
+  .cb input.cb-mini::before {
     transition: none;
   }
+}
+
+/* While the fare is being re-checked after a change, the total stays in place but softens */
+.cb-total.is-loading strong {
+  opacity: 0.45;
+  transition: opacity 150ms ease;
 }
