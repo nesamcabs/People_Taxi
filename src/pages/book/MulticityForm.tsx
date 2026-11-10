@@ -345,6 +345,14 @@ export function MulticityForm() {
                 min={todayStr}
                 max={maxDateStr}
                 value={state.date}
+                onClick={(e) => {
+                  // The browser's calendar button is hidden: tapping anywhere on the field opens the calendar.
+                  try {
+                    e.currentTarget.showPicker?.();
+                  } catch {
+                    /* the browser opens it itself */
+                  }
+                }}
                 onChange={(e) => {
                   setState((s) => ({ ...s, date: e.target.value }));
                   setErrors((x) => ({ ...x, date: '', time: '' }));

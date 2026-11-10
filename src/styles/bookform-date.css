@@ -6,9 +6,16 @@
   -webkit-appearance: none;
   appearance: none;
 }
+/* The browser's own calendar button is removed completely: even invisible it takes about 22px of the field on Android
+   and squeezes the date. Tapping the field opens the calendar instead (see the onClick on the date inputs). */
 .bf .bf-datewrap .bf-input::-webkit-calendar-picker-indicator {
+  display: none;
+  -webkit-appearance: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
   background: none;
-  color: transparent;
   opacity: 0;
 }
 .bf .bf-datewrap .bf-input::-webkit-inner-spin-button,
