@@ -18,6 +18,17 @@ export function categoryPhoto(c: Pick<RideCategory, 'name' | 'seats'> & { imageU
   return `/vehicles/${art}.webp`;
 }
 
+/**
+ * The admin-uploaded picture for the cab type a booking was made with. A booking only carries the category id and name,
+ * so the live category list is matched by id first, then by name (ignoring the " (CNG)" suffix); with no match the
+ * built-in illustration for that kind of car is used.
+ */
+export function tripCategoryPhoto(cats: RideCategory[], trip: { categoryId?: string; categoryName: string }): string {
+  const bare = (s: string) => s.replace(/\s*\(cng\)\s*$/i, '').trim().toLowerCase();
+  const match = cats.find((c) => trip.categoryId && c.id === trip.categoryId) ?? cats.find((c) => bare(c.name) === bare(trip.categoryName));
+  return categoryPhoto(match ?? { name: trip.categoryName, seats: 4 });
+}
+
 /** Longest admin-written display text that is used as the main text; a longer description is treated as marketing copy. */
 const MAX_DISPLAY_TEXT = 48;
 

@@ -30,7 +30,7 @@ import { useBooking } from '@/state/Booking';
 import { CancelDialog, SafetyDialog } from './dialogs';
 import { RatingCard } from './Rating';
 import { markRideDismissed, unmarkRideDismissed } from '@/state/rideFocus';
-import { vehicleArtUrl } from '@/lib/vehicleArt';
+import { tripCategoryPhoto } from '@/lib/categories';
 
 const PHASE_TITLE: Record<TripRecord['phase'], string> = {
   awaiting_review: 'Booking under review',
@@ -123,7 +123,7 @@ export function RidePage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
   const { profile } = useCustomerData();
-  const { startFrom } = useBooking();
+  const { startFrom, categories } = useBooking();
   const { push } = useToasts();
   const { online } = useOnline();
   const { position } = useDeviceLocation(true);
@@ -339,7 +339,7 @@ export function RidePage() {
       <RoutePoints pickup={trip.pickup.name} drop={trip.drop.name} pickupAddress={trip.pickup.address} dropAddress={trip.drop.address} />
       <TripItinerary trip={trip} />
       <div className="mini-ride">
-        <img src={vehicleArtUrl({ name: trip.categoryName, seats: 4 })} alt="" width={96} height={63} />
+        <img src={tripCategoryPhoto(categories, trip)} alt="" width={96} height={63} />
         <div className="mini-ride__info">
           <strong>{trip.categoryName}</strong>
           <small className="muted">
