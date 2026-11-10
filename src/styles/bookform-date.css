@@ -39,3 +39,21 @@
     height: 20px;
   }
 }
+
+/* Round Trip (and any other schedule row) has its own, more specific rule: match it so the whole date shows. */
+@media (max-width: 899.98px) {
+  .bf .bf-form .bf-row .bf-cell--schedule .bf-datewrap .bf-input,
+  .bf .bf-form .bf-row--round-schedule .bf-cell--schedule .bf-datewrap .bf-input {
+    min-width: 0;
+    padding-inline: 12px 32px;
+    font-size: 0.78rem;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+  .bf .bf-form .bf-row .bf-cell--schedule .bf-time,
+  .bf .bf-form .bf-row--round-schedule .bf-cell--schedule .bf-time {
+    padding-inline: 12px 32px;
+    font-size: 0.78rem;
+    letter-spacing: 0;
+  }
+}
