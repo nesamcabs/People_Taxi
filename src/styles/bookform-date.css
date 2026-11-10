@@ -21,7 +21,7 @@
   .bf .bf-form .bf-cell--schedule .bf-datewrap .bf-input,
   .bf .bf-form .bf-cell--schedule .bf-time,
   .bf .bf-form .bf-row .bf-time {
-    font-size: 0.8125rem;
+    font-size: clamp(0.8125rem, 4.2vw, 1rem);
     letter-spacing: 0;
   }
   .bf .bf-form .bf-cell--schedule .bf-datewrap .bf-input {
@@ -46,14 +46,14 @@
   .bf .bf-form .bf-row--round-schedule .bf-cell--schedule .bf-datewrap .bf-input {
     min-width: 0;
     padding-inline: 12px 32px;
-    font-size: 0.78rem;
+    font-size: clamp(0.8125rem, 4.2vw, 1rem);
     letter-spacing: 0;
     white-space: nowrap;
   }
   .bf .bf-form .bf-row .bf-cell--schedule .bf-time,
   .bf .bf-form .bf-row--round-schedule .bf-cell--schedule .bf-time {
     padding-inline: 12px 32px;
-    font-size: 0.78rem;
+    font-size: clamp(0.8125rem, 4.2vw, 1rem);
     letter-spacing: 0;
   }
 }
