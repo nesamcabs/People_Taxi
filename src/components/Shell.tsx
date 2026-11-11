@@ -6,7 +6,7 @@ import { COMPANY_LEGAL_NAME, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@core/
 import { useInbox } from '@/state/Inbox';
 import { useAuth } from '@/state/Auth';
 import { useBooking } from '@/state/Booking';
-import { useOnline } from '@/lib/hooks';
+import { useMinWidth, useOnline } from '@/lib/hooks';
 import { scrollToBookingForm } from '@/lib/scrollToForm';
 import { SERVICES, parseService, serviceHref, serviceOfTrip, type ServiceId } from '@/lib/services';
 import { Avatar, Button, Dialog, PageLoader } from './ui';
@@ -457,6 +457,7 @@ export function Shell() {
   useDockInset();
   const { unreadCount } = useInbox();
   const { profile } = useCustomerData();
+  const { draft } = useBooking();
   const { openLoginModal } = useAuth();
   const { online, recovered } = useOnline();
   const location = useLocation();
@@ -469,7 +470,9 @@ export function Shell() {
   const isLocalPage = /^\/local-(rentals|taxi)\/?$/.test(location.pathname);
   const isLanding = location.pathname === '/' || location.pathname === '/book' || isLocalPage;
   const [hasScrolled, setHasScrolled] = useState(false);
-  const headerHidden = isLanding && !hasScrolled;
+  // Desktop always shows the header; only phones and tablets tuck it away until the page is scrolled.
+  const isDesktop = useMinWidth(900);
+  const headerHidden = isLanding && !hasScrolled && !isDesktop;
 
   useEffect(() => {
     const updateHeader = () => setHasScrolled(window.scrollY > 48);
@@ -592,7 +595,13 @@ export function Shell() {
       {!isFlow ? <BottomNav /> : null}
       <SideDrawer open={menuOpen} onClose={() => setMenuOpen(false)} brand={<Brand />} />
       {/* Support lives in the header (Ask AI / Call us): no floating buttons to cover fares or actions. */}
-      <AiChatbot open={aiOpen} onOpenChange={setAiOpen} hideLauncher />
+      <AiChatbot
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        hideLauncher
+        customer={profile ? { name: profile.name, phone: profile.phone, email: profile.email } : undefined}
+        tripContext={{ pickup: draft.pickup?.name, drop: draft.drop?.name, service: draft.multicity ? 'Multicity' : draft.tripType }}
+      />
     </div>
   );
 }
