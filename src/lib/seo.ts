@@ -67,10 +67,11 @@ export function updateSeo(props: SeoProps): void {
   setPageSchema(s.schema);
 }
 
-export function useSeo(props: SeoProps): void {
+/** `null` leaves the page's tags alone (e.g. the account content shown inside the profile drawer). */
+export function useSeo(props: SeoProps | null): void {
   const key = JSON.stringify(props);
   useEffect(() => {
-    updateSeo(props);
+    if (props) updateSeo(props);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
 }
