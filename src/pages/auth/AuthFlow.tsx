@@ -1,6 +1,6 @@
 // Sign in with a mobile number: number → one-time code. A new customer then continues to
 // profile setup (see ProfileSetup). Same Firebase phone auth as the customer app.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import type { ConfirmationResult } from 'firebase/auth';
 import { isValidIndianMobile, formatPhone } from '@core/utils/format';
@@ -12,9 +12,9 @@ import { Button, Notice, TextField } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { confirmOtpCode, describePhoneAuthError, sendOtpToPhone, signOutUser } from '@/lib/authService';
 import { useOnline, usePageTitle } from '@/lib/hooks';
+import { OtpInput, OTP_LENGTH } from '@/components/OtpInput';
 
 const RESEND_SECONDS = 30;
-const OTP_LENGTH = 6;
 
 const POINTS = [
   { icon: 'verified', text: 'Fares shown upfront, before you book' },
@@ -65,41 +65,6 @@ function AuthLayout({ art, title, subtitle, children }: { art: string; title: st
           </p>
         </div>
       </main>
-    </div>
-  );
-}
-
-function OtpInput({ value, onChange, onComplete, disabled, invalid }: { value: string; onChange: (v: string) => void; onComplete: (v: string) => void; disabled?: boolean; invalid?: boolean }) {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => ref.current?.focus(), []);
-  return (
-    <div className={`otp ${invalid ? 'is-invalid' : ''}`} onClick={() => ref.current?.focus()}>
-      <label className="sr-only" htmlFor="otp">
-        6-digit verification code
-      </label>
-      <input
-        id="otp"
-        ref={ref}
-        className="otp__input"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9]*"
-        maxLength={OTP_LENGTH}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => {
-          const v = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH);
-          onChange(v);
-          if (v.length === OTP_LENGTH) onComplete(v);
-        }}
-      />
-      <div className="otp__boxes" aria-hidden="true">
-        {Array.from({ length: OTP_LENGTH }, (_, i) => (
-          <span key={i} className={`otp__box ${i === value.length && !disabled ? 'is-current' : ''} ${value[i] ? 'is-filled' : ''}`}>
-            {value[i] ?? ''}
-          </span>
-        ))}
-      </div>
     </div>
   );
 }

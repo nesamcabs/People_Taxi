@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { ConfirmationResult } from 'firebase/auth';
 import { isValidIndianMobile, formatPhone, isValidEmail, isValidName } from '@core/utils/format';
@@ -11,9 +11,9 @@ import { confirmOtpCode, describePhoneAuthError, sendOtpToPhone } from '@/lib/au
 import { useAuth } from '@/state/Auth';
 import { useOnline } from '@/lib/hooks';
 import { CountryCodeSelect } from '@/components/CountryCodeSelect';
+import { OtpInput, OTP_LENGTH } from '@/components/OtpInput';
 
 const RESEND_SECONDS = 30;
-const OTP_LENGTH = 6;
 
 const agreement = (
   <p className="login-modal__agree">
@@ -28,59 +28,6 @@ const agreement = (
     .
   </p>
 );
-
-function OtpInput({
-  value,
-  onChange,
-  onComplete,
-  disabled,
-  invalid,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  onComplete: (v: string) => void;
-  disabled?: boolean;
-  invalid?: boolean;
-}) {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    ref.current?.focus();
-  }, []);
-
-  return (
-    <div className={`otp ${invalid ? 'is-invalid' : ''}`} onClick={() => ref.current?.focus()}>
-      <label className="sr-only" htmlFor="modal-otp">
-        6-digit verification code
-      </label>
-      <input
-        id="modal-otp"
-        ref={ref}
-        className="otp__input"
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        pattern="[0-9]*"
-        maxLength={OTP_LENGTH}
-        value={value}
-        disabled={disabled}
-        onChange={(e) => {
-          const v = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH);
-          onChange(v);
-          if (v.length === OTP_LENGTH) onComplete(v);
-        }}
-      />
-      <div className="otp__boxes" aria-hidden="true">
-        {Array.from({ length: OTP_LENGTH }, (_, i) => (
-          <span
-            key={i}
-            className={`otp__box ${i === value.length && !disabled ? 'is-current' : ''} ${value[i] ? 'is-filled' : ''}`}
-          >
-            {value[i] ?? ''}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, loginModalOptions, state } = useAuth();
@@ -295,6 +242,7 @@ export function LoginModal() {
               }}
             >
               <OtpInput
+                id="modal-otp"
                 value={otp}
                 onChange={(v) => {
                   setOtp(v);
