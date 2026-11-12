@@ -100,3 +100,36 @@ export function settlePayout(payoutRequestId: string): void {
   if (!usesHttpApi || !payoutRequestId) return;
   void callBackend('reconcile', { payoutRequestId }, 30000).catch(() => undefined);
 }
+
+/**
+ * Connection check, printed in the browser console on load and runnable any time as `nesamApiCheck()`. It sends one harmless
+ * request to the API and says plainly whether this page can reach it, which address it used, and what the likely cause is when
+ * it cannot. Nothing is sent but an unknown function name; no data and no token.
+ */
+export async function diagnoseApi(): Promise<Record<string, unknown>> {
+  const report: Record<string, unknown> = {
+    page: typeof window !== 'undefined' ? window.location.origin : '',
+    mode: usesHttpApi ? 'HTTP API' : 'Firebase callables (not deployed: saves and fares will fail)',
+    api: usesHttpApi ? API_URL : '(none)',
+  };
+  if (usesHttpApi) {
+    try {
+      const res = await fetch(`${API_URL}/api/call/__connection_check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"data":{}}' });
+      report.reachable = true;
+      report.status = res.status;
+      report.verdict = res.status === 404 ? 'OK: the API answered (an unknown function is the expected reply).' : `The API answered with HTTP ${res.status}.`;
+    } catch (err) {
+      report.reachable = false;
+      report.error = String((err as Error)?.message ?? err);
+      report.verdict = 'BLOCKED: the browser got no reply. This page address is not allowed by the API (CORS) or the API is unreachable. Add this page address to ALLOWED_ORIGINS on the API project (Vercel) and redeploy it.';
+    }
+  } else {
+    report.verdict = 'Not using the HTTP API: set the API address (see the project settings) or remove the Firebase-callables switch.';
+  }
+  console.info('[NESAM API check]', report);
+  return report;
+}
+if (typeof window !== 'undefined') {
+  (window as unknown as { nesamApiCheck?: typeof diagnoseApi }).nesamApiCheck = diagnoseApi;
+  void diagnoseApi();
+}

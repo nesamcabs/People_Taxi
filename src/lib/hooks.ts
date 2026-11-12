@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setOnlineState } from '@core/utils/network';
+import { defaultPickup } from './schedule';
 import { getCurrentPosition, getLocationPermission, watchPosition, LocationError, type DevicePosition, type PermissionStateLite } from '@core/services/geoService';
 
 /** True while the viewport is at least `px` wide. */
@@ -61,7 +62,7 @@ export interface DeviceLocationState {
 }
 
 /** Live device position while mounted (`watch`, only once permission is granted), plus a one-shot `locate()`. */
-export function useDeviceLocation(watch = true): DeviceLocationState {
+export function useDeviceLocation(watch = true, autoLocate = false): DeviceLocationState {
   const [position, setPosition] = useState<DevicePosition | null>(null);
   const [error, setError] = useState<LocationError | null>(null);
   const [permission, setPermission] = useState<PermissionStateLite | 'unknown'>('unknown');
@@ -117,6 +118,14 @@ export function useDeviceLocation(watch = true): DeviceLocationState {
     }
   }, []);
 
+  // Detect the device location by default: the browser asks once, and nothing is asked again after a refusal.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (!autoLocate || autoTried.current || permission === 'unknown' || permission === 'denied' || permission === 'blocked') return;
+    autoTried.current = true;
+    void locate();
+  }, [autoLocate, permission, locate]);
+
   return { position, error, permission, locating, locate };
 }
 
@@ -149,4 +158,26 @@ export function useDebounced<T>(value: T, ms: number): T {
     return () => window.clearTimeout(t);
   }, [value, ms]);
   return v;
+}
+
+/**
+ * Keeps a default pickup at "now + 30 minutes" as the clock moves: while `touched.current` is false the date and time are
+ * refreshed every few seconds (and the moment the tab is shown again). Once the rider picks a date or time they set
+ * `touched.current = true` and it never changes under them.
+ */
+export function useLivePickupDefault(touched: { current: boolean }, apply: (next: { date: string; time: string }) => void): void {
+  const applyRef = useRef(apply);
+  applyRef.current = apply;
+  useEffect(() => {
+    const tick = () => {
+      if (!touched.current) applyRef.current(defaultPickup());
+    };
+    const id = window.setInterval(tick, 10000);
+    const onVisible = () => document.visibilityState === 'visible' && tick();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [touched]);
 }
