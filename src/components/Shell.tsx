@@ -457,7 +457,9 @@ export function Shell() {
   useEffect(() => setMenuOpen(false), [location.pathname]);
   const isFlow = FLOW.some((re) => re.test(location.pathname));
   const isImmersive = IMMERSIVE.some((re) => re.test(location.pathname));
-  const isLocalPage = /^\/local-(rentals|taxi)\/?$/.test(location.pathname);
+  // Local Rentals now only ever shows the "Coming soon" notice (no real immersive map to hide the header for),
+  // so it keeps the normal always-visible header; Local Taxi's live map screen still goes full-bleed.
+  const isLocalPage = /^\/local-taxi\/?$/.test(location.pathname);
   const isLanding = location.pathname === '/' || location.pathname === '/book' || isLocalPage;
   const [hasScrolled, setHasScrolled] = useState(false);
   // Desktop always shows the header; only phones and tablets tuck it away until the page is scrolled.

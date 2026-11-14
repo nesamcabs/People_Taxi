@@ -295,20 +295,42 @@ export function LocalRentalsPage() {
   const navigate = useNavigate();
   return (
     <div className="lr-soon">
-      <div className="lr-soon__backdrop" aria-hidden="true">
-        <div className="lr-soon__search" />
-        <div className="lr-soon__chips">
-          <span />
-          <span />
-          <span />
-          <span />
+      {/* Purely decorative: a static preview that reads as the real screen (search, cities, a mapped
+          route, the trip sheet), inert and blurred behind the notice. No map, location or network calls. */}
+      <div className="lr-soon__backdrop" aria-hidden="true" inert>
+        <div className="lr-soon__search">
+          <Icon name="search" size={18} />
+          <span>Search a place or city</span>
         </div>
-        <div className="lr-soon__map" />
+        <div className="lr-soon__chips">
+          <span>Chennai</span>
+          <span>Bangalore</span>
+          <span>Coimbatore</span>
+          <span>Madurai</span>
+        </div>
+        <div className="lr-soon__map">
+          <span className="lr-soon__road lr-soon__road--1" />
+          <span className="lr-soon__road lr-soon__road--2" />
+          <span className="lr-soon__road lr-soon__road--3" />
+          <span className="lr-soon__route" />
+          <span className="lr-soon__pin lr-soon__pin--from" />
+          <span className="lr-soon__pin lr-soon__pin--to" />
+        </div>
         <div className="lr-soon__sheet">
-          <div className="lr-soon__tabs" />
-          <div className="lr-soon__row" />
-          <div className="lr-soon__row" />
-          <div className="lr-soon__cta" />
+          <span className="lr-soon__grip" />
+          <div className="lr-soon__tabs">
+            <span className="is-on">Pickup &amp; Drop</span>
+            <span>Hourly Rental</span>
+          </div>
+          <div className="lr-soon__row">
+            <i className="lr-soon__dot" />
+            <span>Your current location</span>
+          </div>
+          <div className="lr-soon__row">
+            <i className="lr-soon__dot lr-soon__dot--to" />
+            <span>Choose drop location</span>
+          </div>
+          <div className="lr-soon__cta">See vehicles &amp; fares</div>
         </div>
       </div>
       <div className="lr-soon__overlay">
