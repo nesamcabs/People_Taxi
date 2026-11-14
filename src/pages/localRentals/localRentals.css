@@ -677,3 +677,59 @@
   .lr-field--duration .lr-select select { min-height: 46px; font-size: 0.875rem; }
   .lr-sheet--tall .lr-foot .lr-cta { min-height: 46px; font-size: 0.9rem; }
 }
+
+/* ── Coming soon: a blurred, inert preview of the screen behind a notice card ── */
+.lr-soon {
+  position: fixed;
+  top: var(--nav-h, 76px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 40;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--paper, #f4f6fa);
+}
+.lr-soon__backdrop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  filter: blur(7px);
+  opacity: 0.65;
+  pointer-events: none;
+  user-select: none;
+}
+.lr-soon__search {
+  height: 48px;
+  border-radius: var(--r-lg, 16px);
+  background: var(--surface, #fff);
+  box-shadow: 0 2px 10px rgb(15 23 42 / 0.08);
+}
+.lr-soon__chips { display: flex; gap: 8px; }
+.lr-soon__chips span { flex: 1; height: 32px; border-radius: 999px; background: var(--surface, #fff); }
+.lr-soon__map { flex: 1; min-height: 160px; border-radius: var(--r-lg, 16px); background: #dbe6f5; }
+.lr-soon__sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--r-lg, 16px) var(--r-lg, 16px) 0 0;
+  background: var(--surface, #fff);
+  box-shadow: 0 -8px 26px rgb(15 23 42 / 0.12);
+}
+.lr-soon__tabs { height: 36px; border-radius: 999px; background: var(--sunken, #eef1f6); }
+.lr-soon__row { height: 46px; border-radius: var(--r-md, 12px); background: var(--sunken, #eef1f6); }
+.lr-soon__cta { height: 48px; border-radius: var(--r-md, 12px); background: var(--brand, #1665e8); opacity: 0.5; }
+.lr-soon__overlay {
+  position: relative;
+  z-index: 1;
+  width: min(360px, calc(100% - 32px));
+  border-radius: var(--r-lg, 16px);
+  background: var(--surface, #fff);
+  box-shadow: 0 24px 60px -20px rgb(15 23 42 / 0.4);
+}
+.lr-soon__overlay .empty { padding: 32px 22px; }

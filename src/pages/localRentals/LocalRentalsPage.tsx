@@ -6,19 +6,20 @@ import 'leaflet/dist/leaflet.css';
 // It only collects the trip. The vehicles and fares come from the same booking steps as every other service, and the server
 // prices them, so nothing here can change what a rider is charged.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { GeoPlace } from '@core/types';
 import { reverseGeocode } from '@core/services/geoService';
 import { scheduleProblem } from '@core/utils/bookingRules';
 import { haversineKm } from '@core/utils/geo';
 import { Icon } from '@/components/Icon';
+import { Button, EmptyState } from '@/components/ui';
 import { LocationPicker } from '@/components/LocationPicker';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
 import { useBooking } from '@/state/Booking';
 import { useAuth } from '@/state/Auth';
 import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
 import { setPendingReturn } from '@/lib/pendingReturn';
-import { useDeviceLocation, useLivePickupDefault, useMinWidth, useOnline } from '@/lib/hooks';
+import { useDeviceLocation, useLivePickupDefault, useOnline } from '@/lib/hooks';
 import { LOCATION_HELP, combineDateTime, earliestSlot, latestPickup, pickupTimeOptions, toDateInput, toTimeInput } from '@/lib/schedule';
 import { useSeo } from '@/lib/seo';
 import { QUICK_CITIES } from '@/pages/book/content';
@@ -286,14 +287,37 @@ function PinMap(props: { picking: boolean; target: Target | null; pins: Pin[]; s
 
 // ── The page ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
 /**
- * Phones book Local Rentals on this full-screen map sheet. Desktop books them on the home page, where the
- * booking form sits beside the map, so a desktop visit here (old link, bookmark, a back button) goes there.
+ * Local Rentals (Hourly Rental and Pickup & Drop) is temporarily off: this shows a blurred preview of the
+ * real screen behind a "Coming soon" notice, with a way back to Outstation. The real screen (LocalRentalsSheet
+ * below, and the desktop redirect to the booking form) stays in the file, unused, so this is easy to undo later.
  */
 export function LocalRentalsPage() {
-  const isDesktop = useMinWidth(900);
-  const [params] = useSearchParams();
-  if (isDesktop) return <Navigate to={`/book?service=${params.get('mode') === 'hourly' ? 'rental' : 'pickup'}`} replace />;
-  return <LocalRentalsSheet />;
+  const navigate = useNavigate();
+  return (
+    <div className="lr-soon">
+      <div className="lr-soon__backdrop" aria-hidden="true">
+        <div className="lr-soon__search" />
+        <div className="lr-soon__chips">
+          <span />
+          <span />
+          <span />
+          <span />
+        </div>
+        <div className="lr-soon__map" />
+        <div className="lr-soon__sheet">
+          <div className="lr-soon__tabs" />
+          <div className="lr-soon__row" />
+          <div className="lr-soon__row" />
+          <div className="lr-soon__cta" />
+        </div>
+      </div>
+      <div className="lr-soon__overlay">
+        <EmptyState title="Coming soon" action={<Button onClick={() => navigate('/book?service=outstation')}>Go to Outstation</Button>}>
+          Hourly Rental and Pickup &amp; Drop aren’t open for booking yet. Book an Outstation trip instead.
+        </EmptyState>
+      </div>
+    </div>
+  );
 }
 
 function LocalRentalsSheet() {
