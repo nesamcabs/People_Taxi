@@ -114,9 +114,11 @@ export function CatalogSection({ brand }: PublicContentProps = {}) {
     s.onlineBookingEnabled
       ? s.serviceType === 'Airport Taxi'
         ? '/book?service=airport'
-        : ['One Way Taxi', 'Outstation Cab'].includes(s.serviceType ?? '')
-          ? '/book?service=outstation'
-          : null
+        : s.serviceType === 'Local Rental'
+          ? '/book?service=rental'
+          : ['One Way Taxi', 'Outstation Cab'].includes(s.serviceType ?? '')
+            ? '/book?service=outstation'
+            : null
       : null;
 
   return (

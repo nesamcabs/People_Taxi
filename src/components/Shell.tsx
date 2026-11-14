@@ -42,52 +42,52 @@ const NAV = [
 import airportIcon from '@/assets/nav/airport-taxi.webp';
 import multicityIcon from '@/assets/nav/multicity.webp';
 import outstationIcon from '@/assets/nav/outstation.webp';
+import rentalIcon from '@/assets/nav/local-rentals.webp';
 
-/** Desktop header links. Account lives in the profile menu there. On phones the bottom bar holds the three
-    services plus My trips and Profile, and the header holds Notifications. */
+/** Desktop header links. Account lives in the profile menu there. On phones the bottom bar holds the four
+    services, and the header holds Notifications. Account and My trips are in the side menu. */
 const TOP_NAV = [NAV[0], NAV[1], { to: '/offers', label: 'Offers', short: 'Offers', icon: 'offers' }, NAV[2]] as const;
 
 /** Active booking flow pages where the phone bottom tab bar steps aside for the sticky FlowBar. */
 const FLOW = [/^\/book\/(ride|confirm|done\/[^/]+)$/, /^\/ride\//, /^\/local-taxi\/ride\//, /^\/trips\/[^/]+$/];
-const IMMERSIVE = [/^\/ride\//, /^\/trips\/[^/]+$/];
+const IMMERSIVE = [/^\/ride\//, /^\/local-rentals(\/|$)/, /^\/trips\/[^/]+$/];
 
-/** Phone bottom bar: the selected service rises in its brand color. Outstation sits centered between
-    the other two services and the My trips / Profile tabs that follow. */
-const BAR_ORDER: ServiceId[] = ['multicity', 'airport', 'outstation'];
+/** Phone bottom bar: the selected service rises in its brand color. */
+const BAR_ORDER: ServiceId[] = ['outstation', 'multicity', 'rental', 'airport'];
 const barServices = () => BAR_ORDER.flatMap((id) => SERVICES.find((s) => s.id === id) ?? []);
 
 /** The bottom bar's short names. */
-const SHORT_LABEL: Partial<Record<ServiceId, string>> = { airport: 'Airport', multicity: 'Multicity', outstation: 'Outstation' };
-const NAV_ICON: Partial<Record<ServiceId, string>> = { airport: airportIcon, multicity: multicityIcon, outstation: outstationIcon };
+const SHORT_LABEL: Partial<Record<ServiceId, string>> = { airport: 'Airport', multicity: 'Multicity', outstation: 'Outstation', rental: 'Local' };
+const NAV_ICON: Partial<Record<ServiceId, string>> = { airport: airportIcon, multicity: multicityIcon, outstation: outstationIcon, rental: rentalIcon };
 
 function BottomNav() {
   const location = useLocation();
   const [params] = useSearchParams();
   const { draft } = useBooking();
-  const [pickedTab, setPickedTab] = useState<'trips' | 'profile' | null>(null);
-  useEffect(() => setPickedTab(null), [location.pathname, params.toString()]); // any navigation moves the selection
+  const [profilePicked, setProfilePicked] = useState(false);
+  useEffect(() => setProfilePicked(false), [location.pathname, params.toString()]); // any navigation moves the selection
   const onHome = location.pathname === '/book' || location.pathname === '/';
   // Local Taxi has its own pages (/local-taxi…): keep its tab lit there instead of leaving the bar looking like Outstation.
   const onLocal = /^\/local-taxi(\/|$)/.test(location.pathname);
-  const current: ServiceId | null = pickedTab ? null : onLocal ? 'local' : onHome ? (parseService(params.get('service')) ?? serviceOfTrip(draft.tripType)) : null;
+  const onRentals = /^\/local-rentals(\/|$)/.test(location.pathname);
+  const current: ServiceId | null = profilePicked ? null : onLocal ? 'local' : onRentals ? (params.get('mode') === 'pickup' ? 'pickup' : 'rental') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'pickup' : serviceOfTrip(draft.tripType))) : null;
 
   return (
     <nav className="tabbar" aria-label="Services">
       {barServices().map((s) => (
-        <Link key={s.id} to={s.id === 'local' ? '/local-taxi' : serviceHref(s.id)} className={`tabbar__link ${current === s.id ? 'is-active' : ''}`} aria-current={current === s.id ? 'page' : undefined}>
+        <Link key={s.id} to={s.id === 'local' ? '/local-taxi' : serviceHref(s.id)} className={`tabbar__link ${current === s.id || (s.id === 'rental' && current === 'pickup') ? 'is-active' : ''}`} aria-current={current === s.id || (s.id === 'rental' && current === 'pickup') ? 'page' : undefined}>
           <span className="tabbar__icon">
             <img className="tabbar__img" src={NAV_ICON[s.id]} alt="" width={s.id === 'outstation' ? 46 : 44} height={s.id === 'outstation' ? 46 : 44} draggable={false} />
           </span>
           <span className="tabbar__label">{SHORT_LABEL[s.id] ?? s.label}</span>
         </Link>
       ))}
-      <TripsTab picked={pickedTab === 'trips'} onPick={() => setPickedTab('trips')} />
-      <ProfileTab picked={pickedTab === 'profile'} onPick={() => setPickedTab('profile')} />
+      <TripsTab picked={profilePicked} onPick={() => setProfilePicked(true)} />
     </nav>
   );
 }
 
-/** The fourth slot of the phone bottom bar: My trips. */
+/** The fifth slot of the phone bottom bar: My trips (the profile lives in the side drawer, opened from the header). */
 function TripsTab({ picked, onPick }: { picked: boolean; onPick: () => void }) {
   const location = useLocation();
   const on = /^\/trips(\/|$)/.test(location.pathname);
@@ -99,22 +99,6 @@ function TripsTab({ picked, onPick }: { picked: boolean; onPick: () => void }) {
         </span>
       </span>
       <span className="tabbar__label">My trips</span>
-    </Link>
-  );
-}
-
-/** The fifth slot of the phone bottom bar: Profile/Account. */
-function ProfileTab({ picked, onPick }: { picked: boolean; onPick: () => void }) {
-  const location = useLocation();
-  const on = /^\/account(\/|$)/.test(location.pathname);
-  return (
-    <Link to="/account" onClick={onPick} className={`tabbar__link ${on || picked ? 'is-active' : ''}`} aria-current={on ? 'page' : undefined}>
-      <span className="tabbar__icon">
-        <span className="tabbar__trips" aria-hidden="true">
-          <Icon name="user" size={24} />
-        </span>
-      </span>
-      <span className="tabbar__label">Profile</span>
     </Link>
   );
 }
@@ -320,7 +304,7 @@ function Footer() {
           <div className="footer__brand">
             <Brand light />
             <p className="muted">
-              Tamil Nadu and South India's trusted cab network for outstation one-way drops, round trips, and airport transfers.
+              Tamil Nadu and South India's trusted cab network for outstation one-way drops, round trips, airport transfers, and hourly rentals.
             </p>
           </div>
           <nav className="footer__col" aria-label="Services">
@@ -334,6 +318,9 @@ function Footer() {
               </li>
               <li>
                 <Link to="/services/airport-taxi">Airport Transfers</Link>
+              </li>
+              <li>
+                <Link to="/services/local-rental">Hourly City Rental</Link>
               </li>
               <li>
                 <Link to="/services/pilgrimage-tours">Temple &amp; Pilgrimage Tours</Link>
@@ -470,7 +457,7 @@ export function Shell() {
   useEffect(() => setMenuOpen(false), [location.pathname]);
   const isFlow = FLOW.some((re) => re.test(location.pathname));
   const isImmersive = IMMERSIVE.some((re) => re.test(location.pathname));
-  const isLocalPage = /^\/local-taxi\/?$/.test(location.pathname);
+  const isLocalPage = /^\/local-(rentals|taxi)\/?$/.test(location.pathname);
   const isLanding = location.pathname === '/' || location.pathname === '/book' || isLocalPage;
   const [hasScrolled, setHasScrolled] = useState(false);
   // Desktop always shows the header; only phones and tablets tuck it away until the page is scrolled.

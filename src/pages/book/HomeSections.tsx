@@ -27,6 +27,7 @@ const SERVICE_PAGE: Record<string, string> = {
   'one-way': 'one-way-drop-taxi',
   'round-trip': 'outstation-round-trip',
   airport: 'airport-taxi',
+  'local-rental': 'local-rental',
   pilgrimage: 'pilgrimage-tours',
 };
 

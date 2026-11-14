@@ -20,6 +20,7 @@ const SERVICES = [
   { to: '/services/one-way-drop-taxi', label: 'One-way drop taxi', icon: 'one-way' },
   { to: '/services/outstation-round-trip', label: 'Round trips', icon: 'round-trip' },
   { to: '/services/airport-taxi', label: 'Airport transfers', icon: 'outstation' },
+  { to: '/services/local-rental', label: 'Local rental', icon: 'local-rental' },
   { to: '/services/pilgrimage-tours', label: 'Temple & pilgrimage tours', icon: 'tour-package' },
   { to: '/?service=multicity', label: 'Multicity itineraries', icon: 'route' },
 ];

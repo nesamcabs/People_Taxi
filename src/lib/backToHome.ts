@@ -7,7 +7,8 @@ import { useEffect, useRef } from 'react';
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom';
 
 const HOME = '/';
-const isHome = (path: string) => path === '/';
+/** Home and the page it opens (the index route redirects to Local Pickup & Drop). */
+const isHome = (path: string) => path === '/' || path === '/local-rentals';
 const PROFILE_AREA = [/^\/account(\/|$)/, /^\/support\/?$/, /^\/offers\/?$/, /^\/notifications\/?$/, /^\/trips\/?$/, /^\/legal\/?$/, /^\/about\/?$/];
 const inProfileArea = (path: string) => PROFILE_AREA.some((re) => re.test(path));
 

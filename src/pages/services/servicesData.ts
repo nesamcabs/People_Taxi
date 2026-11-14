@@ -147,6 +147,42 @@ export const ALL_SERVICES: ServiceDetail[] = [
     ],
   },
   {
+    id: 'local-rental',
+    slug: 'local-rental',
+    title: 'Hourly Local Car Rental with Driver | City Disposal Packages',
+    h1: 'Hourly Local Car Rental & City Disposal with Driver',
+    tripType: 'Local Rental',
+    image: '/website-images/web/photography/service-corporate.webp',
+    metaDescription:
+      'Hire a car and driver by the hour for local city travel in Chennai, Bangalore, Coimbatore, and Madurai. Flexible 4hr, 8hr, and 12hr packages for business and shopping.',
+    keywords:
+      'hourly car rental with driver, local cab rental chennai, city taxi by hour, car disposal with driver bangalore, 8 hours 80 km cab package',
+    lead:
+      'A car with a driver, at your service within city limits. Multi-stop meetings, wedding shopping, or sightseeing with flexible hourly packages.',
+    features: [
+      { title: 'Car at Your Disposal', text: 'Vehicle waits for you at every stop while you attend meetings or shopping.' },
+      { title: 'Flexible Packages', text: 'Choose from 1 hr / 10 km up to full-day 12 hr / 120 km packages.' },
+      { title: 'Clean Executive Fleet', text: 'Well-maintained AC cars suited for visiting clients, families, and guests.' },
+      { title: 'Transparent Extra KM/Hr', text: 'Low standard per-km and per-minute rates if you exceed package limits.' },
+    ],
+    overview: [
+      'When your day involves multiple stops across the city — such as doctor visits, corporate client meetings, wedding shopping, or family functions — hailing multiple one-off cabs is frustrating and exhausting. People Taxi Local Hourly Rentals give you a dedicated car and driver throughout your itinerary.',
+      'Your driver waits patiently at each destination and navigates city traffic while you focus on your day in air-conditioned comfort.',
+    ],
+    pricingRules: [
+      { title: 'Flexible Packages', detail: '1hr/10km, 2hr/20km, 4hr/40km, 8hr/80km, up to 12hr/120km' },
+      { title: 'Sedan Rates', detail: 'Base from ₹800 (includes 20km). Extra KM at ₹35/km' },
+      { title: 'SUV Rates', detail: 'Base from ₹1,200 (includes 20km). Extra KM at ₹50/km' },
+      { title: 'Crysta Rates', detail: 'Base from ₹2,000 (includes 20km). Extra KM at ₹70/km' },
+    ],
+    faqs: [
+      {
+        q: 'Can I make multiple stops within the city?',
+        a: 'Yes! The rental is completely flexible: travel to as many locations as you need within your booked hours and kilometres.',
+      },
+    ],
+  },
+  {
     id: 'pilgrimage-tours',
     slug: 'pilgrimage-tours',
     title: 'Tamil Nadu Temple Tours & Pilgrimage Taxi Packages | People Taxi',
