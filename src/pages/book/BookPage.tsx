@@ -1,20 +1,17 @@
 import { serviceSlogan } from '@/lib/serviceSlogan';
 import { ReviewsSection, CatalogSection } from '@/shared/components/PublicContentSections';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
-import type { GeoPlace, TripType } from '@core/types';
+import { useCallback, useEffect, useRef } from 'react';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
+import type { TripType } from '@core/types';
 import { useCustomerData } from '@core/context/CustomerData';
 import { useAuth } from '@/state/Auth';
 import { useBooking } from '@/state/Booking';
-import { useMinWidth } from '@/lib/hooks';
 import { useSeo } from '@/lib/seo';
 import { useExitGuard } from '@/lib/exitGuard';
 import { scrollToBookingForm } from '@/lib/scrollToForm';
 import { HOME_SEO } from '@/seo/pages';
-import { Icon } from '@/components/Icon';
-import { isLocalRentals, parseService, serviceOfTrip, type ServiceId } from '@/lib/services';
+import { parseService, serviceOfTrip, type ServiceId } from '@/lib/services';
 import { BookingForm } from './BookingForm';
-import { HeroRentalMap } from './HeroRentalMap';
 import { ChooseStep } from './ChooseStep';
 import { ReviewStep } from './ReviewStep';
 import {
@@ -92,16 +89,6 @@ function Home({ defaultService }: { defaultService?: ServiceId }) {
   const [params, setParams] = useSearchParams();
   const rawService = params.get('service');
   const tripParam = params.get('trip');
-  const navigate = useNavigate();
-  const isDesktop = useMinWidth(900);
-  const [pinTarget, setPinTarget] = useState<'pickup' | 'drop'>('pickup');
-
-  // On phones and narrow screens, Local Rentals opens the full-screen map sheet; on desktop it stays anchored in the hero.
-  useEffect(() => {
-    if (isDesktop) return;
-    const s = parseService(rawService) ?? defaultService;
-    if (s === 'rental' || s === 'pickup') navigate(`/local-rentals?mode=${s === 'pickup' ? 'pickup' : 'hourly'}`, { replace: true });
-  }, [rawService, defaultService, navigate, isDesktop]);
 
   // Parse service, mapping legacy 'one-way' / 'round-trip' to 'outstation'
   const service: ServiceId = parseService(rawService) ?? defaultService ?? serviceOfTrip(draft.tripType);
@@ -121,41 +108,28 @@ function Home({ defaultService }: { defaultService?: ServiceId }) {
     const wanted: TripType =
       service === 'airport'
         ? 'Airport Taxi'
-        : service === 'local' || service === 'pickup'
+        : service === 'local'
           ? 'One Way'
-          : service === 'rental'
-          ? 'Local Rental'
           : outstationTrip === 'Round Trip'
             ? 'Round Trip'
             : 'One Way';
     if (wanted === draft.tripType) return;
     update((d) => ({
       tripType: wanted,
-      drop: d.drop?.id === 'place-local-disposal' && wanted !== 'Local Rental' ? null : d.drop,
+      drop: d.drop?.id === 'place-local-disposal' ? null : d.drop,
       tripEndAt: wanted === 'Round Trip' ? d.tripEndAt : null,
     }));
   }, [service, outstationTrip]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onService = useCallback(
     (s: ServiceId) => {
-      if (s === 'rental' || s === 'pickup') {
-        if (!isDesktop) {
-          navigate(`/local-rentals?mode=${s === 'pickup' ? 'pickup' : 'hourly'}`);
-          return;
-        }
-        if (s === 'pickup' && draft.drop?.id === 'place-local-disposal') {
-          update({ drop: null });
-        }
-        setParams({ service: s }, { replace: true });
-        return;
-      }
       if (s === 'outstation') {
         setParams({ service: 'outstation', trip: outstationTrip === 'Round Trip' ? 'round-trip' : 'one-way' }, { replace: true });
       } else {
         setParams({ service: s }, { replace: true });
       }
     },
-    [setParams, outstationTrip, navigate, isDesktop, draft.drop?.id, update],
+    [setParams, outstationTrip],
   );
 
   const onOutstationTrip = useCallback(
@@ -198,51 +172,17 @@ function Home({ defaultService }: { defaultService?: ServiceId }) {
 
   const onServiceCard = (s: Service) => {
     if (s.id === 'airport') onService('airport');
-    else if (s.id === 'local-rental') onService('rental');
     else if (s.id === 'round-trip') onOutstationTrip('Round Trip');
     else if (s.id === 'multicity') onService('multicity');
     else onOutstationTrip('One Way');
     scrollToConsole();
   };
 
-  const showHeroMap = isDesktop && isLocalRentals(service);
-  const localDrop = draft.drop?.id === 'place-local-disposal' ? null : draft.drop;
-
-  useEffect(() => {
-    if (service === 'rental') setPinTarget('pickup');
-    else if (service === 'pickup') {
-      if (draft.drop?.id === 'place-local-disposal') {
-        update({ drop: null });
-        setPinTarget(draft.pickup ? 'drop' : 'pickup');
-      } else {
-        setPinTarget(draft.pickup && !draft.drop ? 'drop' : 'pickup');
-      }
-    }
-  }, [service]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const onPickPlace = useCallback(
-    (field: 'pickup' | 'drop', place: GeoPlace) => {
-      update(field === 'pickup' ? { pickup: place } : { drop: place });
-    },
-    [update],
-  );
-
   return (
     <div className="home">
       <div className="wrap home__wrap">
-        <div className={`home-hero ${showHeroMap ? 'home-hero--map' : ''}`}>
-          {showHeroMap ? (
-            <HeroRentalMap
-              mode={service === 'pickup' ? 'pickup' : 'rental'}
-              pickup={draft.pickup}
-              drop={localDrop}
-              pinTarget={pinTarget}
-              onPinTargetChange={setPinTarget}
-              onPickPlace={onPickPlace}
-            />
-          ) : (
-            <HeroCopy service={service} trip={outstationTrip} />
-          )}
+        <div className="home-hero">
+          <HeroCopy service={service} trip={outstationTrip} />
           <BookingForm
             service={service}
             onService={onService}
@@ -269,7 +209,7 @@ function Home({ defaultService }: { defaultService?: ServiceId }) {
   );
 }
 
-/** `defaultService` is the service shown when the URL names none (the site root opens on Local Pickup & Drop). */
+/** `defaultService` is the service shown when the URL names none (the site root opens on Outstation). */
 export function BookPage({ step, defaultService }: { step: BookStep; defaultService?: ServiceId }) {
   useExitGuard(step === 'plan');
   useSeo(

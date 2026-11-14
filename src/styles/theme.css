@@ -823,7 +823,7 @@ html[data-hero-logo='in'] .topbar .brand {
   }
 }
 
-/* Phones: the bottom bar already switches between Outstation, Airport Taxi, Local Rental and Multicity, so the same choices are not repeated above the form. */
+/* Phones: the bottom bar already switches between Outstation, Airport Taxi and Multicity, so the same choices are not repeated above the form. */
 @media (max-width: 899.98px) {
   .bf-services {
     display: none;
@@ -2115,7 +2115,7 @@ html[data-hero-logo='in'] .topbar .brand {
     max-width: 420px;
     margin: 0;
   }
-  /* In a narrow card the five services sit in rows of three, so none is squeezed. */
+  /* In a narrow card the three services sit in one row, so none is squeezed. */
   .home-hero > .bf .bf-services {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2168,11 +2168,11 @@ html[data-hero-logo='in'] .topbar .brand {
   }
 }
 
-/* Desktop form card: the five services in one row, each with the icon above and the name below. */
+/* Desktop form card: the three services in one row, each with the icon above and the name below. */
 @media (min-width: 1000px) {
   .home-hero > .bf .bf-services {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 6px;
     padding: 6px;
     border-radius: 20px;
@@ -2969,10 +2969,10 @@ html[data-hero-logo='in'] .ride-chip {
   text-decoration-thickness: 1.5px;
 }
 
-/* The services bar has four buttons (Outstation, Airport Taxi, Local Rentals, Multicity): they share the whole width. */
+/* The services bar has three buttons (Outstation, Airport Taxi, Multicity): they share the whole width. */
 .bf .bf-services,
 .home-hero > .bf .bf-services {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 /* Round Trip uses the same roomy date/time controls as One Way. */

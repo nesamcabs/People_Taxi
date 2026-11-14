@@ -121,16 +121,6 @@
     </image:image>
   </url>
   <url>
-    <loc>https://www.peopletaxi.in/services/local-rental</loc>
-    <lastmod>2026-11-03</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <image:image>
-      <image:loc>https://www.peopletaxi.in/website-images/web/photography/service-corporate.webp</image:loc>
-      <image:title>Hourly Local Car Rental &amp; City Disposal with Driver</image:title>
-    </image:image>
-  </url>
-  <url>
     <loc>https://www.peopletaxi.in/services/pilgrimage-tours</loc>
     <lastmod>2026-11-03</lastmod>
     <changefreq>monthly</changefreq>
