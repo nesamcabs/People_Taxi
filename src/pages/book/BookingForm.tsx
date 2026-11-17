@@ -20,6 +20,7 @@ import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
 import { useDeviceLocation, useLivePickupDefault, useOnline } from '@/lib/hooks';
 import { ClockIcon, SwapIcon } from '@/shared/components/CabParts';
 import { combineDateTime, defaultPickup, latestPickup, toDateInput, toTimeInput } from '@/lib/schedule';
+import { ServiceNote } from '@/components/ServiceNote';
 import { LOCAL_RENTALS_LABEL, SERVICES, SERVICE_TITLE, isLocalRentals, type ServiceId } from '@/lib/services';
 import { AIRPORTS, QUICK_CITIES, isAirportPlace } from './content';
 import { MulticityForm } from './MulticityForm';
@@ -342,6 +343,14 @@ export function BookingForm({
             { id: 'from', label: 'From airport' },
           ]}
         />
+      ) : null}
+
+      {service === 'outstation' ? (
+        <ServiceNote kind={outstationTrip === 'Round Trip' ? 'roundtrip' : 'oneway'} />
+      ) : service === 'multicity' ? (
+        <ServiceNote kind="multicity" />
+      ) : isLocalRentals(service) ? (
+        <ServiceNote kind={service === 'rental' ? 'rental' : 'local'} />
       ) : null}
 
       {service === 'multicity' ? (
