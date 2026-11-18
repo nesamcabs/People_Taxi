@@ -12,6 +12,12 @@ export interface BookingDraft {
   scheduledAt: Date | null;
   /** Round trips only: when the trip ends (billing counts Indian calendar dates from pickup to here). */
   tripEndAt: Date | null;
+  /** Round trips: how many calendar days the trip lasts. The return time is never asked; the package decides it. */
+  tripDays: number;
+  /** True when `tripDays` was raised from 1 to 2 only because an overnight package was picked; the server is then still asked for 1 day. */
+  daysAuto: boolean;
+  /** Round trips (time-based): the package the rider picked ('same:eight' | 'same:five' | 'same:full' | 'next' | 'morning'); '' = the cheapest that fits. */
+  timePackage: string;
   categoryId: string;
   /** The booking server records Cash or UPI. */
   payment: PaymentMethod;
@@ -50,6 +56,9 @@ export const EMPTY_DRAFT: BookingDraft = {
   tripType: 'One Way',
   scheduledAt: null,
   tripEndAt: null,
+  tripDays: 1,
+  daysAuto: false,
+  timePackage: '',
   categoryId: '',
   payment: 'Cash',
   fuelType: '',
@@ -105,6 +114,9 @@ export function loadDraft(): BookingDraft {
       // A schedule that has already passed is dropped rather than kept as a blocker.
       scheduledAt: scheduled,
       // The end only makes sense after a still-valid pickup.
+      tripDays: typeof d.tripDays === 'number' && Number.isInteger(d.tripDays) && d.tripDays >= 1 && d.tripDays <= 60 ? d.tripDays : 1,
+      daysAuto: d.daysAuto === true,
+      timePackage: typeof d.timePackage === 'string' && /^(same:(five|eight|full)|next|morning)$/.test(d.timePackage) ? d.timePackage : '',
       tripEndAt: scheduled && endAt && !Number.isNaN(endAt.getTime()) && endAt.getTime() >= scheduled.getTime() ? endAt : null,
       categoryId: typeof d.categoryId === 'string' ? d.categoryId : '',
       payment: d.payment === 'UPI' ? 'UPI' : 'Cash',

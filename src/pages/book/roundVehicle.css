@@ -1,0 +1,46 @@
+/* Round-trip "Choose vehicle & package" (Customer UX 9.0) — People Taxi: rounded, cobalt. */
+.rvp { display: grid; gap: 12px; margin: 0 0 18px; }
+.rvp__title { margin: 0; font-size: 1.15rem; font-weight: 800; }
+/* One horizontal row of vehicles (Customer UX 9.0): it scrolls sideways on a narrow screen instead of wrapping. */
+.rvp__tabs { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding-bottom: 4px; scrollbar-width: none; -ms-overflow-style: none; }
+.rvp__tabs::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.rvp__tabs > .rvp__tab { flex: 1 0 84px; scroll-snap-align: start; }
+.rvp__tab { display: grid; justify-items: center; gap: 4px; padding: 8px 6px; cursor: pointer; border: 1.5px solid var(--line, #e3e6ec); border-radius: 10px; background: var(--surface, #fff); color: inherit; font: inherit; font-weight: 600; font-size: .88rem; }
+.rvp__tab img { width: 72px; height: 42px; object-fit: contain; }
+.rvp__tab:hover:not(:disabled) { border-color: var(--brand); }
+.rvp__tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.rvp__tab.is-on { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 7%, #fff); color: var(--brand); box-shadow: 0 0 0 1px var(--brand) inset; }
+.rvp__tab:disabled { opacity: .45; cursor: not-allowed; }
+.rvp__tab-skel { height: 70px; border-radius: 10px; }
+.rvp__caption { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; font-size: .88rem; }
+.rvp__caption span { color: var(--muted, #5b6472); }
+.rvp__na { margin: 0; color: var(--brand); font-size: .85rem; }
+.rvp__list { display: grid; gap: 10px; }
+.rvp__hero, .rvp__compact { display: grid; gap: 8px; width: 100%; padding: 14px; text-align: left; cursor: pointer; border: 1.5px solid var(--line, #e3e6ec); border-radius: var(--r-md, 20px); background: var(--surface, #fff); color: inherit; font: inherit; }
+.rvp__compact { grid-template-columns: 1fr auto; align-items: start; padding: 12px 14px; border-radius: var(--r-sm, 14px); }
+.rvp__hero:hover, .rvp__compact:hover { border-color: var(--brand); }
+.rvp__hero:focus-visible, .rvp__compact:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.rvp__hero.is-on, .rvp__compact.is-on { border-color: var(--brand); background: color-mix(in srgb, var(--brand) 7%, #fff); box-shadow: 0 0 0 1px var(--brand) inset; }
+.rvp__top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.rvp__badge { padding: 3px 9px; border-radius: 6px; background: var(--brand-soft); color: var(--brand-ink); font-size: .76rem; font-weight: 700; }
+.rvp__tick { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1.5px solid #9aa3b2; border-radius: 50%; }
+.is-on .rvp__tick { border-color: var(--brand); background: var(--brand); color: #fff; }
+.rvp__main { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rvp__text { display: grid; gap: 2px; min-width: 0; }
+.rvp__text strong { font-size: 1.05rem; }
+.rvp__text span { color: var(--muted, #5b6472); font-size: .8rem; line-height: 1.4; }
+.rvp__right { display: grid; justify-items: end; gap: 4px; white-space: nowrap; }
+.rvp__right b { font-size: 1.3rem; }
+.rvp__compact .rvp__right b { font-size: 1.05rem; }
+.rvp__right img { width: 110px; height: 60px; object-fit: contain; }
+.rvp__foot { color: var(--muted, #5b6472); font-size: .8rem; }
+@media (max-width: 420px) { .rvp__right img { width: 84px; height: 46px; } }
+
+/* The one-line package rule under the round-trip packages (Customer UX 9.0). */
+.rvp__rule { display: flex; align-items: flex-start; gap: 8px; margin: 12px 0 0; padding: 10px 12px; border: 1px solid var(--line, #e3e7ee); border-radius: 10px; background: var(--surface, #fff); color: var(--muted, #5b6472); font-size: .8125rem; line-height: 1.45; }
+.rvp__rule svg { flex: none; margin-top: 2px; color: var(--brand-ink, var(--brand, #c8181f)); }
+
+.rvp__tab small { color: var(--muted, #5b6472); font-size: .7rem; font-weight: 700; white-space: nowrap; }
+.rvp__tab.is-on small { color: inherit; }
+.rvp__wait { display: grid; gap: 10px; }
+.rvp__skel { display: block; height: 92px; border-radius: 12px; }

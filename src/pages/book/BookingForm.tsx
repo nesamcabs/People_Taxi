@@ -14,12 +14,14 @@ import { Icon } from '@/components/Icon';
 import { LocationPicker, type PickerConfig } from '@/components/LocationPicker';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
 import { useBooking } from '@/state/Booking';
+import { UNAVAILABLE_TEXT, useServiceAvailability, type ServiceKey } from '@/lib/serviceAvailability';
 import { useAuth } from '@/state/Auth';
 import { setPendingReturn } from '@/lib/pendingReturn';
 import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
 import { useDeviceLocation, useLivePickupDefault, useOnline } from '@/lib/hooks';
 import { ClockIcon, SwapIcon } from '@/shared/components/CabParts';
 import { combineDateTime, defaultPickup, latestPickup, toDateInput, toTimeInput } from '@/lib/schedule';
+import { isOvernightPickup } from '@core/utils/timePackages';
 import { ServiceNote } from '@/components/ServiceNote';
 import { LOCAL_RENTALS_LABEL, SERVICES, SERVICE_TITLE, isLocalRentals, type ServiceId } from '@/lib/services';
 import { AIRPORTS, QUICK_CITIES, isAirportPlace } from './content';
@@ -78,8 +80,20 @@ export function BookingForm({
   const { trips, savedPlaces } = useCustomerData();
   const { position } = useDeviceLocation(true, true);
   const { online } = useOnline();
+  const avail = useServiceAvailability();
   const { pickup, drop, scheduledAt, tripEndAt, tripType } = draft;
   const isRound = service === 'outstation' && tripType === 'Round Trip';
+  // Services the admin has switched off (Admin → Services) show as "Currently unavailable" and cannot be searched.
+  const keyOf = (id: ServiceId, trip: 'One Way' | 'Round Trip' = tripType === 'Round Trip' ? 'Round Trip' : 'One Way'): ServiceKey | null =>
+    id === 'outstation' ? trip : id === 'airport' ? 'Airport Taxi' : id === 'rental' ? 'Local Rental' : id === 'pickup' ? 'Pickup & Drop' : id === 'multicity' ? 'Multicity' : null;
+  const serviceOff = (id: ServiceId): boolean => {
+    if (id === 'outstation') return avail.off('One Way') && avail.off('Round Trip');
+    if (id === 'rental') return avail.off('Local Rental') && avail.off('Pickup & Drop');
+    const k = keyOf(id);
+    return !!k && avail.off(k);
+  };
+  const currentKey = keyOf(service);
+  const currentOff = currentKey ? avail.off(currentKey) : false;
 
   const [picker, setPicker] = useState<'pickup' | 'drop' | null>(null);
   const [stopPicker, setStopPicker] = useState<number | 'new' | null>(null);
@@ -131,9 +145,24 @@ export function BookingForm({
     const n = Math.round((Date.parse(toDateInput(tripEndAt)) - Date.parse(toDateInput(scheduledAt))) / 86400000) + 1;
     return n >= 1 && n <= RT_MAX_DAYS ? n : 1;
   });
+  // A pickup from 6:46 PM to 12:59 AM cannot finish a same-day package (they all end at 11:45 PM; the shortest runs 5 hours), so the trip
+  // becomes an overnight 2-day trip by itself and the stepper cannot go below 2 days. Moving the pickup earlier again returns it to 1 day.
+  const overnight = isRound && isOvernightPickup(combineDateTime(date, time));
+  const minDays = overnight ? 2 : 1;
+  const [autoOvernight, setAutoOvernight] = useState(false);
+  useEffect(() => {
+    if (!isRound) return;
+    if (overnight && days < 2) { setDays(2); setAutoOvernight(true); }
+    else if (!overnight && autoOvernight) { setDays(1); setAutoOvernight(false); }
+  }, [overnight, isRound]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const end = isRound && date && time ? combineDateTime(addDaysISO(date, days - 1), time) : null;
-    if ((end?.getTime() ?? null) !== (tripEndAt?.getTime() ?? null)) update({ tripEndAt: end });
+    const tripDays = isRound ? days : 1;
+    const patch: Partial<typeof draft> = {};
+    if ((end?.getTime() ?? null) !== (tripEndAt?.getTime() ?? null)) patch.tripEndAt = end;
+    // The package list depends on the days; a package picked for other days no longer applies.
+    if (tripDays !== draft.tripDays) { patch.tripDays = tripDays; patch.daysAuto = false; patch.timePackage = ''; }
+    if (Object.keys(patch).length) update(patch);
   }, [date, time, days, isRound]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const recent = useMemo(() => {
@@ -181,6 +210,7 @@ export function BookingForm({
   const validate = (): Errors => {
     const e: Errors = {};
     if (!online) e.form = 'You’re offline. Reconnect to see fares.';
+    else if (currentOff) e.form = `${currentKey} is currently unavailable. Please choose another service.`;
     if (!pickup) e.pickup = service === 'airport' && airportField === 'pickup' ? 'Choose the airport.' : 'Choose your pickup location.';
     if (service !== 'rental' && !drop) e.drop = service === 'airport' && airportField === 'drop' ? 'Choose the airport.' : 'Choose your drop location.';
     if (service === 'rental' && !draft.rentalHours) e.hours = 'Select the rental hours.';
@@ -294,12 +324,14 @@ export function BookingForm({
           // The rental slot is the "Local Rentals" button: it holds both the hourly rental and the pickup & drop.
           const grouped = s.id === 'rental';
           const active = grouped ? isLocalRentals(service) : service === s.id;
+          const off = serviceOff(s.id);
           return (
-            <button key={s.id} type="button" className={`bf-service ${active ? 'is-active' : ''}`} aria-pressed={active} aria-controls="bf-form" onClick={() => (grouped && isLocalRentals(service) ? undefined : onService(s.id))}>
+            <button key={s.id} type="button" className={`bf-service ${active ? 'is-active' : ''} ${off ? 'is-off' : ''}`} aria-pressed={active} aria-disabled={off || undefined} disabled={off} title={off ? UNAVAILABLE_TEXT : undefined} aria-controls="bf-form" onClick={() => (grouped && isLocalRentals(service) ? undefined : onService(s.id))}>
               <span className="bf-service__icon">
                 <ServiceIcon id={s.id} size={30} />
               </span>
               <span>{grouped ? LOCAL_RENTALS_LABEL : s.label}</span>
+              {off ? <small className="bf-service__off">{UNAVAILABLE_TEXT}</small> : null}
             </button>
           );
         })}
@@ -314,8 +346,8 @@ export function BookingForm({
             setErrors({});
           }}
           items={[
-            { id: 'rental', label: 'Hourly Rental' },
-            { id: 'pickup', label: 'Pickup & Drop' },
+            { id: 'rental', label: 'Hourly Rental', disabled: avail.off('Local Rental'), note: UNAVAILABLE_TEXT },
+            { id: 'pickup', label: 'Pickup & Drop', disabled: avail.off('Pickup & Drop'), note: UNAVAILABLE_TEXT },
           ]}
         />
       ) : null}
@@ -329,8 +361,8 @@ export function BookingForm({
             setErrors({});
           }}
           items={[
-            { id: 'One Way', label: 'One Way' },
-            { id: 'Round Trip', label: 'Round Trip' },
+            { id: 'One Way', label: 'One Way', disabled: avail.off('One Way'), note: UNAVAILABLE_TEXT },
+            { id: 'Round Trip', label: 'Round Trip', disabled: avail.off('Round Trip'), note: UNAVAILABLE_TEXT },
           ]}
         />
       ) : service === 'airport' ? (
@@ -485,29 +517,30 @@ export function BookingForm({
             {isRound ? (
               <div className="bf-cell bf-round-days">
                 <label className="bf-label bf-label--out" htmlFor="bf-days">
-                  Days
+                  {overnight ? 'Trip days' : 'Days'}{overnight ? <small className="bf-days__tag">Overnight</small> : null}
                 </label>
                 <div className="bf-duration-stepper" role="group" aria-label="Trip duration">
-                  <button type="button" aria-label="Decrease trip days" disabled={days <= 1} onClick={() => { setDays((n) => Math.max(1, n - 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>−</button>
+                  <button type="button" aria-label="Decrease trip days" disabled={days <= minDays} onClick={() => { setAutoOvernight(false); setDays((n) => Math.max(minDays, n - 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>−</button>
                 <select
                   id="bf-days"
                   className="bf-days__input"
                   value={days}
                   aria-invalid={!!errors.retDate || undefined}
                   onChange={(e) => {
-                    setDays(Number(e.target.value));
+                    setAutoOvernight(false);
+                    setDays(Math.max(minDays, Number(e.target.value)));
                     setErrors((x) => ({ ...x, retDate: '' }));
                   }}
                 >
-                  {Array.from({ length: RT_MAX_DAYS }, (_, i) => i + 1).map((n) => (
+                  {Array.from({ length: RT_MAX_DAYS - minDays + 1 }, (_, i) => i + minDays).map((n) => (
                     <option key={n} value={n}>
                       {n} {n === 1 ? 'day' : 'days'}
                     </option>
                   ))}
                 </select>
-                  <button type="button" aria-label="Increase trip days" disabled={days >= RT_MAX_DAYS} onClick={() => { setDays((n) => Math.min(RT_MAX_DAYS, n + 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>+</button>
+                  <button type="button" aria-label="Increase trip days" disabled={days >= RT_MAX_DAYS} onClick={() => { setAutoOvernight(false); setDays((n) => Math.min(RT_MAX_DAYS, n + 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>+</button>
                 </div>
-                <span className="bf-days__end">{date ? `Ends ${dayHint(addDaysISO(date, days - 1))}` : 'Pick a date'}</span>
+                <span className="bf-days__end">{date ? `${days === 1 ? 'Same day' : `Last day ${dayHint(addDaysISO(date, days - 1))}`}` : 'Pick a date'}</span>
                 {fieldErr('retDate')}
               </div>
             ) : null}

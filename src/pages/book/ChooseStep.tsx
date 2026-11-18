@@ -13,6 +13,9 @@ import { categoryGroup, categoryName, categoryPhoto, type CategoryGroup } from '
 import { tripTypeLabel } from '@/lib/services';
 import { CabIcon, FuelPick, type FuelChoice } from '@/shared/components/CabParts';
 import { FareDialog, FlowBar, PromoControl } from './parts';
+import { RoundVehiclePackage } from './RoundVehiclePackage';
+import { EditTripDialog } from './EditTripDialog';
+import { packageClock, packageDay } from '@core/utils/timePackages';
 
 const TOO_FAR_KM = 1500;
 type Sort = 'recommended' | 'low' | 'high';
@@ -23,6 +26,7 @@ export function ChooseStep() {
   const q = useBookingQuote();
   const { online } = useOnline();
   const [fareFor, setFareFor] = useState<RideCategory | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
   const [group, setGroup] = useState<'All' | CategoryGroup>('All');
   const [sort, setSort] = useState<Sort>('recommended');
   // The fuel chosen on each card (CNG is offered only on vehicles whose CNG rates the admin has saved).
@@ -50,6 +54,7 @@ export function ChooseStep() {
   const tooFar = !!route && route.distanceKm > TOO_FAR_KM;
   const selected = q.category;
   const quote = q.quote;
+  const roundPick = tripType === 'Round Trip' && !draft.multicity;
   const canContinue = q.authoritative && !!quote && !tooFar && !!selected && !q.unavailable.has(selected.id);
   const cngOf = (c: RideCategory) => q.entries.get(c.id)?.cng ?? null;
   const fuelOf = (c: RideCategory): FuelChoice => (cngOf(c) ? fuelPick[c.id] ?? (c.id === categoryId && draft.fuelType === 'cng' ? 'cng' : 'diesel') : 'diesel');
@@ -92,10 +97,19 @@ export function ChooseStep() {
                     <Badge variant="blue">{tripTypeLabel(draft.multicity ? 'Multicity' : tripType)}</Badge>
                   </span>
                   {scheduledAt ? <span className="trip-sum__when">{formatDate(scheduledAt)}, {formatTime(scheduledAt)}</span> : null}
+                  {roundPick && q.selectedPackage ? (
+                    <span className="trip-sum__when">{q.selectedPackage.days} calendar {q.selectedPackage.days === 1 ? 'day' : 'days'} · Return by {packageDay(new Date(q.selectedPackage.endAt))}, {packageClock(new Date(q.selectedPackage.endAt))}</span>
+                  ) : null}
                   {route && tripType !== 'Local Rental' ? <span>{formatDistance(q.trip?.distanceKm ?? route.totalDistanceKm ?? route.distanceKm)} · about {formatDuration(q.trip?.durationMin ?? route.totalDurationMin ?? route.durationMin)}</span> : null}
                 </p>
+                {tripType !== 'Local Rental' ? (
+                  <button type="button" className="trip-sum__edit" onClick={() => setEditOpen(true)} aria-label="Edit pickup date, time and trip days">
+                    <Icon name="edit" size={13} /> Edit
+                  </button>
+                ) : null}
               </div>
             </section>
+            {editOpen ? <EditTripDialog onClose={() => setEditOpen(false)} /> : null}
 
             <div className="choose__notices">
               {!online ? (
@@ -147,7 +161,43 @@ export function ChooseStep() {
             </div>
 
 
-            <div className="cabs" role="radiogroup" aria-label="Available cabs">
+            {q.customQuote ? (
+              <Notice variant="warning" icon="info">
+                Round trips of {draft.tripDays} days are quoted individually, so the fare is not shown here. Please{' '}
+                <a href={`tel:${SUPPORT_PHONE}`}>call {SUPPORT_PHONE_DISPLAY}</a> for a custom quote, or choose fewer days.
+              </Notice>
+            ) : null}
+
+            {q.hillStations.length ? (
+              <Notice variant="info" icon="info">
+                <strong>Hill station trip · {q.hillStations.map((h) => h.name).join(', ')}.</strong>{' '}
+                A separate “Hill Station Allowance / Charge” is added to your fare{q.breakup?.lines.some((l) => l.key === 'hillStation') ? '' : ' (confirmed by our team)'}.
+                {tripType === 'Round Trip' ? ' The 5-hour and 8-hour packages do not apply to hill stations.' : ''}
+              </Notice>
+            ) : null}
+
+            {roundPick ? (
+              <RoundVehiclePackage
+                categories={categories}
+                selected={selected}
+                entries={q.entries}
+                unavailable={q.unavailable}
+                packages={q.packages}
+                selectedPackage={q.selectedPackage}
+                autoDays={q.autoDays}
+                fuel={selected ? fuelOf(selected) : 'diesel'}
+                hasCng={!!selected && !!cngOf(selected)}
+                scheduledAt={scheduledAt}
+                loading={categoryStatus === 'loading'}
+                quoteLoading={q.quoteLoading}
+                onPickVehicle={chooseCategory}
+                onPickPackage={(id) => update({ timePackage: id })}
+                onFuel={chooseFuel}
+                onFareDetails={setFareFor}
+              />
+            ) : null}
+
+            {roundPick ? null : <div className="cabs" role="radiogroup" aria-label="Available cabs">
               {categoryStatus === 'loading' && categories.length === 0 ? (
                 <>
                   <div className="skeleton cab-skel" />
@@ -251,7 +301,7 @@ export function ChooseStep() {
                   Try selecting "All Vehicles" to browse our complete driver fleet.
                 </EmptyState>
               ) : null}
-            </div>
+            </div>}
           </div>
 
           <aside className="choose__aside">
