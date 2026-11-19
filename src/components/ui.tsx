@@ -699,13 +699,28 @@ export function PageHead({
   // and search engines; a back link, step label or actions passed in still show in a slim row.
   const step = eyebrow && /^Step \d/.test(eyebrow) ? eyebrow : '';
   const extras = children && typeof children !== 'string' ? children : null;
-  if (!back && !step && !extras && !actions) return <h1 className="sr-only">{title}</h1>;
+  // On desktop screens (1000px and wider) the title is also shown as a visible heading; styles/desktop.css hides this block below that width.
+  const heading = (
+    <div className="dt-pagetitle" aria-hidden="true">
+      <strong className="dt-pagetitle__title">{title}</strong>
+      {typeof children === 'string' ? <span className="dt-pagetitle__text">{children}</span> : null}
+    </div>
+  );
+  if (!back && !step && !extras && !actions) {
+    return (
+      <>
+        <h1 className="sr-only">{title}</h1>
+        {heading}
+      </>
+    );
+  }
   return (
     <header className="page-head page-head--slim">
       {back}
       <div className="page-head__text">
         {step ? <p className="eyebrow">{step}</p> : null}
         <h1 className="sr-only">{title}</h1>
+        {heading}
         {extras ? <div className="page-head__sub">{extras}</div> : null}
       </div>
       {actions ? <div className="page-head__actions">{actions}</div> : null}

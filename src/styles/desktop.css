@@ -1,0 +1,245 @@
+/*
+  Desktop layout (1000px and wider) — loaded last.
+
+  Every layout rule in this file sits inside a min-width: 1000px query, so phones and tablets below that width keep the
+  layout they have always had. The only rule outside the query hides the desktop-only page title below 1000px.
+
+  What this does at desktop widths:
+  - one content grid for header, pages and footer, centred and capped, so a 1920px screen is not a stretched 1440px one;
+  - page titles above lists and settings, and a readable 1120px column for those pages;
+  - forms and summaries in two columns, with the booking action bar laid out in one row;
+  - cards that share one radius, border and shadow, with roomier rows and larger text.
+  Colours come from the site's own tokens, so People Taxi and One Way keep their own brand.
+*/
+
+/* Desktop-only page title (rendered by PageHead). Hidden everywhere; shown again inside the desktop query below. */
+.dt-pagetitle { display: none; }
+
+@media (min-width: 1000px) {
+  :root {
+    --max: 1440px;
+    --dt-col: 1120px;
+    --dt-radius: var(--r-md, 20px);
+    --dt-border: 1px solid var(--line, #dde6f6);
+    --dt-shadow: var(--shadow-2, 0 8px 24px rgb(15 31 77 / 0.08));
+  }
+
+  /* ── Header and footer share the page grid ─────────────────────────────────────────────────────────── */
+  .topbar__inner { max-width: calc(var(--max) - 2 * var(--gutter)); }
+  /* The footer's coloured block runs edge to edge; its content lines up with the page grid. */
+  .footer__inner {
+    max-width: none;
+    padding-inline: max(var(--gutter), calc(50% - (var(--max) - 2 * var(--gutter)) / 2));
+  }
+
+  /* The home hero keeps its full-width photo; its content is already centred inside it. */
+  .home__wrap { max-width: none; }
+
+  /* ── Page titles and the readable column ───────────────────────────────────────────────────────────── */
+  .dt-pagetitle {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    max-width: var(--dt-col);
+    margin: 0 auto;
+    padding: clamp(28px, 3vw, 44px) var(--gutter) 0;
+  }
+  .page-head__text .dt-pagetitle { padding: 0; max-width: none; margin: 0; }
+  .dt-pagetitle__title {
+    color: var(--ink, #0c1b3d);
+    font-size: clamp(1.75rem, 2.2vw, 2.25rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+  .dt-pagetitle__text { max-width: 62ch; color: var(--muted, #55627f); font-size: 1.0625rem; line-height: 1.5; }
+  .page-head.page-head--slim {
+    width: 100%;
+    max-width: var(--dt-col);
+    margin: 0 auto;
+    padding: clamp(28px, 3vw, 44px) var(--gutter) 0;
+  }
+  .dt-pagetitle + .page,
+  .page-head--slim + .page { max-width: var(--dt-col); padding-top: 24px; }
+  /* Title and form cards centre together on single-card form pages. */
+  .dt-pagetitle:has(+ .page .simple-form-wrap) { text-align: center; max-width: 640px; }
+  .dt-pagetitle:has(+ .page .simple-form-wrap) .dt-pagetitle__text { margin-inline: auto; }
+  .page-head--slim:has(+ .page .simple-form-wrap) .page-head__text { text-align: center; }
+  .simple-form-wrap { max-width: 560px; padding: 28px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+
+  /* ── Complete your booking (review step) ───────────────────────────────────────────────────────────
+     Two columns: who is travelling on the left; add-ons, payment and coupon on the right.
+     The action bar is one row: terms on the left, back / total / confirm on the right. */
+  .cb {
+    background: var(--paper, #f5f8ff);
+  }
+  .cb .cb__wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 28px;
+    row-gap: 20px;
+    align-items: start;
+    max-width: 1080px;
+    padding: 44px 32px 56px;
+  }
+  .cb .cb__wrap > .cb-pkgline { grid-column: 1 / -1; margin: 0; }
+  .cb .cb__wrap > .cb__section {
+    grid-column: 2;
+    padding: 28px 28px 30px;
+    border: var(--dt-border);
+    border-radius: var(--dt-radius);
+    background: #fff;
+    box-shadow: var(--dt-shadow);
+  }
+  .cb .cb__wrap > .cb__section[aria-label="Passenger & Contact Details"] { grid-column: 1; grid-row: span 3; }
+  .cb .cb__wrap > .cb__section[aria-label="Passenger & Contact Details"]::before,
+  .cb .cb__wrap > .cb__section[aria-label="Payment"]::before {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--cb-ink, #0f1f4d);
+    font-size: 1.25rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .cb .cb__wrap > .cb__section[aria-label="Passenger & Contact Details"]::before { content: 'Passenger details'; }
+  .cb .cb__wrap > .cb__section[aria-label="Payment"]::before { content: 'Payment'; }
+  .cb .cb__wrap > .cb__rule { display: none; }
+  .cb .cb__wrap > .cb__section--addons { padding: 24px 28px 26px; }
+  .cb .cb__section--addons .cb__h2 { font-size: 1.25rem; letter-spacing: -0.01em; }
+
+  .cb .cb-bar {
+    border-radius: 0;
+    border-top: 1px solid var(--cb-line, #d3e0f5);
+    background: rgb(255 255 255 / 0.97);
+    box-shadow: 0 -8px 28px rgb(15 31 77 / 0.08);
+  }
+  .cb .cb-bar__in {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 40px;
+    max-width: 1080px;
+    padding: 16px 32px;
+  }
+  .cb .cb-bar__in > .cb-terms { flex: 1 1 auto; min-width: 0; }
+  .cb .cb-terms__row { font-size: 0.875rem; white-space: normal; }
+  .cb .cb-bar__row { flex: none; gap: 18px; }
+  .cb .cb-total { flex: none; min-width: 120px; }
+  .cb .cb-confirm { min-width: 260px; }
+
+  /* ── Choose your vehicle ──────────────────────────────────────────────────────────────────────────── */
+  .choose .trip-sum { padding: 18px 22px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .choose .route-title { font-size: 1.25rem; }
+  .choose .trip-sum__meta { font-size: 0.9375rem; }
+  .choose .cab { border-radius: var(--dt-radius); }
+  .choose .cab__name { font-size: 1.1875rem; }
+  .choose .cabx-facts { font-size: 0.9375rem; }
+  .choose .cab__price strong { font-size: 1.5rem; }
+  .choose .cab__breakup-btn { font-size: 0.875rem; }
+  .choose .sel-card { padding: 24px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .choose .sel-card dd, .choose .sel-card__trip dd { font-size: 1rem; }
+
+  /* ── Local Taxi: the trip card beside the map ──────────────────────────────────────────────────────── */
+  .page.lt { display: grid; grid-template-columns: minmax(340px, 420px) minmax(0, 1fr); gap: 24px; align-items: start; }
+  .page.lt .lt-card { padding: 22px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .page.lt .lt-map { height: 540px; border-radius: var(--dt-radius); }
+
+  /* ── Booking confirmed: the Home / View Booking row sits under the ticket instead of a full-width strip ─ */
+  .flow-page--done .flow-page__wrap { padding-top: 28px; }
+  .flow-page--done .done-actions {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 4px 0 40px;
+    border: 0;
+    background: none;
+  }
+  .flow-page--done .done-actions .btn,
+  .flow-page--done .done-actions .btn--primary { max-width: 280px; min-height: 48px; font-size: 0.9375rem; }
+
+  /* ── My trips ──────────────────────────────────────────────────────────────────────────────────────── */
+  .trip-list { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .trow__link { grid-template-columns: 96px minmax(0, 1fr) auto; column-gap: 24px; row-gap: 5px; padding: 20px 28px; }
+  .trow__art { width: 96px; }
+  .trow__route { font-size: 1.1875rem; }
+  .trow__fare { font-size: 1.375rem; }
+  .trow__actions { padding: 0 28px 16px calc(28px + 96px + 24px); gap: 2px 22px; }
+  .trow__act { font-size: 0.875rem; }
+
+  /* ── Notifications ─────────────────────────────────────────────────────────────────────────────────── */
+  .notif-list { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .notif { gap: 18px; padding: 20px 28px; }
+  .notif__icon { width: 44px; height: 44px; border-radius: 13px; }
+  .notif__head { grid-template-columns: 1fr auto; align-items: baseline; gap: 16px; }
+  .notif__head strong { font-size: 1.0625rem; }
+  .notif__head time { order: 2; font-size: 0.8125rem; }
+  .notif__msg { font-size: 0.9375rem; }
+  .notif__dot { top: 28px; right: 22px; width: 10px; height: 10px; }
+  .notif__body { padding-right: 24px; }
+
+  /* ── Account ───────────────────────────────────────────────────────────────────────────────────────── */
+  .account:not(.account--drawer) { grid-template-columns: 360px minmax(0, 1fr); gap: 32px; }
+  .account:not(.account--drawer) .account__groups { max-width: none; gap: 26px; }
+  .account:not(.account--drawer) .card--list { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .account:not(.account--drawer) .setting { min-height: 60px; padding: 8px 20px; font-size: 0.9875rem; }
+  .account:not(.account--drawer) .setting__icon { width: 36px; height: 36px; border-radius: 11px; }
+  .account:not(.account--drawer) .profile-card { padding: 20px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .account:not(.account--drawer) .credit-row { min-height: 56px; border-radius: 16px; }
+  .account:not(.account--drawer) .credit-row > span { white-space: nowrap; }
+
+  /* ── Payments ──────────────────────────────────────────────────────────────────────────────────────── */
+  .pay-summary { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .pay-summary__item { gap: 14px; padding: 22px 26px; }
+  .pay-summary__icon { width: 44px; height: 44px; border-radius: 13px; }
+  .pay-summary__text small { font-size: 0.8125rem; }
+  .pay-summary__text strong { font-size: 1.375rem; }
+  .pay-note { margin: 14px 4px 20px; font-size: 0.875rem; }
+  .pay-list { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .pay-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto 20px;
+    align-items: center;
+    gap: 24px;
+    padding: 18px 26px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .pay-row:hover { background: var(--paper, #f2f6ff); text-decoration: none; }
+  .pay-row__main { display: grid; gap: 3px; min-width: 0; }
+  .pay-row__main strong { color: var(--ink, #0c1b3d); font-size: 1.0625rem; font-weight: 800; }
+  .pay-row__main small { font-size: 0.875rem; }
+  .pay-row__refund { color: var(--green, #0f8a4a); font-weight: 700; }
+  .pay-row__amount { display: grid; justify-items: end; gap: 6px; }
+  .pay-row__amount strong { color: var(--ink, #0c1b3d); font-size: 1.25rem; font-weight: 800; }
+  .pay-row > .icon { color: var(--faint, #98a3bd); }
+  .pay-list > li + li { border-top: 1px solid var(--line, #dde6f6); }
+  .pay-row__pay { padding: 0 26px 18px; }
+
+  /* ── Help and support ──────────────────────────────────────────────────────────────────────────────── */
+  .support-page { gap: 24px; }
+  .seg { max-width: 560px; border-radius: 16px; }
+  .quick-help { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  .quick-help__item { align-items: flex-start; padding: 18px; border-radius: 16px; box-shadow: var(--dt-shadow); }
+  .faq-list { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .faq-list__item > summary { padding: 18px 24px; font-size: 1.0625rem; }
+  .support-title, .group__title { font-size: 0.8125rem; }
+  .ticket-form { max-width: 720px; padding: 28px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+
+  /* ── About ─────────────────────────────────────────────────────────────────────────────────────────── */
+  .about { max-width: var(--dt-col); grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px 28px; align-items: start; }
+  .about > .about-hero, .about > .about-legal { grid-column: 1 / -1; }
+  .about-hero { padding: 32px 36px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .about-hero h2 { font-size: 2.125rem; }
+  .about-hero > p:not(.about-hero__eyebrow) { max-width: 70ch; font-size: 1.0625rem; }
+  .about .card--list { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+  .about .about-section:first-of-type { grid-row: span 2; }
+
+  /* ── Legal: the policies read in a comfortable column ─────────────────────────────────────────────── */
+  .page.split { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
+  .page.split > .stack { min-width: 0; }
+  .page.split .split__aside { position: sticky; top: calc(var(--nav-h, 84px) + 16px); }
+  .page.split .card { border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+
+  /* ── Offers and other empty pages ──────────────────────────────────────────────────────────────────── */
+  .dt-pagetitle + .page > .card--center { padding-block: 56px; border-radius: var(--dt-radius); box-shadow: var(--dt-shadow); }
+}

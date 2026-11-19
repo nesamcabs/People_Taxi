@@ -70,7 +70,7 @@ function BottomNav() {
   // Local Taxi has its own pages (/local-taxi…): keep its tab lit there instead of leaving the bar looking like Outstation.
   const onLocal = /^\/local-taxi(\/|$)/.test(location.pathname);
   const onRentals = /^\/local-rentals(\/|$)/.test(location.pathname);
-  const current: ServiceId | null = profilePicked ? null : onLocal ? 'local' : onRentals ? (params.get('mode') === 'pickup' ? 'pickup' : 'rental') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'pickup' : serviceOfTrip(draft.tripType))) : null;
+  const current: ServiceId | null = profilePicked ? null : onLocal ? 'local' : onRentals ? (params.get('mode') === 'pickup' ? 'pickup' : 'rental') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'outstation' : serviceOfTrip(draft.tripType, draft.multicity))) : null;
 
   return (
     <nav className="tabbar" aria-label="Services">

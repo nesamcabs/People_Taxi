@@ -123,8 +123,8 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Shell />}>
-        {/* The site opens on the booking home with Local Pickup & Drop selected: on desktop the booking form sits beside the map; phones get the full-screen map sheet. */}
-        <Route index element={<BookPage step="plan" defaultService="pickup" />} />
+        {/* The site opens on the booking home with Outstation selected (Local Pickup & Drop and Hourly Rental are not open for booking yet). */}
+        <Route index element={<BookPage step="plan" defaultService="outstation" />} />
         <Route path="/book" element={<BookPage step="plan" />} />
         <Route path="/book/ride" element={<BookPage step="choose" />} />
         <Route path="/book/confirm" element={<BookPage step="review" />} />

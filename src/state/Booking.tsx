@@ -6,8 +6,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { AppliedCoupon, Coupon, FareBreakdown, GeoPlace, RideCategory, RouteInfo } from '@core/types';
 import {
-  calculateFare,
-  hasEstimate,
   isOutstation,
   serviceName,
   subscribeToCoupons,
@@ -92,10 +90,11 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const startFrom = useCallback<BookingValue['startFrom']>((pickup, drop) => setDraft((d) => ({ ...d, pickup, drop, stops: [], scheduledAt: null, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', multicity: false, roofCarrier: false, pets: false, promoCode: '' })), []);
 
   const routeStops = draft.tripType === 'Round Trip' ? draft.stops : [];
-  const isRoundTrip = draft.tripType === 'Round Trip';
+  // Only a real Round Trip comes back to the pickup. A Multicity tour (stored as a Round Trip with a flag) ends at its own final drop.
+  const isRoundTrip = draft.tripType === 'Round Trip' && !draft.multicity;
   const baseRouteKey = routeKeyOf(draft.pickup, draft.drop, routeStops);
   // The key also tells a Round Trip apart, so switching trip type measures the way back too.
-  const routeKey = baseRouteKey && isRoundTrip ? `${baseRouteKey}|rt` : baseRouteKey;
+  const routeKey = baseRouteKey && isRoundTrip ? `${baseRouteKey}|rt` : baseRouteKey && draft.multicity ? `${baseRouteKey}|mc` : baseRouteKey;
   const pickupRef = useRef(draft.pickup);
   const dropRef = useRef(draft.drop);
   pickupRef.current = draft.pickup;
@@ -169,7 +168,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   // Anything the admin changes that prices a trip (vehicle fares, the price adjustment, coupons) arrives
   // live; its fingerprint makes the quote ask the server again, so new prices show within seconds.
   const pricingStamp = useMemo(
-    () => JSON.stringify([categories.map((c) => [c.id, c.displayOrder, c.fare]), adjustment, coupons.map((c) => [c.code, c.discountValue, c.validUntil])]),
+    () => JSON.stringify([categories.map((c) => [c.id, c.displayOrder]), adjustment, coupons.map((c) => [c.code, c.discountValue, c.validUntil])]),
     [categories, adjustment, coupons],
   );
   const serverQuote = useServerQuotes(quoteRequest, auth.status === 'ready', pricingStamp);
@@ -205,6 +204,8 @@ export interface BookingQuote {
   entries: Map<string, ServerCategoryQuote>;
   /** Why a category cannot be priced for this trip, by category id. */
   unavailable: Map<string, string>;
+  /** Cab types the office has turned off for this location: they are not shown at all. */
+  hidden: Set<string>;
   /** The journey distance and time the server priced (null until it answers). */
   trip: { distanceKm: number; durationMin: number } | null;
   /** Chargeable calendar days of a round trip. */
@@ -220,6 +221,9 @@ export interface BookingQuote {
   retryQuote: () => void;
 }
 
+/** The server's reason when the office has turned a cab type off for this location (Admin → Booking rules). */
+export const isTurnedOff = (reason?: string): boolean => /is not offered for this location/i.test(reason ?? '');
+
 /** Prices the draft the way the booking server will (same engine, adjustment and coupon rules). */
 export function useBookingQuote(): BookingQuote {
   const { draft, route, categories, adjustment, coupons, serverQuote, update } = useBooking();
@@ -231,17 +235,34 @@ export function useBookingQuote(): BookingQuote {
 
   const result = useMemo<BookingQuote>(() => {
     const category = categories.find((c) => c.id === categoryId) ?? null;
-    const quotes = new Map<string, FareBreakdown>();
-    if (route) for (const c of categories) if (hasEstimate(c)) quotes.set(c.id, calculateFare({ category: c, route, tripType, pickupTime, adjustment }));
     const outstation = route ? isOutstation(route.distanceKm) : false;
     const service = pickup && drop && route ? serviceName(pickup, drop, route.distanceKm) : 'Local';
     const history = trips.filter((t) => t.status !== 'Cancelled' && t.status !== 'Rejected');
 
+    // Only the booking server's quotes exist: the app never calculates a fare.
+    const server = serverQuote.status === 'ready' ? serverQuote.data : null;
+    // Time-based round trip: a vehicle carries one fare per package; the package the rider picked (else the server's pick) is the one in force.
+    const withPackage = (x: ServerCategoryQuote): ServerCategoryQuote => {
+      const pkg = x.packages?.find((p) => p.id === draft.timePackage) ?? x.packages?.find((p) => p.id === x.selectedPackage) ?? x.packages?.[0];
+      return x.ok && pkg ? { ...x, fare: pkg.fare, breakup: pkg.breakup, strikeTotal: pkg.strikeTotal, couponMessage: pkg.couponMessage, couponApplied: pkg.couponApplied, includedKm: pkg.includedKm, days: pkg.days, extraKmRate: pkg.extraKmRate, selectedPackage: pkg.id } : x;
+    };
+    const byId = new Map<string, ServerCategoryQuote>((server?.quotes ?? []).map((x) => [x.categoryId, withPackage(x)]));
+    const unavailable = new Map<string, string>();
+    const hidden = new Set<string>();
+    for (const x of server?.quotes ?? []) if (!x.ok) { unavailable.set(x.categoryId, x.error ?? 'Not available for this trip.'); if (isTurnedOff(x.error)) hidden.add(x.categoryId); }
+    const finalQuotes = new Map<string, FareBreakdown>();
+    if (server) for (const x of byId.values()) if (x.ok && x.fare) finalQuotes.set(x.categoryId, x.fare);
+    const chosen = category ? byId.get(category.id) : undefined;
+    // The CNG rate card applies when the rider picked CNG and this vehicle offers it.
+    const cngChoice = draft.fuelType === 'cng' && chosen?.ok && chosen.cng ? chosen.cng : null;
+    const serverFare = cngChoice ? cngChoice.fare : chosen?.ok && chosen.fare ? chosen.fare : null;
+    const authoritative = !!serverFare;
     const checkCoupon = (code: string): CouponResult => {
       if (!category || !route) return { ok: false, message: 'Choose a ride first.' };
-      const base = quotes.get(category.id) ?? calculateFare({ category, route, tripType, pickupTime, adjustment });
+      // The booking server's own price is the only one: a code is checked against it once it has answered.
+      if (!serverFare) return { ok: false, message: 'The price is still loading. Try again in a moment.' };
       return validateCoupon(coupons, code, {
-        subtotal: base.subtotal,
+        subtotal: serverFare.subtotal,
         categoryId: category.id,
         service,
         isFirstBooking: history.length === 0,
@@ -252,24 +273,6 @@ export function useBookingQuote(): BookingQuote {
     // Re-validated on every change so a discount never outlives the fare it was granted on.
     const couponCheck = promoCode && category && route ? checkCoupon(promoCode) : null;
     const coupon = couponCheck?.ok ? couponCheck.coupon : null;
-    // Only the server's quotes are customer-visible. Local calculations remain available for coupon
-    // validation, but showing them while this request is pending makes stale/config-default prices flash.
-    const server = serverQuote.status === 'ready' ? serverQuote.data : null;
-    // Time-based round trip: a vehicle carries one fare per package; the package the rider picked (else the server's pick) is the one in force.
-    const withPackage = (x: ServerCategoryQuote): ServerCategoryQuote => {
-      const pkg = x.packages?.find((p) => p.id === draft.timePackage) ?? x.packages?.find((p) => p.id === x.selectedPackage) ?? x.packages?.[0];
-      return x.ok && pkg ? { ...x, fare: pkg.fare, breakup: pkg.breakup, strikeTotal: pkg.strikeTotal, couponMessage: pkg.couponMessage, couponApplied: pkg.couponApplied, includedKm: pkg.includedKm, days: pkg.days, extraKmRate: pkg.extraKmRate, selectedPackage: pkg.id } : x;
-    };
-    const byId = new Map<string, ServerCategoryQuote>((server?.quotes ?? []).map((x) => [x.categoryId, withPackage(x)]));
-    const unavailable = new Map<string, string>();
-    for (const x of server?.quotes ?? []) if (!x.ok) unavailable.set(x.categoryId, x.error ?? 'Not available for this trip.');
-    const finalQuotes = new Map<string, FareBreakdown>();
-    if (server) for (const x of byId.values()) if (x.ok && x.fare) finalQuotes.set(x.categoryId, x.fare);
-    const chosen = category ? byId.get(category.id) : undefined;
-    // The CNG rate card applies when the rider picked CNG and this vehicle offers it.
-    const cngChoice = draft.fuelType === 'cng' && chosen?.ok && chosen.cng ? chosen.cng : null;
-    const serverFare = cngChoice ? cngChoice.fare : chosen?.ok && chosen.fare ? chosen.fare : null;
-    const authoritative = !!serverFare;
     const days = chosen?.ok && typeof chosen.days === 'number' && (chosen.model === 'round_trip_calendar' || chosen.model === 'round_trip_time_based') ? chosen.days : null;
     // The packages shown are the chosen vehicle's; before a vehicle is chosen, the first vehicle that has any.
     const source = (chosen?.ok && chosen.packages?.length ? chosen : (server?.quotes ?? []).find((x) => x.ok && x.packages?.length)) ?? null;
@@ -288,7 +291,7 @@ export function useBookingQuote(): BookingQuote {
       quoteLoading: serverQuote.status === 'loading',
       quoteError: serverQuote.status === 'error' ? serverQuote.error : '',
       breakup: (cngChoice ? cngChoice.breakup : chosen?.breakup) ?? null,
-      entries: byId, unavailable, days, packages, selectedPackage, autoDays: source?.autoDays === true, customQuote, retryQuote: serverQuote.retry,
+      entries: byId, unavailable, hidden, days, packages, selectedPackage, autoDays: source?.autoDays === true, customQuote, retryQuote: serverQuote.retry,
       hillStations: server?.hillStations ?? [],
       trip: server?.trip ?? null,
     };
