@@ -19,6 +19,7 @@ import { PolicyLinks } from '@/pages/PolicySections';
 import { categoryName, categoryPhoto } from '@/lib/categories';
 import { FareDialog } from './parts';
 import { payBookingOnline, useOnlinePaymentAvailable } from '@/lib/onlinePayment';
+import { holdBookingConfirmed } from '@/lib/paymentHold';
 import { DIAL_CODES, splitPhone } from '@/lib/countryCodes';
 import './review.css';
 
@@ -37,10 +38,10 @@ export function ReviewStep() {
   const q = !liveQ.quote && liveQ.quoteLoading && lastQ.current.quote ? { ...lastQ.current, quoteLoading: true, authoritative: false } : liveQ;
   const { online } = useOnline();
   const [submitting, setSubmitting] = useState(false);
-  // Pay the driver later (default) or pay online now with Razorpay. Online is offered only when the office has it on.
+  // Pay online now with Razorpay (the default) or pay the driver later. Online is offered only when the office has it on.
   const onlineOn = useOnlinePaymentAvailable(!!profile);
-  const [payMode, setPayMode] = useState<'later' | 'online'>('later');
-  const payOnline = payMode === 'online' && onlineOn;
+  const [payMode, setPayMode] = useState<'later' | 'online' | null>(null); // null = not chosen yet: online when it is available
+  const payOnline = onlineOn && payMode !== 'later';
   const [submitError, setSubmitError] = useState('');
   const [termsAccepted, setTermsAccepted] = useState(false);
   // Morning Return: the strict 9:00 AM cutoff and the automatic upgrade are accepted on their own, per package.
@@ -215,7 +216,10 @@ export function ReviewStep() {
         passengerMobile: forOther ? passengerMobile : '',
         notes,
       });
+      // Paying online: hold the "Booking confirmed" popup until the payment is done, and tell the server to wait for it as well.
+      holdBookingConfirmed(payOnline);
       const res = await createRideRequest({
+        awaitPayment: payOnline,
         fuelType: draft.fuelType === 'cng' ? 'cng' : undefined,
         profile,
         pickup,
@@ -249,7 +253,7 @@ export function ReviewStep() {
       const payResult = payOnline
         ? await payBookingOnline(res.id, 'Ride booking', { name: customerName.trim(), contact: `${contactCode}${contactNumber}`, email: email.trim() || undefined })
         : null;
-      navigate(`/book/done/${res.id}`, { replace: true, state: { confirmed: true, payment: payResult } });
+      navigate(`/book/done/${res.id}`, { replace: true, state: { confirmed: true, payment: payResult, online: payOnline } });
     } catch (e: unknown) {
       const err = e as { code?: string; fare?: Fare };
       if (err.code === 'fare-changed' && err.fare) {
@@ -259,6 +263,7 @@ export function ReviewStep() {
       }
       setSubmitError(describeError(e, 'We couldn’t submit your booking request. Please check your connection and try again.'));
     } finally {
+      holdBookingConfirmed(false);
       submittingRef.current = false;
       setSubmitting(false);
     }
@@ -408,32 +413,30 @@ export function ReviewStep() {
 
         <section className="cb__section" aria-label="Payment">
           <div className="cb-payopts" role="radiogroup" aria-label="Payment mode">
-            <div
-              className={`cb-pay cb-pay--opt ${payOnline ? '' : 'is-on'}`} role="radio" aria-checked={!payOnline} tabIndex={0}
-              onClick={() => setPayMode('later')} onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPayMode('later'); } }}
-            >
-              <span className="cb-pay__icon" aria-hidden="true"><Icon name="wallet" size={26} /></span>
-              <span className="cb-pay__sep" aria-hidden="true" />
-              <span className="cb-pay__text">
-                <strong>Book now, pay later</strong>
-                <small>Pay your driver at the end of the trip.</small>
-              </span>
-              <input type="radio" className="cb-radio" name="pay" value="later" checked={!payOnline} readOnly tabIndex={-1} aria-label="Book now, pay later" />
-            </div>
             {onlineOn ? (
               <div
                 className={`cb-pay cb-pay--opt ${payOnline ? 'is-on' : ''}`} role="radio" aria-checked={payOnline} tabIndex={0}
                 onClick={() => setPayMode('online')} onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPayMode('online'); } }}
               >
-                <span className="cb-pay__icon" aria-hidden="true"><Icon name="shield-check" size={26} /></span>
-                <span className="cb-pay__sep" aria-hidden="true" />
+                <input type="radio" className="cb-radio" name="pay" value="online" checked={payOnline} readOnly tabIndex={-1} aria-label="Pay online now" />
                 <span className="cb-pay__text">
-                  <strong>Pay online now</strong>
+                  <strong>Pay online now<em className="cb-pay__tag">Recommended</em></strong>
                   <small>UPI, cards, net banking, wallets · Secured by Razorpay</small>
                 </span>
-                <input type="radio" className="cb-radio" name="pay" value="online" checked={payOnline} readOnly tabIndex={-1} aria-label="Pay online now" />
+                <span className="cb-pay__icon" aria-hidden="true"><Icon name="shield-check" size={24} /></span>
               </div>
             ) : null}
+            <div
+              className={`cb-pay cb-pay--opt ${payOnline ? '' : 'is-on'}`} role="radio" aria-checked={!payOnline} tabIndex={0}
+              onClick={() => setPayMode('later')} onKeyDown={(e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setPayMode('later'); } }}
+            >
+              <input type="radio" className="cb-radio" name="pay" value="later" checked={!payOnline} readOnly tabIndex={-1} aria-label="Book now, pay later" />
+              <span className="cb-pay__text">
+                <strong>Book now, pay later</strong>
+                <small>Pay your driver at the end of the trip.</small>
+              </span>
+              <span className="cb-pay__icon" aria-hidden="true"><Icon name="wallet" size={24} /></span>
+            </div>
           </div>
 
           {applied ? (
