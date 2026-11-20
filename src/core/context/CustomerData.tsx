@@ -9,7 +9,7 @@ import { subscribeToSavedPlaces } from '../services/userService';
 import { describeError } from '../utils/retry';
 
 /** Completed trips younger than this still prompt for a rating. */
-const RATING_PROMPT_WINDOW_MS = 3 * 60 * 60 * 1000;
+const RATING_PROMPT_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 interface CustomerDataValue {
   profile: UserProfile;

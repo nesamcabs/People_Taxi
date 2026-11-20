@@ -8,7 +8,7 @@ import { useAuth } from '@/state/Auth';
 import { useBooking } from '@/state/Booking';
 import { useMinWidth, useOnline } from '@/lib/hooks';
 import { scrollToBookingForm } from '@/lib/scrollToForm';
-import { SERVICES, parseService, serviceHref, serviceOfTrip, type ServiceId } from '@/lib/services';
+import { parseService, serviceHref, serviceOfTrip, type ServiceId } from '@/lib/services';
 import { Avatar, Button, Dialog, PageLoader } from './ui';
 import { Icon } from './Icon';
 import { RideBanner } from './RideBanner';
@@ -39,7 +39,7 @@ const NAV = [
   { to: '/notifications', label: 'Notifications', short: 'Alerts', icon: 'notifications' },
 ] as const;
 
-import airportIcon from '@/assets/nav/airport-taxi.webp';
+import pickupIcon from '@/assets/nav/pickup-drop.webp';
 import multicityIcon from '@/assets/nav/multicity.webp';
 import outstationIcon from '@/assets/nav/outstation.webp';
 import rentalIcon from '@/assets/nav/local-rentals.webp';
@@ -52,13 +52,15 @@ const TOP_NAV = [NAV[0], NAV[1], { to: '/offers', label: 'Offers', short: 'Offer
 const FLOW = [/^\/book\/(ride|confirm|done\/[^/]+)$/, /^\/ride\//, /^\/local-taxi\/ride\//, /^\/trips\/[^/]+$/];
 const IMMERSIVE = [/^\/ride\//, /^\/local-rentals(\/|$)/, /^\/trips\/[^/]+$/];
 
-/** Phone bottom bar: the selected service rises in its brand color. */
-const BAR_ORDER: ServiceId[] = ['outstation', 'multicity', 'rental', 'airport'];
-const barServices = () => BAR_ORDER.flatMap((id) => SERVICES.find((s) => s.id === id) ?? []);
-
-/** The bottom bar's short names. */
-const SHORT_LABEL: Partial<Record<ServiceId, string>> = { airport: 'Airport', multicity: 'Multicity', outstation: 'Outstation', rental: 'Local' };
-const NAV_ICON: Partial<Record<ServiceId, string>> = { airport: airportIcon, multicity: multicityIcon, outstation: outstationIcon, rental: rentalIcon };
+/** Phone bottom bar, left to right: Local Pickup & Drop · Hourly Rental · Outstation (the middle one) · Multicity · My trips.
+    Airport Taxi lives in the side drawer. The selected service rises in its brand color. */
+type BarId = 'pickup' | 'rental' | 'outstation' | 'multicity';
+const BAR: { id: BarId; label: string; full: string; to: string; image: string; size: number; wide?: boolean }[] = [
+  { id: 'pickup', label: 'Pickup & Drop', full: 'Local Pickup & Drop', to: '/local-rentals?mode=pickup', image: pickupIcon, size: 44, wide: true },
+  { id: 'rental', label: 'Hourly Rental', full: 'Hourly Rental', to: '/local-rentals?mode=hourly', image: rentalIcon, size: 44, wide: true },
+  { id: 'outstation', label: 'Outstation', full: 'Outstation', to: serviceHref('outstation'), image: outstationIcon, size: 46 },
+  { id: 'multicity', label: 'Multicity', full: 'Multicity', to: serviceHref('multicity'), image: multicityIcon, size: 44 },
+];
 
 function BottomNav() {
   const location = useLocation();
@@ -67,21 +69,24 @@ function BottomNav() {
   const [profilePicked, setProfilePicked] = useState(false);
   useEffect(() => setProfilePicked(false), [location.pathname, params.toString()]); // any navigation moves the selection
   const onHome = location.pathname === '/book' || location.pathname === '/';
-  // Local Taxi has its own pages (/local-taxi…): keep its tab lit there instead of leaving the bar looking like Outstation.
+  // Local Taxi has its own pages (/local-taxi…): it is the city Pickup & Drop, so that tab stays lit there.
   const onLocal = /^\/local-taxi(\/|$)/.test(location.pathname);
   const onRentals = /^\/local-rentals(\/|$)/.test(location.pathname);
-  const current: ServiceId | null = profilePicked ? null : onLocal ? 'local' : onRentals ? (params.get('mode') === 'pickup' ? 'pickup' : 'rental') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'outstation' : serviceOfTrip(draft.tripType, draft.multicity))) : null;
+  const current: ServiceId | null = profilePicked ? null : onLocal ? 'pickup' : onRentals ? (params.get('mode') === 'hourly' ? 'rental' : 'pickup') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'outstation' : serviceOfTrip(draft.tripType, draft.multicity))) : null;
 
   return (
     <nav className="tabbar" aria-label="Services">
-      {barServices().map((s) => (
-        <Link key={s.id} to={s.id === 'local' ? '/local-taxi' : serviceHref(s.id)} className={`tabbar__link ${current === s.id || (s.id === 'rental' && current === 'pickup') ? 'is-active' : ''}`} aria-current={current === s.id || (s.id === 'rental' && current === 'pickup') ? 'page' : undefined}>
-          <span className="tabbar__icon">
-            <img className="tabbar__img" src={NAV_ICON[s.id]} alt="" width={s.id === 'outstation' ? 46 : 44} height={s.id === 'outstation' ? 46 : 44} draggable={false} />
-          </span>
-          <span className="tabbar__label">{SHORT_LABEL[s.id] ?? s.label}</span>
-        </Link>
-      ))}
+      {BAR.map((s) => {
+        const active = current === s.id || (s.id === 'pickup' && current === 'local');
+        return (
+          <Link key={s.id} to={s.to} replace={onRentals && s.to.startsWith('/local-rentals')} className={`tabbar__link ${s.wide ? 'tabbar__link--wide' : ''} ${active ? 'is-active' : ''}`} aria-label={s.full} aria-current={active ? 'page' : undefined}>
+            <span className="tabbar__icon">
+              <img className="tabbar__img" src={s.image} alt="" width={s.size} height={s.size} draggable={false} />
+            </span>
+            <span className="tabbar__label">{s.label}</span>
+          </Link>
+        );
+      })}
       <TripsTab picked={profilePicked} onPick={() => setProfilePicked(true)} />
     </nav>
   );

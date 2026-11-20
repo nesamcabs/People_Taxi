@@ -1,4 +1,5 @@
 import { callBackend, settleBooking } from './backend';
+import { callFunction } from './callables';
 // Ride lifecycle for the customer: request → dispatch → live tracking →
 // completion, cancellation, rating and SOS.
 //
@@ -38,7 +39,6 @@ import { withTimeout, errorCode } from '../utils/retry';
 export const BOOKINGS = 'bookings';
 const SECRETS = 'booking_secrets';
 const MARKETPLACE = 'marketplace_trips';
-const REVIEWS = 'reviews';
 const SOS = 'sos_alerts';
 
 // ── Mapping ─────────────────────────────────────────────────────────────────
@@ -461,35 +461,28 @@ export async function cancelRide(trip: TripRecord, reason: string): Promise<void
 
 // ── Rate ────────────────────────────────────────────────────────────────────
 
-export async function rateTrip(trip: TripRecord, profile: UserProfile, rating: number, comment: string): Promise<void> {
-  const stars = Math.round(rating);
+export interface TripRating {
+  stars: number;
+  /** Quick tags (any rating). */
+  tags?: string[];
+  /** Why, for a low rating (one of RATING_REASONS). */
+  reason?: string;
+  /** What went wrong, for a low rating. */
+  feedback?: string;
+  /** What should be improved (optional). */
+  improvements?: string;
+  /** A free comment on a good rating. */
+  comment?: string;
+}
+
+/**
+ * Rate the driver at the end of a trip. The server checks it (a 1–2 star rating must carry a reason and feedback),
+ * stores it against the driver's profile and opens a follow-up for the office when it is low.
+ */
+export async function rateTrip(trip: TripRecord, _profile: UserProfile, rating: TripRating): Promise<void> {
+  const stars = Math.round(rating.stars);
   if (stars < 1 || stars > 5) throw new Error('Choose between 1 and 5 stars.');
-  const text = comment.trim().slice(0, 500);
-  const batch = writeBatch(db);
-  batch.update(doc(db, BOOKINGS, trip.id), {
-    rating: stars,
-    reviewComment: text,
-    ratedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  });
-  // Review doc id must equal the booking doc id (firestore.rules).
-  batch.set(doc(db, REVIEWS, trip.id), {
-    bookingId: trip.id,
-    bookingCode: trip.bookingId,
-    customerId: profile.uid,
-    customerName: profile.name,
-    customerPhone: profile.phone,
-    driverId: trip.driver?.id ?? '',
-    driverName: trip.driver?.name ?? '',
-    vehicleNumber: trip.driver?.vehicleNumber ?? '',
-    serviceName: trip.service,
-    overallRating: stars,
-    driverRating: stars,
-    reviewText: text,
-    status: 'Pending',
-    createdAt: serverTimestamp(),
-  });
-  await withTimeout(batch.commit(), 15000);
+  await callFunction<Record<string, unknown>, { rated: boolean }>('rateDriver', { ...rating, stars, bookingId: trip.id }, 30000);
 }
 
 // ── SOS ─────────────────────────────────────────────────────────────────────
