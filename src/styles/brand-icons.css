@@ -11,8 +11,9 @@
 /* Bottom bar: the selected (or hovered) service gets a ring in the site's theme colour, never a filled disc. The icon stays in place. */
 @media (max-width: 899.98px) {
   .tabbar .tabbar__icon::before { inset: -6px; border: 2px solid var(--brand); background: transparent; box-shadow: none; }
-  .tabbar .tabbar__link.is-active .tabbar__icon { transform: none; }
-  .tabbar .tabbar__link.is-active .tabbar__icon::before { opacity: 1; transform: scale(1); }
+  /* The selected one is lifted a little, so it reads as raised out of the bar. */
+  .tabbar .tabbar__link.is-active .tabbar__icon { transform: translateY(-7px); }
+  .tabbar .tabbar__link.is-active .tabbar__icon::before { opacity: 1; transform: scale(1); background: #fff; box-shadow: 0 8px 14px -4px color-mix(in srgb, var(--brand) 45%, transparent); }
 }
 @media (hover: hover) and (max-width: 899.98px) {
   .tabbar .tabbar__link:hover .tabbar__icon::before { opacity: 1; transform: scale(1); }

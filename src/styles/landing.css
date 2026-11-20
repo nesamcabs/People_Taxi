@@ -333,3 +333,26 @@
   .lp-table td.lp-table__end { grid-column: 1 / -1; display: block; padding-top: 6px; }
   .lp-table td.lp-table__end .btn { width: 100%; min-height: 44px; }
 }
+
+/* Route fare chart, colourful: each vehicle row takes its own accent (same palette as the booking cards). */
+.lp-table tr[data-acc] { --a: #1665e8; --a-ink: #0b3a94; --a-wash: #e9f2ff; }
+.lp-table tr[data-acc='green'] { --a: #12a150; --a-ink: #0b6b34; --a-wash: #e4f8ec; }
+.lp-table tr[data-acc='orange'] { --a: #f26b0f; --a-ink: #a84300; --a-wash: #fff0e0; }
+.lp-table tr[data-acc='purple'] { --a: #7a4dff; --a-ink: #4b25c4; --a-wash: #f0eaff; }
+.lp-table tr[data-acc='teal'] { --a: #0b9fb3; --a-ink: #086373; --a-wash: #dff6f9; }
+.lp-table tr[data-acc='pink'] { --a: #e0287a; --a-ink: #a1135a; --a-wash: #ffe8f2; }
+.lp-table tr[data-acc] td.lp-table__cat { color: var(--ink); font-weight: 900; box-shadow: inset 4px 0 0 var(--a); }
+.lp-table tr[data-acc] td.lp-table__fare { color: var(--a-ink); font-weight: 900; }
+.lp-table tr[data-acc] .btn--primary { border: 0; border-radius: var(--r-pill); background: var(--brand-gradient); box-shadow: 0 8px 14px -6px rgb(22 101 232 / .6); font-weight: 800; }
+@media (min-width: 721px) {
+  .lp-table tr[data-acc]:hover td { background: var(--a-wash); }
+}
+@media (max-width: 720px) {
+  .lp-table tr[data-acc] { position: relative; overflow: hidden; border: 2px solid color-mix(in srgb, var(--a) 16%, #fff); border-radius: 22px; background: linear-gradient(115deg, var(--a-wash) 0%, #fff 55%, var(--a-wash) 100%); box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--a) 45%, transparent); }
+  .lp-table tr[data-acc]::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(150px 56px at 100% 118%, color-mix(in srgb, var(--a) 18%, transparent) 98%, transparent 100%), radial-gradient(64px 64px at 94% 10%, color-mix(in srgb, var(--a) 11%, transparent) 98%, transparent 100%); }
+  .lp-table tr[data-acc] td { position: relative; }
+  .lp-table tr[data-acc] td.lp-table__cat { box-shadow: none; font-size: 1.1rem; }
+  .lp-table tr[data-acc] td.lp-table__fare { align-self: center; padding: 6px 14px; border-radius: 14px; background: #fff; font-size: 1.25rem; box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--a) 40%, transparent), 0 0 0 1px color-mix(in srgb, var(--a) 16%, transparent); }
+  .lp-table tr[data-acc] td:not(.lp-table__cat):not(.lp-table__fare):not(.lp-table__end) { border-top-color: color-mix(in srgb, var(--a) 28%, #c3d2ee); }
+  .lp-table tr[data-acc] td.lp-table__end .btn { min-height: 46px; font-size: 1rem; }
+}

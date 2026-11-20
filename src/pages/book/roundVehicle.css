@@ -1,125 +1,164 @@
-/* Round-trip "Choose vehicle & package" — People Taxi: rounded, cobalt, soft blue shadows.
-   Layout: vehicle tabs → one vehicle banner → package cards (1 column on a phone, 2–3 on a wide screen) → rule note → fine print. */
+/* Round-trip "Choose vehicle & package" — People Taxi: a blue banner, vehicle tiles, then one colourful card per package.
+   Every package card takes its own accent (blue · green · orange · purple · teal · pink) through --a / --a-ink / --a-wash; the card, the icon tile,
+   the hours in the name, the selected ring and the scenery all follow it. */
 .rvp { display: grid; gap: 14px; margin: 0 0 20px; }
-.rvp__title { margin: 0; font-size: 1.2rem; font-weight: 800; letter-spacing: -0.01em; color: var(--ink); }
 
-/* ── Vehicle tabs: one row that scrolls sideways on a narrow screen ───────────────────────── */
-.rvp__tabs { display: flex; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 2px 2px 6px; margin: 0 -2px; scrollbar-width: none; -ms-overflow-style: none; }
+/* ── Vehicle tiles: one row, scrolls sideways when there are more than fit ─────────────────── */
+.rvp__tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(84px, 1fr); gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 6px 3px 8px; margin: 0 -3px; scrollbar-width: none; -ms-overflow-style: none; }
 .rvp__tabs::-webkit-scrollbar { display: none; width: 0; height: 0; }
-.rvp__tabs > .rvp__tab { flex: 1 0 92px; scroll-snap-align: start; }
-.rvp__tab { display: grid; justify-items: center; align-content: start; gap: 3px; padding: 10px 6px 9px; cursor: pointer; border: 1.5px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--text); font: inherit; font-weight: 700; font-size: .88rem; transition: border-color var(--dur), background-color var(--dur), box-shadow var(--dur), transform var(--dur); }
-.rvp__tab img { width: 76px; height: 44px; object-fit: contain; }
-.rvp__tab:hover:not(:disabled) { border-color: var(--brand-line); box-shadow: var(--shadow-1); }
+.rvp__tab { scroll-snap-align: start; display: grid; justify-items: center; align-content: start; gap: 4px; padding: 10px 4px 9px; cursor: pointer; border: 2px solid transparent; border-radius: 18px; background: var(--surface); color: var(--ink); font: inherit; box-shadow: 0 3px 12px -4px rgb(22 70 160 / .22); transition: border-color var(--dur), box-shadow var(--dur), transform var(--dur); }
+.rvp__tab img { width: 100%; max-width: 88px; height: 46px; object-fit: contain; }
+.rvp__tabname { font-size: .9rem; font-weight: 800; line-height: 1.2; text-align: center; }
+.rvp__from { padding: 3px 9px; border-radius: var(--r-pill); background: var(--brand-soft); color: var(--brand-ink); font-size: .7rem; font-weight: 800; white-space: nowrap; }
+.rvp__tab:hover:not(:disabled) { box-shadow: 0 8px 18px -6px rgb(22 70 160 / .35); }
 .rvp__tab:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.rvp__tab.is-on { border-color: var(--brand); background: var(--brand-soft); color: var(--brand-ink); box-shadow: 0 0 0 1px var(--brand) inset, var(--shadow-1); }
+.rvp__tab.is-on { border-color: var(--brand); background: linear-gradient(180deg, #f4f8ff 0%, #fff 100%); box-shadow: 0 0 0 3px rgb(22 101 232 / .12), 0 10px 20px -8px rgb(22 101 232 / .5); }
+.rvp__tab.is-on .rvp__from { background: var(--brand-gradient); color: #fff; }
 .rvp__tab:disabled { opacity: .45; cursor: not-allowed; }
-.rvp__tab small { color: var(--muted); font-size: .7rem; font-weight: 700; white-space: nowrap; }
-.rvp__tab.is-on small { color: var(--brand); }
-.rvp__tab-skel { height: 76px; border-radius: var(--r-sm); }
+.rvp__tab-skel { height: 96px; border-radius: 18px; }
 
-/* ── The chosen vehicle, shown once ───────────────────────────────────────────────────────── */
-.rvp__vehicle { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px 14px 18px; overflow: hidden; border: 1px solid var(--brand-tint); border-radius: var(--r-md); background: linear-gradient(110deg, var(--brand-soft) 0%, #fff 62%); }
-.rvp__vtext { display: grid; gap: 2px; min-width: 0; }
-.rvp__vclass { color: var(--brand); font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.rvp__vtext strong { color: var(--ink); font-size: 1.1rem; font-weight: 800; line-height: 1.25; }
-.rvp__vmeta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 3px; color: var(--muted); font-size: .82rem; font-weight: 600; }
-.rvp__vmeta > span { display: inline-flex; align-items: center; gap: 5px; }
-.rvp__vmeta svg { color: var(--brand); }
-.rvp__vehicle img { flex: none; width: 128px; height: 70px; object-fit: contain; filter: drop-shadow(0 8px 10px rgb(22 70 160 / .18)); }
+/* ── The chosen vehicle: one slim line; tapping it opens the fare details ──────────────────── */
+.rvp__vrow { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 48px; padding: 8px 14px; cursor: pointer; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); color: var(--ink); font: inherit; text-align: left; box-shadow: var(--shadow-1); transition: border-color var(--dur), box-shadow var(--dur); }
+.rvp__vrow:hover { border-color: var(--brand-line); box-shadow: var(--shadow-2); }
+.rvp__vrow:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.rvp__vrow > .icon:first-child { flex: none; color: var(--brand); }
+.rvp__vrow > .icon:last-child { flex: none; margin-left: auto; color: var(--muted); }
+.rvp__vline { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 0; min-width: 0; font-size: .86rem; font-weight: 600; color: var(--muted); }
+.rvp__vline b { color: var(--ink); font-weight: 800; }
+.rvp__vline > span { display: inline-flex; align-items: center; }
+.rvp__vline > b::after, .rvp__vline > span:not(:last-child)::after { content: ''; display: inline-block; width: 3px; height: 3px; margin: 0 8px; border-radius: 50%; background: var(--faint); }
 
 .rvp__na { margin: 0; padding: 10px 12px; border-radius: var(--r-xs); background: var(--danger-soft); color: var(--danger-ink); font-size: .85rem; font-weight: 600; }
 .rvp__wait { display: grid; gap: 10px; }
-.rvp__skel { display: block; height: 118px; border-radius: var(--r-md); }
+.rvp__skel { display: block; height: 138px; border-radius: 20px; }
 
 /* "No same-day package fits…" and the fine print: both were unstyled plain text before. */
 .pkgs__auto { display: flex; align-items: flex-start; gap: 8px; margin: 0; padding: 10px 12px; border: 1px solid var(--amber-line); border-radius: var(--r-xs); background: var(--amber-soft); color: var(--amber); font-size: .85rem; font-weight: 600; line-height: 1.45; }
 .pkgs__auto svg { flex: none; margin-top: 2px; }
 
-/* ── Package cards ────────────────────────────────────────────────────────────────────────── */
-/* The top padding makes room for the tag that sits on the card's top edge. */
-.rvp__list { display: grid; gap: 18px; padding-top: 10px; }
-.rvp__pkg { position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding: 16px 16px 14px; text-align: left; cursor: pointer; border: 1.5px solid var(--line); border-radius: var(--r-md); background: var(--surface); color: var(--text); font: inherit; box-shadow: var(--shadow-1); transition: border-color var(--dur), background-color var(--dur), box-shadow var(--dur), transform var(--dur); }
-.rvp__pkg.has-tag { padding-top: 20px; }
-.rvp__pkg:hover { border-color: var(--brand-line); box-shadow: var(--shadow-2); }
-.rvp__pkg:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.rvp__pkg.is-on { border-color: var(--brand); background: linear-gradient(180deg, var(--brand-soft) 0%, #fff 100%); box-shadow: 0 0 0 1px var(--brand) inset, var(--shadow-2); }
+/* ── Package cards ─────────────────────────────────────────────────────────────────────────── */
+.rvp__list { display: grid; gap: 16px; padding-top: 8px; }
+.rvp__pkg { --a: #1665e8; --a-ink: #0b3a94; --a-wash: #e9f2ff; --a-grad: linear-gradient(135deg, #4a9bff 0%, #1451d6 100%); }
+.rvp__pkg[data-acc='green'] { --a: #12a150; --a-ink: #0b6b34; --a-wash: #e4f8ec; --a-grad: linear-gradient(135deg, #3dd27f 0%, #0f9a4a 100%); }
+.rvp__pkg[data-acc='orange'] { --a: #f26b0f; --a-ink: #a84300; --a-wash: #fff0e0; --a-grad: linear-gradient(135deg, #ffa24d 0%, #ef6a0c 100%); }
+.rvp__pkg[data-acc='purple'] { --a: #7a4dff; --a-ink: #4b25c4; --a-wash: #f0eaff; --a-grad: linear-gradient(135deg, #a07bff 0%, #6a3de8 100%); }
+.rvp__pkg[data-acc='teal'] { --a: #0b9fb3; --a-ink: #086373; --a-wash: #dff6f9; --a-grad: linear-gradient(135deg, #3fd2e0 0%, #0a8fa6 100%); }
+.rvp__pkg[data-acc='pink'] { --a: #e0287a; --a-ink: #a1135a; --a-wash: #ffe8f2; --a-grad: linear-gradient(135deg, #ff6aa8 0%, #d41f70 100%); }
+
+.rvp__pkg {
+  position: relative; display: flex; flex-direction: column; gap: 12px; width: 100%; padding: 16px 14px 14px; overflow: visible; text-align: left; cursor: pointer; isolation: isolate;
+  border: 2px solid color-mix(in srgb, var(--a) 14%, #fff); border-radius: 22px; color: var(--text); font: inherit;
+  background: linear-gradient(115deg, var(--a-wash) 0%, #fff 52%, var(--a-wash) 100%);
+  box-shadow: 0 6px 16px -8px color-mix(in srgb, var(--a) 40%, transparent);
+  transition: border-color var(--dur), box-shadow var(--dur), transform var(--dur);
+}
+.rvp__pkg.has-tag { padding-top: 22px; }
+/* scenery: two soft hills and a sun in the card's accent, behind the car */
+.rvp__pkg::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background:
+    radial-gradient(70px 70px at 92% 16%, color-mix(in srgb, var(--a) 12%, transparent) 98%, transparent 100%),
+    radial-gradient(170px 62px at 98% 112%, color-mix(in srgb, var(--a) 20%, transparent) 98%, transparent 100%),
+    radial-gradient(150px 52px at 62% 118%, color-mix(in srgb, var(--a) 12%, transparent) 98%, transparent 100%);
+}
+.rvp__pkg:hover { box-shadow: 0 12px 24px -10px color-mix(in srgb, var(--a) 55%, transparent); }
+.rvp__pkg:focus-visible { outline: 3px solid color-mix(in srgb, var(--a) 55%, transparent); outline-offset: 2px; }
+.rvp__pkg.is-on { border-color: var(--a); box-shadow: 0 0 0 4px color-mix(in srgb, var(--a) 14%, transparent), 0 14px 28px -10px color-mix(in srgb, var(--a) 60%, transparent); }
 .rvp__pkg--static { cursor: default; }
 
-.rvp__badge { position: absolute; top: -11px; left: 14px; max-width: calc(100% - 28px); padding: 3px 10px; overflow: hidden; border-radius: var(--r-pill); font-size: .74rem; font-weight: 800; line-height: 1.5; white-space: nowrap; text-overflow: ellipsis; box-shadow: 0 2px 6px rgb(22 70 160 / .12); }
-.rvp__badge--save { background: var(--green-soft); color: var(--green); border: 1px solid var(--green-line); }
-.rvp__badge--std { background: var(--sunken); color: var(--ink-3); border: 1px solid var(--line-strong); }
-.rvp__badge--early { background: var(--sun-soft); color: var(--sun-ink); border: 1px solid var(--sun-line); }
-.rvp__badge--rec { background: var(--brand-soft); color: var(--brand-ink); border: 1px solid var(--brand-line); }
+.rvp__badge { position: absolute; top: -11px; left: 16px; z-index: 2; display: inline-flex; align-items: center; gap: 4px; max-width: calc(100% - 32px); padding: 3px 11px 3px 9px; overflow: hidden; border-radius: var(--r-pill); font-size: .72rem; font-weight: 800; line-height: 1.5; white-space: nowrap; text-overflow: ellipsis; color: #fff; box-shadow: 0 4px 10px -2px rgb(12 27 61 / .3); }
+.rvp__badge--best { background: linear-gradient(135deg, #20c46b, #0e8f46); }
+.rvp__badge--early { background: linear-gradient(135deg, #ffb020, #f08a00); color: #4a2d00; }
+.rvp__badge--std { background: linear-gradient(135deg, #5b6b8f, #34436a); }
 
-.rvp__head { display: flex; align-items: center; gap: 10px; }
-.rvp__tick { flex: none; display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1.5px solid var(--faint); border-radius: 50%; background: #fff; color: #fff; transition: border-color var(--dur), background-color var(--dur), transform var(--dur); }
-.is-on > .rvp__head .rvp__tick { border-color: var(--brand); background: var(--brand); transform: scale(1.05); }
-.rvp__name { flex: 1; min-width: 0; color: var(--ink); font-size: 1.05rem; font-weight: 800; line-height: 1.25; }
-.rvp__pkg--static .rvp__name { padding-left: 2px; }
-.rvp__price { flex: none; color: var(--ink); font-size: 1.4rem; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.is-on > .rvp__head .rvp__price { color: var(--brand-ink); }
+.rvp__top { display: flex; align-items: center; gap: 11px; }
+.rvp__icon { flex: none; display: grid; place-items: center; width: 54px; height: 54px; border-radius: 16px; background: var(--a-grad); color: #fff; box-shadow: 0 8px 16px -6px color-mix(in srgb, var(--a) 70%, transparent), inset 0 1px 0 rgb(255 255 255 / .35); }
+.rvp__ttl { flex: 1; display: grid; gap: 2px; min-width: 0; }
+.rvp__name { color: var(--ink); font-size: 1.08rem; font-weight: 900; letter-spacing: -0.01em; line-height: 1.2; }
+.rvp__name em { color: var(--a); font-style: normal; }
+.rvp__tag { color: var(--muted); font-size: .8rem; font-weight: 600; line-height: 1.35; }
+.rvp__price { flex: none; padding: 6px 13px; border-radius: 14px; background: #fff; color: var(--ink); font-size: 1.3rem; font-weight: 900; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--a) 40%, transparent), 0 0 0 1px color-mix(in srgb, var(--a) 16%, transparent); }
+.is-on > .rvp__top .rvp__price { color: var(--a-ink); }
+.rvp__tick { flex: none; display: inline-grid; place-items: center; width: 26px; height: 26px; border: 2px solid color-mix(in srgb, var(--a) 30%, #c3d2ee); border-radius: 50%; background: #fff; color: #fff; transition: border-color var(--dur), background-color var(--dur), transform var(--dur); }
+.is-on > .rvp__top .rvp__tick { border-color: var(--a); background: var(--a); transform: scale(1.06); box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--a) 70%, transparent); }
+.rvp__pkg--static .rvp__top { padding-right: 2px; }
 
-.rvp__chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.rvp__chip { padding: 4px 10px; border-radius: 14px; background: var(--inset); color: var(--text); font-size: .8rem; font-weight: 600; line-height: 1.4; }
-.is-on > .rvp__chips .rvp__chip { background: #fff; box-shadow: 0 0 0 1px var(--brand-tint) inset; }
+/* what the package includes: four little tiles, with the car beside them */
+.rvp__body { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.rvp__stats { flex: 1; min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.rvp__stat { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 7px 9px; border-radius: 12px; background: rgb(255 255 255 / .86); box-shadow: 0 0 0 1px color-mix(in srgb, var(--a) 14%, transparent); }
+.rvp__stat > .icon { flex: none; color: var(--a); }
+.rvp__stat > span { display: grid; min-width: 0; line-height: 1.2; }
+.rvp__stat b { color: var(--ink); font-size: .78rem; font-weight: 800; white-space: nowrap; }
+.rvp__stat small { color: var(--muted); font-size: .72rem; font-weight: 600; white-space: nowrap; }
+.rvp__car { flex: none; align-self: flex-end; width: 112px; height: auto; max-height: 72px; margin: 0 -2px -4px 0; object-fit: contain; filter: drop-shadow(0 8px 8px rgb(12 27 61 / .25)); }
 
-.rvp__foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 12px; margin-top: auto; padding-top: 11px; border-top: 1px dashed var(--line-strong); color: var(--muted); font-size: .82rem; font-weight: 600; }
-.rvp__return { display: inline-flex; align-items: center; gap: 6px; }
-.rvp__return svg { color: var(--brand); }
-.rvp__return b { color: var(--ink); font-weight: 800; }
-
-.rvp__note { display: flex; align-items: flex-start; gap: 7px; padding: 8px 10px; border-radius: var(--r-xs); background: var(--amber-soft); color: var(--amber); font-size: .8rem; font-weight: 600; line-height: 1.45; }
+.rvp__note { display: flex; align-items: flex-start; gap: 7px; padding: 8px 10px; border-radius: 12px; background: var(--amber-soft); color: var(--amber); font-size: .8rem; font-weight: 600; line-height: 1.45; }
 .rvp__note svg { flex: none; margin-top: 2px; }
 
-/* ── The package rule: a short card, one sentence per line ───────────────────────────────── */
-.rvp__rule { display: flex; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 16px; border: 1px solid var(--brand-tint); border-radius: var(--r-md); background: linear-gradient(115deg, var(--brand-soft) 0%, #fff 85%); }
-.rvp__ruleicon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; box-shadow: 0 4px 10px rgb(22 101 232 / .3); }
+/* ── "Extra km …" strip ────────────────────────────────────────────────────────────────────── */
+.rvp__infobar { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 12px; margin: 2px 0 0; padding: 10px 14px; border-radius: var(--r-pill); background: linear-gradient(100deg, #eaf2ff, #f6f9ff); color: var(--ink-3); font-size: .84rem; font-weight: 600; box-shadow: 0 0 0 1px var(--brand-tint) inset; }
+.rvp__infobar b { color: var(--brand-ink); font-weight: 900; }
+.rvp__infobar i { width: 1px; height: 16px; background: var(--brand-line); }
+.rvp__infoicon { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; background: var(--brand-gradient); color: #fff; }
+
+/* ── The package rule: a short card, one sentence per line ────────────────────────────────── */
+.rvp__rule { display: flex; align-items: flex-start; gap: 12px; margin: 0; padding: 14px 16px; border: 1px solid var(--brand-tint); border-radius: 18px; background: linear-gradient(115deg, var(--brand-soft) 0%, #fff 85%); }
+.rvp__ruleicon { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--brand-gradient); color: #fff; box-shadow: 0 4px 10px rgb(22 101 232 / .3); }
 .rvp__ruletext { display: grid; gap: 5px; min-width: 0; color: var(--ink-3); font-size: .9rem; font-weight: 600; line-height: 1.45; }
 .rvp__ruletext strong { color: var(--ink); font-size: .95rem; font-weight: 800; }
 .rvp__ruletext > span { position: relative; padding-left: 14px; }
 .rvp__ruletext > span::before { content: ''; position: absolute; left: 1px; top: .55em; width: 6px; height: 6px; border-radius: 50%; background: var(--brand-bright); }
 
 /* ── Fine print and the fare-details button ───────────────────────────────────────────────── */
-.pkgs__fine { display: grid; gap: 12px; margin: 2px 0 0; padding: 14px 16px; border: 1px dashed var(--line-strong); border-radius: var(--r-md); background: rgb(255 255 255 / .6); }
+.pkgs__fine { display: grid; gap: 12px; margin: 2px 0 0; padding: 14px 16px; border: 1px dashed var(--line-strong); border-radius: 18px; background: rgb(255 255 255 / .6); }
 .pkgs__fine ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .pkgs__fine li { display: flex; align-items: flex-start; gap: 9px; color: var(--muted); font-size: .86rem; font-weight: 600; line-height: 1.5; }
 .pkgs__fine li svg { flex: none; margin-top: 3px; color: var(--faint); }
-.rvp__details { justify-self: start; display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 0 16px; border: 1.5px solid var(--brand-line); border-radius: var(--r-pill); background: #fff; color: var(--brand-ink); font: inherit; font-size: .88rem; font-weight: 800; cursor: pointer; box-shadow: var(--shadow-1); transition: background-color var(--dur), border-color var(--dur), box-shadow var(--dur), transform var(--dur); }
-.rvp__details:hover { border-color: var(--brand); background: var(--brand-soft); box-shadow: var(--shadow-2); }
-.rvp__details:hover svg { transform: translateX(2px); }
+.rvp__details { justify-self: start; display: inline-flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 18px; border: 0; border-radius: var(--r-pill); background: var(--brand-gradient); color: #fff; font: inherit; font-size: .88rem; font-weight: 800; cursor: pointer; box-shadow: 0 8px 16px -6px rgb(22 101 232 / .6); transition: box-shadow var(--dur), transform var(--dur); }
+.rvp__details:hover { box-shadow: 0 12px 20px -6px rgb(22 101 232 / .7); }
+.rvp__details:hover svg:last-child { transform: translateX(2px); }
 .rvp__details svg { transition: transform var(--dur); }
 .rvp__details:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
-/* ── Phones ───────────────────────────────────────────────────────────────────────────────── */
+/* ── Small phones ──────────────────────────────────────────────────────────────────────────── */
 @media (max-width: 420px) {
-  .rvp__vehicle { padding: 12px 12px 12px 14px; }
-  .rvp__vehicle img { width: 104px; height: 58px; }
-  .rvp__price { font-size: 1.28rem; }
-  .rvp__tabs > .rvp__tab { flex-basis: 86px; }
+  .rvp__tabs { grid-auto-columns: minmax(78px, 1fr); gap: 6px; }
+  .rvp__pkg { padding: 15px 12px 12px; }
+  .rvp__icon { width: 48px; height: 48px; border-radius: 14px; }
+  .rvp__name { font-size: 1rem; }
+  .rvp__price { padding: 5px 10px; font-size: 1.14rem; }
+  .rvp__car { width: 96px; }
+  .rvp__stat { padding: 6px 7px; gap: 5px; }
+  .rvp__stat b { font-size: .74rem; }
+  .rvp__stat small { font-size: .68rem; }
 }
 
-/* ── Wider screens: cards sit side by side, the vehicle gets a roomier banner ──────────────── */
+/* ── Wider screens: cards sit side by side, the banner gets roomier ───────────────────────── */
 @media (min-width: 680px) {
-  .rvp__list { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px 16px; }
+  .rvp__tabs { grid-auto-columns: minmax(120px, 1fr); gap: 12px; }
+  .rvp__tab img { height: 56px; max-width: 110px; }
+  .rvp__list { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px 18px; align-items: start; }
   .rvp__pkg { padding: 18px 18px 16px; }
-  .rvp__pkg.has-tag { padding-top: 22px; }
-  .rvp__vehicle { padding: 16px 22px 16px 24px; }
-  .rvp__vehicle img { width: 160px; height: 86px; }
-  .rvp__vtext strong { font-size: 1.25rem; }
-  .rvp__title { font-size: 1.35rem; }
+  .rvp__pkg.has-tag { padding-top: 24px; }
+  .rvp__car { width: 128px; max-height: 80px; }
 }
 @media (min-width: 1000px) {
-  .rvp { gap: 16px; }
-  .rvp__tab { padding: 12px 8px 10px; }
-  .rvp__tab img { width: 90px; height: 52px; }
-  .rvp__vehicle { padding: 18px 28px 18px 28px; }
-  .rvp__vehicle img { width: 190px; height: 100px; }
-  .rvp__pkg:hover { transform: translateY(-2px); }
+  .rvp { gap: 18px; }
+  .rvp__pkg:hover { transform: translateY(-3px); }
   .rvp__pkg.is-on:hover { transform: none; }
-  .rvp__price { font-size: 1.5rem; }
+  .rvp__price { font-size: 1.4rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .rvp__tab, .rvp__pkg, .rvp__tick, .rvp__details, .rvp__details svg { transition: none; }
   .rvp__pkg:hover { transform: none; }
 }
+
+/* Vehicle tabs: equal, roomy tiles so the name and the "From" price always fit. Three show on a phone; more scroll sideways. */
+.rvp__tabs { grid-auto-columns: minmax(112px, 1fr); gap: 10px; padding: 8px 4px 10px; scroll-padding-inline: 4px; }
+@media (max-width: 560px) { .rvp__tabs { grid-auto-columns: calc((100% - 20px) / 3); } }
+.rvp__tab { min-width: 0; align-content: center; justify-items: center; gap: 7px; padding: 12px 6px 11px; }
+.rvp__tab img { width: 100%; max-width: 84px; height: 48px; }
+.rvp__tabname { max-width: 100%; overflow: hidden; font-size: .76rem; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; text-overflow: ellipsis; white-space: nowrap; }
+.rvp__from { max-width: 100%; overflow: hidden; padding: 4px 7px; font-size: .68rem; text-align: center; text-overflow: ellipsis; }

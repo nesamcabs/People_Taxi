@@ -177,8 +177,7 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
           </aside>
 
           <div className="account__groups">
-            <section className="group" aria-labelledby="g-account">
-              <h2 id="g-account" className="group__title">Account</h2>
+            <section className="group" aria-label="Account">
               <div className="card card--list">
                 <Row icon="emergency" label="Emergency contact" value={profile.emergencyContact || 'Not set'} {...(inDrawer ? { onPress: () => toggleEdit('emergency'), expanded: editing === 'emergency' } : { to: '/account/emergency' })} />
                 {inDrawer && editing === 'emergency' ? (
@@ -188,16 +187,14 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
                 ) : null}
               </div>
             </section>
-            <section className="group" aria-labelledby="g-trips">
-              <h2 id="g-trips" className="group__title">Trips &amp; payments</h2>
+            <section className="group" aria-label="Trips and payments">
               <div className="card card--list">
                 <Row icon="trip-history" label="My trips" to="/trips" />
                 <Row icon="receipt" label="Payments and refunds" to="/account/payments" />
                 <Row icon="offers" label="Offers" to="/offers" />
               </div>
             </section>
-            <section className="group" aria-labelledby="g-help">
-              <h2 id="g-help" className="group__title">Help</h2>
+            <section className="group" aria-label="Help">
               <div className="card card--list">
                 <Row icon="support" label="Help and support" to="/support" />
                 <Row icon="info" label="About People Taxi" to="/about" />

@@ -1,10 +1,12 @@
-// "Choose vehicle & package" for a Round Trip (Customer UX 9.0): vehicle class tabs (Sedan · SUV · Innova · Crysta), the chosen vehicle's
-// name, then that vehicle's packages — the first as the hero card, the others compact. The server prices every package for every
-// vehicle, so picking a vehicle or a package only changes the choice; the fare in force always comes from the server's answer.
+// "Choose vehicle & package" for a Round Trip (Customer UX 9.0): a banner, vehicle tiles (Hatchback · Sedan · SUV · …), the chosen vehicle's
+// line, then that vehicle's packages as colourful cards (icon tile, name, price, what is included, the car). The server prices every
+// package for every vehicle, so picking a vehicle or a package only changes the choice; the fare in force always comes from the server's answer.
+import type { ReactNode } from 'react';
 import type { RideCategory } from '@core/types';
 import type { ServerCategoryQuote, ServerTimePackage } from '@core/services/quoteService';
 import { formatINR } from '@core/utils/format';
 import { Icon } from '@/components/Icon';
+import { ChooseHero } from './parts';
 import './roundVehicle.css';
 import { categoryName, categoryPhoto } from '@/lib/categories';
 import { FuelPick, type FuelChoice } from '@/shared/components/CabParts';
@@ -16,6 +18,9 @@ export function vehicleTabLabel(name: string): string {
   if (/crysta/i.test(n)) return 'Crysta';
   return n.replace(/\s*(or|\/)\s*similar$/i, '').replace(/^toyota\s+/i, '') || n;
 }
+
+/** Card colours, in order: every package gets its own, so neighbouring cards never look alike. */
+export const ACCENTS = ['blue', 'green', 'orange', 'purple', 'teal', 'pink'] as const;
 
 interface Props {
   categories: RideCategory[];
@@ -37,28 +42,63 @@ interface Props {
   onFareDetails: (c: RideCategory) => void;
 }
 
+/** The picture on a package card: a short word for the kind of trip it suits. */
+const iconOf = (x: ServerTimePackage): string => {
+  if (x.kind === 'morning') return 'sunrise';
+  if (x.kind === 'next_day') return 'moon';
+  if (x.hours == null) return 'calendar-check';
+  if (x.hours <= 5) return 'zap';
+  if (x.hours < 8) return 'calendar';
+  return 'map-pin';
+};
+
+/** The one-line description under a package name. */
+const taglineOf = (x: ServerTimePackage): string => {
+  if (x.kind === 'morning') return 'Back by the next morning';
+  if (x.kind === 'next_day') {
+    if (x.dayKm && x.dayKm.length > 1) return `${x.days} calendar days · ${x.dayKm[0]} km on day 1, then ${x.dayKm[1]} km a day`;
+    return `${x.days} calendar days of travel`;
+  }
+  if (x.hours == null) return 'Complete day, complete flexibility';
+  if (x.hours <= 5) return 'A short & quick round trip';
+  if (x.hours < 8) return 'More time, more freedom';
+  if (x.hours === 8) return 'Ideal for city & nearby trips';
+  return 'Extra hours for a relaxed trip';
+};
+
+/** The package name split so the hours / days can be shown in the card's colour: "Quick Return (4 Hrs)", "5-Hour Return". */
+const nameParts = (x: ServerTimePackage): { pre: string; hl: string; post: string } => {
+  const m = /(\d+\s*-?\s*(?:hours?|hrs?|days?))/i.exec(x.label);
+  if (m && m.index !== undefined) return { pre: x.label.slice(0, m.index), hl: m[1], post: x.label.slice(m.index + m[1].length) };
+  const hl = x.kind === 'morning' ? 'Overnight' : x.kind === 'next_day' ? `${x.days} Days` : x.hours == null ? 'All Day' : `${x.hours} Hrs`;
+  return { pre: `${x.label} (`, hl, post: ')' };
+};
+
 export function RoundVehiclePackage(p: Props) {
   const { selected, packages } = p;
   const entry = selected ? p.entries.get(selected.id) : undefined;
   const standard = packages.find((x) => x.id === 'same:full') ?? packages.find((x) => x.id === 'next');
-  /** The small tag floating on a package card. The first card always carries one; the others only when they say something (a saving, the standard, an early return). */
-  const badge = (x: ServerTimePackage, first: boolean): { text: string; tone: 'save' | 'std' | 'early' | 'rec' } | null => {
+  /** The package that costs least for every km it includes: only meaningful when there is a choice. */
+  const bestValue = (() => {
+    if (packages.length < 2) return null;
+    const perKm = packages.filter((x) => x.includedKm > 0).map((x) => ({ x, r: x.fare.total / x.includedKm })).sort((a, b) => a.r - b.r);
+    return perKm.length > 1 && perKm[0].r < perKm[1].r ? perKm[0].x : null;
+  })();
+  /** The small tag on a package card's top edge: Best Value (honestly: the lowest price per included km), the early-return option, or the standard package. */
+  const badge = (x: ServerTimePackage): { text: string; tone: 'best' | 'std' | 'early'; icon: string } | null => {
+    if (x === bestValue) return { text: 'Best Value', tone: 'best', icon: 'star' };
+    if (x.kind === 'morning') return { text: 'Early Return', tone: 'early', icon: 'sunrise' };
+    if (x.id === standard?.id) return { text: 'Standard', tone: 'std', icon: 'check' };
+    return null;
+  };
+  const savingText = (x: ServerTimePackage) => {
     const save = standard && standard !== x ? standard.fare.total - x.fare.total : 0;
-    if (save > 0) return { text: `${formatINR(save)} less than ${standard!.label}`, tone: 'save' };
-    if (x.kind === 'morning') return { text: 'Early-return option', tone: 'early' };
-    if (x.id === standard?.id) return { text: 'Standard package', tone: 'std' };
-    return first ? { text: 'Recommended package', tone: 'rec' } : null;
+    return save > 0 ? `${formatINR(save)} less than ${standard!.label}` : undefined;
   };
-  /** What the package includes, as short chips: distance, time allowed, driver bata. */
-  const chips = (x: ServerTimePackage): string[] => {
-    const split = x.dayKm && x.dayKm.length > 1 ? ` (First day: ${x.dayKm[0]} km + ${x.dayKm.length === 2 ? 'Next day' : 'Each next day'}: ${x.dayKm[1]} km)` : '';
-    const when = x.kind === 'morning' ? 'Overnight' : x.hours ? `Up to ${x.hours} hours` : x.kind === 'next_day' ? `${x.days} calendar days${split}` : 'Full day';
-    return [`${x.includedKm} km included`, when, `Driver bata${x.days > 1 ? ` for ${x.days === 2 ? 'both' : 'all'} days` : ''} included`];
-  };
-  const endText = (x: ServerTimePackage) => {
+  const endParts = (x: ServerTimePackage) => {
     const end = new Date(x.endAt);
     const same = p.scheduledAt ? packageDay(end) === packageDay(p.scheduledAt) : true;
-    return `Return by ${same ? '' : `${packageDay(end)}, `}${packageClock(end)}`;
+    return same ? packageClock(end) : `${packageDay(end)}, ${packageClock(end)}`;
   };
   const upgradeNote = (x: ServerTimePackage) =>
     x.upgrade ? (
@@ -68,7 +108,7 @@ export function RoundVehiclePackage(p: Props) {
       </span>
     ) : null;
   const photo = selected ? categoryPhoto(selected) : '';
-  /** The lowest package fare a vehicle has for this trip (what "From ₹…" on its tab shows). */
+  /** The lowest package fare a vehicle has for this trip (what "From ₹…" on its tile shows). */
   const from = (c: RideCategory): number | null => {
     const e = p.entries.get(c.id);
     if (!e?.ok) return null;
@@ -77,20 +117,29 @@ export function RoundVehiclePackage(p: Props) {
   };
   const reason = selected ? p.unavailable.get(selected.id) : '';
   const fare = selected && entry?.ok ? entry.fare : undefined;
+  const extraKm = p.selectedPackage?.extraKmRate ?? packages[0]?.extraKmRate ?? entry?.extraKmRate;
+
+  const stat = (icon: string, top: ReactNode, bottom: ReactNode) => (
+    <span className="rvp__stat">
+      <Icon name={icon} size={16} />
+      <span><b>{top}</b><small>{bottom}</small></span>
+    </span>
+  );
 
   return (
     <section className="rvp" aria-labelledby="rvp-title">
-      <h2 id="rvp-title" className="rvp__title">Choose vehicle &amp; package</h2>
+      <ChooseHero id="rvp-title" title={['Choose ', 'Vehicle', ' & Package']} sub="Round Trip · Flexible Hours · Transparent Kms" photo={photo} />
 
       <div className="rvp__tabs" role="radiogroup" aria-label="Vehicle">
         {p.categories.map((c) => {
           const on = selected?.id === c.id;
           const off = p.unavailable.has(c.id);
+          const f = from(c);
           return (
             <button key={c.id} type="button" role="radio" aria-checked={on} disabled={off} className={`rvp__tab ${on ? 'is-on' : ''}`} onClick={() => p.onPickVehicle(c)} title={off ? p.unavailable.get(c.id) : undefined}>
               <img src={categoryPhoto(c)} alt="" loading="lazy" decoding="async" />
-              <span>{vehicleTabLabel(c.name)}</span>
-              {from(c) ? <small>From {formatINR(from(c)!)}</small> : null}
+              <span className="rvp__tabname">{vehicleTabLabel(c.name)}</span>
+              {f ? <small className="rvp__from">From {formatINR(f)}</small> : null}
             </button>
           );
         })}
@@ -98,17 +147,16 @@ export function RoundVehiclePackage(p: Props) {
       </div>
 
       {selected ? (
-        <div className="rvp__vehicle" aria-live="polite">
-          <div className="rvp__vtext">
-            <span className="rvp__vclass">{vehicleTabLabel(selected.name)}</span>
-            <strong>{categoryName(selected)}</strong>
-            <span className="rvp__vmeta">
-              <span><Icon name="user" size={14} /> {selected.seats} seats</span>
-              <span><Icon name="snowflake" size={14} /> AC</span>
-            </span>
-          </div>
-          {photo ? <img src={photo} alt="" decoding="async" /> : null}
-        </div>
+        <button type="button" className="rvp__vrow" aria-live="polite" onClick={() => p.onFareDetails(selected)} aria-label={`${vehicleTabLabel(selected.name)}, ${categoryName(selected)}. Open fare details`}>
+          <Icon name="car" size={18} />
+          <span className="rvp__vline">
+            <b>{vehicleTabLabel(selected.name)}</b>
+            <span>{categoryName(selected)}</span>
+            <span>{selected.seats} seats</span>
+            <span>AC</span>
+          </span>
+          <Icon name="chevron-right" size={18} />
+        </button>
       ) : null}
 
       {p.autoDays && packages[0] ? (
@@ -130,21 +178,28 @@ export function RoundVehiclePackage(p: Props) {
         <div className="rvp__list" role="radiogroup" aria-label="Round-trip packages">
           {packages.map((x, i) => {
             const on = x.id === p.selectedPackage?.id;
-            const tag = badge(x, i === 0);
+            const tag = badge(x);
+            const nm = nameParts(x);
             return (
-              <button key={x.id} type="button" role="radio" aria-checked={on} className={`rvp__pkg ${on ? 'is-on' : ''} ${tag ? 'has-tag' : ''}`} onClick={() => p.onPickPackage(x.id)}>
-                {tag ? <span className={`rvp__badge rvp__badge--${tag.tone}`}>{tag.text}</span> : null}
-                <span className="rvp__head">
-                  <span className="rvp__tick" aria-hidden="true">{on ? <Icon name="check" size={13} /> : null}</span>
-                  <strong className="rvp__name">{x.label}</strong>
+              <button key={x.id} type="button" role="radio" aria-checked={on} data-acc={ACCENTS[i % ACCENTS.length]} title={savingText(x)} className={`rvp__pkg ${on ? 'is-on' : ''} ${tag ? 'has-tag' : ''}`} onClick={() => p.onPickPackage(x.id)}>
+                {tag ? <span className={`rvp__badge rvp__badge--${tag.tone}`}><Icon name={tag.icon} size={11} /> {tag.text}</span> : null}
+                <span className="rvp__top">
+                  <span className="rvp__icon" aria-hidden="true"><Icon name={iconOf(x)} size={26} /></span>
+                  <span className="rvp__ttl">
+                    <strong className="rvp__name">{nm.pre}<em>{nm.hl}</em>{nm.post}</strong>
+                    <small className="rvp__tag">{taglineOf(x)}</small>
+                  </span>
                   <b className="rvp__price">{formatINR(x.fare.total)}</b>
+                  <span className="rvp__tick" aria-hidden="true">{on ? <Icon name="check" size={14} /> : null}</span>
                 </span>
-                <span className="rvp__chips">
-                  {chips(x).map((c) => <span key={c} className="rvp__chip">{c}</span>)}
-                </span>
-                <span className="rvp__foot">
-                  <span className="rvp__return"><Icon name="clock" size={14} /> <b>{endText(x)}</b></span>
-                  <span className="rvp__extra">Extra {formatINR(x.extraKmRate)}/km</span>
+                <span className="rvp__body">
+                  <span className="rvp__stats">
+                    {stat('route', `${x.includedKm} km`, 'included')}
+                    {stat('steering', 'Driver bata', x.days > 1 ? (x.days === 2 ? 'for both days' : 'for all days') : 'included')}
+                    {stat('clock', 'Return by', endParts(x))}
+                    {stat('coins', 'Extra', `${formatINR(x.extraKmRate)}/km`)}
+                  </span>
+                  {photo ? <img className="rvp__car" src={photo} alt="" loading="lazy" decoding="async" /> : null}
                 </span>
                 {on ? upgradeNote(x) : null}
               </button>
@@ -152,17 +207,33 @@ export function RoundVehiclePackage(p: Props) {
           })}
         </div>
       ) : fare && selected ? (
-        <div className="rvp__pkg rvp__pkg--static is-on" role="status">
-          <span className="rvp__head">
-            <strong className="rvp__name">Round Trip{entry?.days ? ` · ${entry.days} ${entry.days === 1 ? 'day' : 'days'}` : ''}</strong>
+        <div className="rvp__pkg rvp__pkg--static is-on" data-acc="blue" role="status">
+          <span className="rvp__top">
+            <span className="rvp__icon" aria-hidden="true"><Icon name="calendar-check" size={26} /></span>
+            <span className="rvp__ttl">
+              <strong className="rvp__name">Round Trip{entry?.days ? <> · <em>{entry.days} {entry.days === 1 ? 'Day' : 'Days'}</em></> : null}</strong>
+              <small className="rvp__tag">Fare confirmed by quote</small>
+            </span>
             <b className="rvp__price">{formatINR(fare.total)}</b>
           </span>
-          <span className="rvp__chips">
-            <span className="rvp__chip">{entry?.includedKm ? `${entry.includedKm} km included` : 'Fare confirmed by quote'}</span>
-            <span className="rvp__chip">Driver bata included</span>
+          <span className="rvp__body">
+            <span className="rvp__stats">
+              {stat('route', entry?.includedKm ? `${entry.includedKm} km` : 'Distance', entry?.includedKm ? 'included' : 'per quote')}
+              {stat('steering', 'Driver bata', 'included')}
+              {entry?.extraKmRate ? stat('coins', 'Extra', `${formatINR(entry.extraKmRate)}/km`) : null}
+            </span>
+            {photo ? <img className="rvp__car" src={photo} alt="" loading="lazy" decoding="async" /> : null}
           </span>
-          {entry?.extraKmRate ? <span className="rvp__foot"><span className="rvp__extra">Extra {formatINR(entry.extraKmRate)}/km</span></span> : null}
         </div>
+      ) : null}
+
+      {packages.length && extraKm ? (
+        <p className="rvp__infobar">
+          <span className="rvp__infoicon" aria-hidden="true"><Icon name="info" size={15} /></span>
+          <span>Extra km: <b>{formatINR(extraKm)}/km</b></span>
+          <i aria-hidden="true" />
+          <span>Return time as per package duration</span>
+        </p>
       ) : null}
 
       {packages.length ? (
@@ -184,7 +255,7 @@ export function RoundVehiclePackage(p: Props) {
         </ul>
         {selected ? (
           <button type="button" className="rvp__details" onClick={() => p.onFareDetails(selected)}>
-            Fare details &amp; exclusions <Icon name="arrow-right" size={14} />
+            <Icon name="receipt" size={16} /> Fare details &amp; exclusions <Icon name="arrow-right" size={14} />
           </button>
         ) : null}
       </div>

@@ -12,13 +12,21 @@ import { useOnline } from '@/lib/hooks';
 import { categoryGroup, categoryName, categoryPhoto, type CategoryGroup } from '@/lib/categories';
 import { tripTypeLabel } from '@/lib/services';
 import { CabIcon, FuelPick, type FuelChoice } from '@/shared/components/CabParts';
-import { FareDialog, FlowBar, PromoControl } from './parts';
-import { RoundVehiclePackage } from './RoundVehiclePackage';
+import { ChooseHero, FareDialog, FlowBar, PromoControl } from './parts';
+import { ACCENTS, RoundVehiclePackage, vehicleTabLabel } from './RoundVehiclePackage';
 import { EditTripDialog } from './EditTripDialog';
 import './tripSummary.css';
+import './choosePage.css';
 import { packageClock, packageDay } from '@core/utils/timePackages';
 
 const TOO_FAR_KM = 1500;
+/** The line under the banner: what this kind of trip gives the customer. */
+const heroLine = (tripType: string, multicity?: boolean): string =>
+  multicity ? 'Multicity · One driver · Every stop planned'
+  : tripType === 'Airport Taxi' ? 'Airport Taxi · Fixed fares · On-time pickup'
+  : tripType === 'Local Rental' ? 'Local Rental · Hourly packages · Driver included'
+  : tripType === 'One Way' ? 'One Way · Pay for one side only · Upfront fares'
+  : `${tripType} · Upfront fares · No hidden charges`;
 type Sort = 'recommended' | 'low' | 'high';
 
 export function ChooseStep() {
@@ -85,6 +93,9 @@ export function ChooseStep() {
     const f = q.quotes.get(c.id);
     return f ? breakupFromFare(f) : null;
   };
+
+  const priced = shown.map((c) => (fuelOf(c) === 'cng' ? cngOf(c)?.fare : q.quotes.get(c.id))?.taxableAmount).filter((n): n is number => typeof n === 'number' && n > 0);
+  const lowestFare = priced.length > 1 && new Set(priced).size > 1 ? Math.min(...priced) : -1;
 
   const handleNext = () => {
     if (canContinue) navigate('/book/confirm');
@@ -214,12 +225,20 @@ export function ChooseStep() {
               />
             ) : null}
 
-            {roundPick ? null : <div className="cabs" role="radiogroup" aria-label="Available cabs">
+            {roundPick ? null : (
+              <ChooseHero
+                title={['Choose ', 'Your Vehicle', '']}
+                sub={heroLine(tripType, draft.multicity)}
+                photo={selected ? categoryPhoto(selected) : shown[0] ? categoryPhoto(shown[0]) : ''}
+              />
+            )}
+
+            {roundPick ? null : <div className="fcabs" role="radiogroup" aria-label="Available cabs">
               {categoryStatus === 'loading' && categories.length === 0 ? (
                 <>
-                  <div className="skeleton cab-skel" />
-                  <div className="skeleton cab-skel" />
-                  <div className="skeleton cab-skel" />
+                  <div className="skeleton fcab-skel" />
+                  <div className="skeleton fcab-skel" />
+                  <div className="skeleton fcab-skel" />
                 </>
               ) : null}
 
@@ -231,76 +250,77 @@ export function ChooseStep() {
                 const disabled = unavailable || tooFar;
                 const photo = categoryPhoto(c);
                 const name = categoryName(c);
-                const b = breakupFor(c);
                 const entry = q.entries.get(c.id);
                 const strikeTotal = (cngAlt ? cngAlt.strikeTotal : entry?.strikeTotal) ?? 0;
                 const strike = fare && strikeTotal > 0 && fare.total > 0 ? Math.round((fare.taxableAmount * strikeTotal) / fare.total) : 0;
+                const cheapest = !!fare && fare.taxableAmount === lowestFare;
 
                 return (
                   <div
                     key={c.id}
-                    className={`cab ${isSelected ? 'is-selected' : ''} ${disabled ? 'is-disabled' : ''}`}
+                    className={`fcab ${isSelected ? 'is-on' : ''} ${disabled ? 'is-disabled' : ''}`}
+                    data-acc={ACCENTS[index % ACCENTS.length]}
                     onClick={() => !disabled && chooseCategory(c)}
                     role="radio"
                     aria-checked={isSelected}
+                    aria-disabled={disabled || undefined}
                     tabIndex={disabled ? -1 : 0}
                     onKeyDown={(e) => {
-                      if ((e.key === ' ' || e.key === 'Enter') && !disabled) {
+                      if ((e.key === ' ' || e.key === 'Enter') && !disabled && e.target === e.currentTarget) {
                         e.preventDefault();
                         chooseCategory(c);
                       }
                     }}
                   >
-                    <span className="cab__tick" aria-hidden="true">
-                      {isSelected ? <Icon name="check" size={13} /> : null}
-                    </span>
-
-                    <div className="cab__photo">
-                      <img src={photo} alt={c.name} loading={index < 4 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 2 ? 'high' : 'auto'} />
+                    {cheapest ? <span className="fcab__badge"><Icon name="star" size={11} /> Lowest fare</span> : null}
+                    <div className="fcab__top">
+                      <span className="fcab__photo">
+                        <img src={photo} alt={c.name} loading={index < 4 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 2 ? 'high' : 'auto'} />
+                      </span>
+                      <span className="fcab__ttl">
+                        <strong>{c.iconUrl ? <img className="fcab__icon" src={c.iconUrl} alt="" width={22} height={22} loading="lazy" /> : null}{name}</strong>
+                        <small>{vehicleTabLabel(c.name)}</small>
+                      </span>
+                      <span className="fcab__tick" aria-hidden="true">{isSelected ? <Icon name="check" size={14} /> : null}</span>
                     </div>
 
-                    <div className="cab__info">
-                      <div className="cab__header">
-                        <h3 className="cab__name">{c.iconUrl ? <img className="cab__category-icon" src={c.iconUrl} alt="" width={24} height={24} loading="lazy" /> : null}{name}</h3>
-                        <ul className="cabx-facts">
-                          <li><CabIcon kind="seat" size={20} /> {c.seats} seats</li>
-                          <li><CabIcon kind="ac" size={20} /> AC</li>
-                          <li><CabIcon kind="bag" size={20} /> {((c as any).luggage ?? (c.seats >= 6 ? 4 : 2))} bags</li>
-                        </ul>
+                    <ul className="fcab__facts">
+                      <li><Icon name="seats" size={16} /> <span><b>{c.seats}</b> seats</span></li>
+                      <li><Icon name="snowflake" size={16} /> <span><b>AC</b> cab</span></li>
+                      <li><Icon name="luggage" size={16} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
+                    </ul>
+
+                    {cngOf(c) ? <FuelPick name={`fuel-${c.id}`} value={fuelOf(c)} onChange={(f) => !disabled && chooseFuel(c, f)} /> : null}
+
+                    <div className="fcab__foot">
+                      <div className="fcab__foot-price">
+                          <span className="fcab__price">
+                            {fare ? (
+                              <>
+                                {strike > 0 ? <s>{formatINR(strike)}</s> : null}
+                                <b>{formatINR(fare.taxableAmount)}</b>
+                                {fare.gst > 0 ? <small>+ {formatINR(fare.gst)} GST</small> : null}
+                              </>
+                            ) : unavailable ? (
+                              <span className="fcab__na">{q.unavailable.get(c.id) || 'Unavailable for this route'}</span>
+                            ) : (
+                              <span className="fcab__price-skel skeleton" />
+                            )}
+                          </span>
+                        {fare && fare.discount > 0 ? <span className="fcab__saving"><Icon name="tag" size={13} /> Save {formatINR(fare.discount)}</span> : null}
                       </div>
-
-                      {cngOf(c) ? <FuelPick name={`fuel-${c.id}`} value={fuelOf(c)} onChange={(f) => !disabled && chooseFuel(c, f)} /> : null}
-
                       {fare ? (
                         <button
                           type="button"
-                          className="cab__breakup-btn"
+                          className="fcab__details"
                           onClick={(e) => {
                             e.stopPropagation();
                             setFareFor(c);
                           }}
                         >
-                          <Icon name="info" size={12} /> Fare details
+                          <Icon name="receipt" size={14} /> Fare details
                         </button>
                       ) : null}
-
-                    </div>
-
-                    <div className="cab__price">
-                      {fare ? (
-                        <>
-                          {strike > 0 ? <s className="cab__strike">{formatINR(strike)}</s> : null}
-                          <strong>{formatINR(fare.taxableAmount)}</strong>
-                          {fare.gst > 0 ? <small className="cab__tax">+ {formatINR(fare.gst)} GST</small> : null}
-                          {fare.discount > 0 ? (
-                            <span className="cab__saving">Save {formatINR(fare.discount)}</span>
-                          ) : null}
-                        </>
-                      ) : unavailable ? (
-                        <span className="cab__na">{q.unavailable.get(c.id) || 'Unavailable for this route'}</span>
-                      ) : (
-                        <span className="cab__price-skel skeleton" />
-                      )}
                     </div>
                   </div>
                 );
@@ -404,6 +424,7 @@ export function ChooseStep() {
       <FlowBar
         onNext={handleNext}
         nextLabel="Continue"
+        nextIcon="arrow-right"
         nextDisabled={!canContinue}
         total={quote?.total}
         hideFare

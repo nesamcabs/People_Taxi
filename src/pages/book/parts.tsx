@@ -1,37 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
-import type { FareBreakdown as Fare, FareLine, PaymentMethod } from '@core/types';
+import { useState, type ReactNode } from 'react';
+import type { FareBreakdown as Fare, FareLine } from '@core/types';
 import type { FareBreakup } from '@core/utils/fareBreakup';
 import { formatINR } from '@core/utils/format';
 import { Button, Dialog } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { FareBreakdown } from '@/components/FareBreakdown';
-
-/** One way to pay: book now, pay the driver at the end of the trip. Recorded as Cash, whatever an older draft held. */
-export function PaymentChoice({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: PaymentMethod;
-  onChange: (m: PaymentMethod) => void;
-  disabled?: boolean;
-}) {
-  useEffect(() => {
-    if (value !== 'Cash') onChange('Cash');
-  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <div className="pay-opts" role="radiogroup" aria-label="Payment mode">
-      <label className="pay-opt is-selected">
-        <input type="radio" name="pay" value="Cash" checked readOnly disabled={disabled} />
-        <div className="pay-opt__text">
-          <strong>Book now, pay later</strong>
-          <small>Pay your driver at the end of the trip.</small>
-        </div>
-        <Icon name="wallet" size={20} />
-      </label>
-    </div>
-  );
-}
 
 export function PromoControl({
   code,
@@ -138,6 +111,7 @@ export function FlowBar({
   hideFare = false,
   onHome,
   above,
+  nextIcon,
 }: {
   onBack?: () => void;
   onNext?: () => void;
@@ -154,6 +128,8 @@ export function FlowBar({
   onHome?: () => void;
   /** Shown directly above the main button, inside the bar (the terms checkbox). */
   above?: ReactNode;
+  /** An icon after the main button's label (for example an arrow on Continue). */
+  nextIcon?: string;
 }) {
   return (
     <div className="flow-bar">
@@ -177,6 +153,7 @@ export function FlowBar({
             disabled={nextDisabled}
             loading={nextLoading}
             onClick={onNext}
+            iconTrailing={nextIcon}
           >
             {nextLabel}
           </Button>
@@ -211,5 +188,18 @@ export function FlowBar({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** The blue banner at the top of every "choose your fare" screen: a headline with its middle words in yellow, a line under it, and the car. */
+export function ChooseHero({ title, sub, photo, id }: { title: [string, string, string]; sub: string; photo?: string; id?: string }) {
+  return (
+    <header className="chero">
+      <div className="chero__text">
+        <h2 id={id} className="chero__title">{title[0]}<em>{title[1]}</em>{title[2]}</h2>
+        <p>{sub}</p>
+      </div>
+      {photo ? <img className="chero__img" src={photo} alt="" decoding="async" /> : null}
+    </header>
   );
 }

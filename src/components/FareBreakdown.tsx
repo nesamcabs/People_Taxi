@@ -2,6 +2,7 @@ import type { FareLine } from '@core/types';
 import { formatINR } from '@core/utils/format';
 import { PolicyLinks, type PolicyId } from '@/pages/PolicySections';
 import { AdditionalCharges } from '@/shared/components/AdditionalCharges';
+import './fare.css';
 
 const money = (n: number) => (n < 0 ? `−${formatINR(-n)}` : formatINR(n));
 

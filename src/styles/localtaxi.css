@@ -114,3 +114,16 @@ label.lts-chip { border-color: var(--brand); background: var(--brand-soft, #eef4
 .lt .btn:disabled, .lts .btn:disabled { cursor: not-allowed; }
 .lt .btn--primary:disabled:not([aria-busy='true']), .lts .btn--primary:disabled:not([aria-busy='true']) { background: #e5e9f0 !important; border-color: #e5e9f0 !important; color: #94a3b8 !important; box-shadow: none !important; opacity: 1; }
 .lt-see__why { margin: -2px 0 0; text-align: center; }
+
+/* Local Taxi ride list: same coloured cards as the booking screens. */
+.lts-ride { --a: #1665e8; --a-ink: #0b3a94; --a-wash: #e9f2ff; position: relative; padding: 10px 14px 10px 10px; border: 2px solid color-mix(in srgb, var(--a) 14%, #fff); border-radius: 20px; background: linear-gradient(115deg, var(--a-wash) 0%, #fff 55%, var(--a-wash) 100%); box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--a) 40%, transparent); }
+.lts-ride[data-acc='green'] { --a: #12a150; --a-ink: #0b6b34; --a-wash: #e4f8ec; }
+.lts-ride[data-acc='orange'] { --a: #f26b0f; --a-ink: #a84300; --a-wash: #fff0e0; }
+.lts-ride[data-acc='purple'] { --a: #7a4dff; --a-ink: #4b25c4; --a-wash: #f0eaff; }
+.lts-ride[data-acc='teal'] { --a: #0b9fb3; --a-ink: #086373; --a-wash: #dff6f9; }
+.lts-ride[data-acc='pink'] { --a: #e0287a; --a-ink: #a1135a; --a-wash: #ffe8f2; }
+.lts-ride img { padding: 4px; border-radius: 14px; background: #fff; box-shadow: 0 0 0 1px color-mix(in srgb, var(--a) 14%, transparent); filter: drop-shadow(0 4px 4px rgb(12 27 61 / .18)); }
+.lts-ride__txt strong { color: var(--ink); font-weight: 900; }
+.lts-ride__price { padding: 6px 12px; border-radius: 14px; background: #fff; box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--a) 40%, transparent), 0 0 0 1px color-mix(in srgb, var(--a) 16%, transparent); }
+.lts-ride.is-on { border-color: var(--a); background: linear-gradient(115deg, var(--a-wash) 0%, #fff 55%, var(--a-wash) 100%); box-shadow: 0 0 0 4px color-mix(in srgb, var(--a) 14%, transparent), 0 12px 24px -10px color-mix(in srgb, var(--a) 60%, transparent); }
+.lts-ride.is-on .lts-ride__price { color: var(--a-ink); }

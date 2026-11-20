@@ -128,8 +128,8 @@ export function RouteLandingPage() {
                 </tr>
               </thead>
               <tbody>
-                {route.estimates.map((est) => (
-                  <tr key={est.category}>
+                {route.estimates.map((est, i) => (
+                  <tr key={est.category} data-acc={['blue', 'green', 'orange', 'purple', 'teal', 'pink'][i % 6]}>
                     <td className="lp-table__cat">{est.category}</td>
                     <td data-label="Popular models">{est.model}</td>
                     <td data-label="Seating">{est.seats}</td>
