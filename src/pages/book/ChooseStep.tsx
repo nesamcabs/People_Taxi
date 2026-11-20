@@ -285,9 +285,9 @@ export function ChooseStep() {
                     </div>
 
                     <ul className="fcab__facts">
-                      <li><Icon name="seats" size={16} /> <span><b>{c.seats}</b> seats</span></li>
-                      <li><Icon name="snowflake" size={16} /> <span><b>AC</b> cab</span></li>
-                      <li><Icon name="luggage" size={16} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
+                      <li><Icon name="seats" size={14} /> <span><b>{c.seats}</b> seats</span></li>
+                      <li><Icon name="snowflake" size={14} /> <span><b>AC</b> cab</span></li>
+                      <li><Icon name="luggage" size={14} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
                     </ul>
 
                     {cngOf(c) ? <FuelPick name={`fuel-${c.id}`} value={fuelOf(c)} onChange={(f) => !disabled && chooseFuel(c, f)} /> : null}
