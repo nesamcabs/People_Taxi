@@ -35,6 +35,7 @@ import './styles/otp.css';
 import './styles/clean-pages.css';
 import './styles/desktop.css';
 import './styles/placefield.css';
+import './styles/brand-icons.css';
 import { keepHomeBehindEveryScreen } from './lib/homeNav';
 import { installStaleVersionReload, installVersionCheck } from '@/shared/components/RouteErrorBoundary';
 import { prefetchWhenIdle, registerDeviceCache } from '@/lib/deviceCache';
