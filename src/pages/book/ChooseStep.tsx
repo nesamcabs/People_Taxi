@@ -29,6 +29,9 @@ const LINE_GLYPHS = {
   pump: <path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M7 8h4M14 10h2a2 2 0 0 1 2 2v4.5a1.5 1.5 0 0 0 3 0V8.5L18 5.5" />,
   leaf: <path d="M5 19c0-8 5.5-13 15-14-.5 9.5-6 15-14 15M5 19c2.5-4 5.5-6.5 9-8.5" />,
   road: <path d="M8 3 4 21M16 3l4 18M12 4v2.5M12 10.5v3M12 17.5V20" />,
+  calendar: <path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V6.5A1.5 1.5 0 0 1 5 5ZM3.5 10h17M8 3v4M16 3v4" />,
+  clock: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7.5V12l3 2" />,
+  pin: <path d="M12 21.5s-6.5-6.2-6.5-11.5a6.5 6.5 0 0 1 13 0c0 5.3-6.5 11.5-6.5 11.5ZM12 12.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" />,
 } as const;
 function LineIcon({ name, size = 16 }: { name: keyof typeof LINE_GLYPHS; size?: number }) {
   return (
@@ -139,41 +142,40 @@ export function ChooseStep() {
           <div className="choose__main">
             <section className="trip-sum trip-sum--compact" aria-label="Trip summary">
               {roundPick ? <h1 className="sr-only">Choose your vehicle</h1> : null}
-              <div className="trip-sum__body">
-                <div className="trip-sum__headrow">
-                  <div className="trip-sum__routebox">
-                    <p className="route-title">
-                      <span>{pickup.name}</span>
-                      <Icon name="arrow-right" size={14} />
-                      <span>{returnsToPickup ? pickup.name : drop.id === 'place-local-disposal' ? 'Local City Disposal' : drop.name}</span>
-                    </p>
-                    {roundVia.length ? <p className="trip-sum__via"><Icon name="route" size={13} /> Via {roundVia.map((stop) => stop.name).join(' → ')}</p> : null}
+              <div className="trip-sum__body ts2">
+                {scheduledAt ? (
+                  <div className="ts2__when">
+                    <span><LineIcon name="calendar" size={18} /> {formatDate(scheduledAt)}</span>
+                    <span><LineIcon name="clock" size={18} /> {formatTime(scheduledAt)}</span>
+                  </div>
+                ) : null}
+                <div className="ts2__mid">
+                  <div className="ts2__route">
+                    <p className="ts2__stop ts2__stop--from"><span className="ts2__dot" aria-hidden="true" /><span className="sr-only">From </span><strong>{pickup.name}</strong></p>
+                    <span className="ts2__line" aria-hidden="true" />
+                    <p className="ts2__stop ts2__stop--to"><span className="ts2__pin" aria-hidden="true"><LineIcon name="pin" size={18} /></span><span className="sr-only">To </span><strong>{returnsToPickup ? pickup.name : drop.id === 'place-local-disposal' ? 'Local City Disposal' : drop.name}</strong></p>
+                    {roundVia.length ? <p className="trip-sum__via ts2__via"><LineIcon name="road" size={14} /> Via {roundVia.map((stop) => stop.name).join(' → ')}</p> : null}
+                    {roundPick && q.selectedPackage ? (
+                      <p className="trip-sum__via ts2__via"><LineIcon name="clock" size={14} /> {q.selectedPackage.days} calendar {q.selectedPackage.days === 1 ? 'day' : 'days'} · Return by {packageDay(new Date(q.selectedPackage.endAt))}, {packageClock(new Date(q.selectedPackage.endAt))}</p>
+                    ) : null}
                   </div>
                   {tripType !== 'Local Rental' ? (
-                    <button type="button" className="trip-sum__edit" onClick={() => setEditOpen(true)} aria-label="Modify pickup date, time and trip days">
-                      <span className="trip-sum__edit-ico"><LineIcon name="pencil" size={14} /></span> Modify
+                    <button type="button" className="trip-sum__edit ts2__edit" onClick={() => setEditOpen(true)} aria-label="Modify pickup date, time and trip days">
+                      <LineIcon name="pencil" size={16} /> Modify
                     </button>
                   ) : null}
                 </div>
-                <p className="trip-sum__meta">
-                  <span className="ts-chip ts-chip--type">{tripTypeLabel(draft.multicity ? 'Multicity' : tripType)}</span>
-                  {scheduledAt ? (
+                <div className="ts2__strip">
+                  <span className="ts2__type">{tripTypeLabel(draft.multicity ? 'Multicity' : tripType)}</span>
+                  {route && tripType !== 'Local Rental' ? (
                     <>
-                      <span className="ts-chip trip-sum__when"><Icon name="calendar" size={14} /> {formatDate(scheduledAt)}</span>
-                      <span className="ts-chip trip-sum__when"><Icon name="clock" size={14} /> {formatTime(scheduledAt)}</span>
+                      <span className="ts2__sep" aria-hidden="true" />
+                      <span className="ts2__fact ts2__fact--km"><LineIcon name="road" size={16} /> <b>{formatDistance(q.trip?.distanceKm ?? route.totalDistanceKm ?? route.distanceKm)}</b></span>
+                      <span className="ts2__sep" aria-hidden="true" />
+                      <span className="ts2__fact ts2__fact--time"><LineIcon name="clock" size={16} /> <span>about {formatDuration(q.trip?.durationMin ?? route.totalDurationMin ?? route.durationMin)}</span></span>
                     </>
                   ) : null}
-                  {roundPick && q.selectedPackage ? (
-                    <span className="ts-chip trip-sum__when"><Icon name="clock" size={14} /> {q.selectedPackage.days} calendar {q.selectedPackage.days === 1 ? 'day' : 'days'} · Return by {packageDay(new Date(q.selectedPackage.endAt))}, {packageClock(new Date(q.selectedPackage.endAt))}</span>
-                  ) : null}
-                </p>
-                {route && tripType !== 'Local Rental' ? (
-                  <p className="trip-sum__dist">
-                    <span><Icon name="route" size={18} /> <b>{formatDistance(q.trip?.distanceKm ?? route.totalDistanceKm ?? route.distanceKm)}</b></span>
-                    <span className="trip-sum__dist-sep" aria-hidden="true" />
-                    <span><Icon name="clock" size={18} /> about {formatDuration(q.trip?.durationMin ?? route.totalDurationMin ?? route.durationMin)}</span>
-                  </p>
-                ) : null}
+                </div>
               </div>
             </section>
             {editOpen ? <EditTripDialog onClose={() => setEditOpen(false)} /> : null}
