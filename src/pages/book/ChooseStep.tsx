@@ -28,7 +28,16 @@ type Sort = 'recommended' | 'low' | 'high';
 const LINE_GLYPHS = {
   pencil: <path d="M4 20h4L18.5 9.5a2.83 2.83 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4" />,
   pump: <path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M7 8h4M14 10h2a2 2 0 0 1 2 2v4.5a1.5 1.5 0 0 0 3 0V8.5L18 5.5" />,
-  leaf: <path d="M5 19c0-8 5.5-13 15-14-.5 9.5-6 15-14 15M5 19c2.5-4 5.5-6.5 9-8.5" />,
+  // CNG: a main leaf rising to the right and a smaller leaf opening left, joined by one short curved stem.
+  leaf: (
+    <>
+      <path d="M10.3 15.6C9.6 10.1 13 5.4 20.2 3.8c.6 7.1-3.3 11.3-9.9 11.8Z" />
+      <path d="M10.3 15.6c2.2-3.4 4.4-6 6.9-8.3" />
+      <path d="M9.3 18.4C8.7 14.8 6.1 12.5 2.5 12.8c-.2 3.6 2.7 6 6.8 5.6Z" />
+      <path d="M8.3 17.3C7.3 16.1 6.2 15.2 4.9 14.6" />
+      <path d="M8.4 21.2c.6-1.5 1.1-3.3 1.9-5.6" />
+    </>
+  ),
   road: <path d="M8 3 4 21M16 3l4 18M12 4v2.5M12 10.5v3M12 17.5V20" />,
   calendar: <path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5V19a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 19V6.5A1.5 1.5 0 0 1 5 5ZM3.5 10h17M8 3v4M16 3v4" />,
   clock: <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18ZM12 7.5V12l3 2" />,
