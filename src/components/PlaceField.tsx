@@ -74,6 +74,8 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
   const [busy, setBusy] = useState(false);
   const [results, setResults] = useState<{ q: string; list: GeoPlace[]; error: string }>({ q: '', list: [], error: '' });
   const { error: locError, permission, locating, locate } = useDeviceLocation(false);
+  // Bumped on every newer intent (a pick, typing, opening the map) so a slow current-location lookup can't overwrite it.
+  const intent = useRef(0);
 
   const query = dirty ? text : '';
   const q = query.trim();
@@ -194,6 +196,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
       return;
     }
     setReject('');
+    intent.current += 1;
     close();
     inputEl.current?.blur();
     onSelect(picked);
@@ -201,6 +204,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
 
   const pickOption = (o: Option) => {
     if (o.kind === 'map') {
+      intent.current += 1;
       setOpen(false);
       setMapMode(true);
       return;
@@ -212,15 +216,19 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
     setReject('');
     setLocTried(true);
     setBusy(true);
+    const mine = ++intent.current;
     try {
       const pos = await locate();
+      if (mine !== intent.current) return;
       if (!pos) {
         setOpen(true);
         return;
       }
       const found = await reverseGeocode(pos);
+      if (mine !== intent.current) return;
       choose({ ...found, type: 'current' });
     } catch {
+      if (mine !== intent.current) return;
       setReject('We couldn’t read your address. Please search for it instead.');
       setOpen(true);
     } finally {
@@ -350,6 +358,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
           e.currentTarget.select();
         }}
         onChange={(e) => {
+          intent.current += 1;
           setDirty(true);
           setText(e.target.value);
           setReject('');
@@ -388,6 +397,8 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
         <PinDialog
           title={config.title}
           mode={config.pinMode ?? 'pickup'}
+          initial={value}
+          check={config.check}
           onBack={() => setMapMode(false)}
           onConfirm={(p) => {
             setMapMode(false);

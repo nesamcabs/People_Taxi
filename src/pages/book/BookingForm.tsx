@@ -43,6 +43,13 @@ const disposalFor = (pickup: GeoPlace): GeoPlace => ({
   type: 'other',
 });
 
+/** True when `drop` is the disposal placeholder built for this exact pickup (not one left over from an earlier pickup). */
+const isDisposalFor = (drop: GeoPlace | null, pickup: GeoPlace): boolean => {
+  if (!drop || drop.id !== 'place-local-disposal') return false;
+  const want = disposalFor(pickup);
+  return drop.lat === want.lat && drop.lng === want.lng && drop.address === want.address;
+};
+
 /** Airport direction follows the draft: whichever end is an airport. */
 const directionOf = (pickup: GeoPlace | null, drop: GeoPlace | null): AirportDirection => (isAirportPlace(pickup) && !isAirportPlace(drop) ? 'from' : 'to');
 
@@ -119,10 +126,10 @@ export function BookingForm({
     });
   }, [position, pickup, update, service]);
 
-  // Rentals drive within the pickup city: the destination is the city-disposal placeholder.
+  // Rentals drive within the pickup city: the destination is the city-disposal placeholder, rebuilt whenever the pickup changes.
   useEffect(() => {
-    if (service === 'rental' && pickup && (!drop || drop.id !== 'place-local-disposal')) update({ drop: disposalFor(pickup) });
-  }, [service, pickup?.lat, pickup?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (service === 'rental' && pickup && isValidLatLng(pickup) && !isDisposalFor(drop, pickup)) update({ drop: disposalFor(pickup) });
+  }, [service, pickup?.lat, pickup?.lng, pickup?.name, drop?.id, drop?.lat, drop?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Schedule (local date + time inputs mirrored into the draft) ─────────
   // By default: today, 30 minutes from now. A time already chosen earlier is kept while it can still be booked.
@@ -212,16 +219,22 @@ export function BookingForm({
     if (!online) e.form = 'You’re offline. Reconnect to see fares.';
     else if (currentOff) e.form = `${currentKey} is currently unavailable. Please choose another service.`;
     if (!pickup) e.pickup = service === 'airport' && airportField === 'pickup' ? 'Choose the airport.' : 'Choose your pickup location.';
+    else if (!isValidLatLng(pickup)) e.pickup = 'We couldn’t read this pickup’s position. Please choose it again.';
     if (service !== 'rental' && !drop) e.drop = service === 'airport' && airportField === 'drop' ? 'Choose the airport.' : 'Choose your drop location.';
+    else if (service !== 'rental' && drop && !isValidLatLng(drop)) e.drop = 'We couldn’t read this drop’s position. Please choose it again.';
+    if (isRound && draft.stops.some((st) => !isValidLatLng(st))) e.stops = 'A stop’s position couldn’t be read. Please choose it again.';
+    // Distance rules only run on real coordinates.
+    const pickupOk = !!pickup && isValidLatLng(pickup);
+    const dropOk = !!drop && isValidLatLng(drop);
     if (service === 'rental' && !draft.rentalHours) e.hours = 'Select the rental hours.';
-    if (service === 'pickup' && pickup && drop && haversineKm(pickup, drop) > 40) e.drop = 'Pickup & Drop is for trips inside one city. For a longer trip choose Outstation.';
+    if (service === 'pickup' && pickupOk && dropOk && haversineKm(pickup, drop) > 40) e.drop = 'Pickup & Drop is for trips inside one city. For a longer trip choose Outstation.';
     if (service === 'airport') {
       const ap = airportField === 'pickup' ? pickup : drop;
       if (ap && !isAirportPlace(ap)) e[airportField] = 'Choose an airport for this transfer.';
     }
-    if (pickup && drop && service !== 'rental' && !(service === 'outstation' && tripType === 'Round Trip') && haversineKm(pickup, drop) < 0.2) e.drop = 'Pickup and drop are too close together.';
+    if (pickupOk && dropOk && service !== 'rental' && !(service === 'outstation' && tripType === 'Round Trip') && haversineKm(pickup, drop) < 0.2) e.drop = 'Pickup and drop are too close together.';
     if (tripType === 'Round Trip' && service === 'outstation') {
-      const points = [pickup, ...draft.stops, drop].filter((p): p is GeoPlace => p !== null);
+      const points = [pickup, ...draft.stops, drop].filter((p): p is GeoPlace => p !== null && isValidLatLng(p));
       if (points.some((p, index) => index > 0 && haversineKm(points[index - 1]!, p) < 0.2)) e.stops = 'Consecutive itinerary locations cannot be the same.';
     }
     if (isRound && (!days || days < 1 || days > RT_MAX_DAYS)) e.retDate = `Choose 1 to ${RT_MAX_DAYS} days.`;
@@ -236,7 +249,7 @@ export function BookingForm({
   };
 
   const search = () => {
-    if (service === 'rental' && pickup && (!drop || drop.id !== 'place-local-disposal')) update({ drop: disposalFor(pickup) });
+    if (service === 'rental' && pickup && isValidLatLng(pickup) && !isDisposalFor(drop, pickup)) update({ drop: disposalFor(pickup) });
     const e = validate();
     setErrors(e);
     const first = (['pickup', 'stops', 'drop', 'hours', 'date', 'time', 'retDate', 'retTime'] as Field[]).find((f) => e[f]);

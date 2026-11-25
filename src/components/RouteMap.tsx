@@ -35,6 +35,11 @@ interface Props {
   /** Drop-a-pin mode: a fixed pin at the visible centre; reports where the map is centred. */
   pinMode?: 'pickup' | 'drop' | null;
   onCenterChange?: (p: LatLng) => void;
+  /**
+   * Pin mode only: where the map opens — the field's current selection. It wins over `userLocation`, and once the
+   * map has been placed (or the rider has moved it) no later device fix, resize or re-render moves it again.
+   */
+  pinStart?: LatLng | null;
   /** Finds the device's position for the locate button; the map then centres on it. */
   onLocate?: () => Promise<LatLng | null>;
   className?: string;
@@ -54,7 +59,7 @@ const meIcon = L.divIcon({ className: 'map-pin-wrap', html: '<span class="map-me
 
 const ZERO: MapPadding = { top: 24, right: 24, bottom: 24, left: 24 };
 
-function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, padding = ZERO, pinMode = null, onCenterChange, onLocate, className = '', label }: Props) {
+function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, padding = ZERO, pinMode = null, onCenterChange, pinStart = null, onLocate, className = '', label }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const layers = useRef<{ group: L.LayerGroup; route: L.Polyline | null }>({ group: L.layerGroup(), route: null });
@@ -65,6 +70,8 @@ function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, p
   const pinRef = useRef(pinMode);
   pinRef.current = pinMode;
   const lastFit = useRef('');
+  // Pin mode: true once the map sits on its starting point or the rider has taken over (drag / keyboard).
+  const pinSettled = useRef(false);
   const [ready, setReady] = useState(false);
   const [tilesFailed, setTilesFailed] = useState(false);
   const [fitTick, setFitTick] = useState(0);
@@ -80,7 +87,12 @@ function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, p
   useEffect(() => {
     if (!host.current) return undefined;
     const map = L.map(host.current, { zoomControl: false, attributionControl: true, scrollWheelZoom: true, worldCopyJump: false, minZoom: 3, maxZoom: 18 });
-    map.setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], 12);
+    // A pin map for a field that already has a place opens right on it (never on the default centre first).
+    const opening = pinMode && pinStart && isValidLatLng(pinStart) ? pinStart : null;
+    if (opening) {
+      map.setView([opening.lat, opening.lng], 16, { animate: false });
+      pinSettled.current = true;
+    } else map.setView([DEFAULT_CENTER.lat, DEFAULT_CENTER.lng], 12);
     const tiles = L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19, subdomains: 'abc', crossOrigin: true });
     let errors = 0;
     tiles.on('tileerror', () => {
@@ -106,6 +118,12 @@ function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, p
       }
     };
     map.on('moveend', onMove);
+    const takeOver = () => {
+      pinSettled.current = true;
+    };
+    map.on('dragstart', takeOver);
+    const hostEl = host.current;
+    hostEl.addEventListener('keydown', takeOver);
 
     const ro = new ResizeObserver(() => {
       map.invalidateSize({ animate: false });
@@ -116,6 +134,7 @@ function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, p
     setReady(true);
     return () => {
       ro.disconnect();
+      hostEl.removeEventListener('keydown', takeOver);
       mapRef.current = null;
       // Cancel any running pan / zoom animation first: its frame callback would
       // otherwise touch panes that remove() has already torn down.
@@ -166,18 +185,21 @@ function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, p
       pts.push([driver.lat, driver.lng]);
     }
 
+    if (pinMode) {
+      // The rider is placing a pin: place the map once (the field's selection, else the device's position), then leave it alone.
+      if (!pinSettled.current) {
+        const start = pinStart && isValidLatLng(pinStart) ? pinStart : p ?? (userLocation && isValidLatLng(userLocation) ? userLocation : null);
+        if (start) {
+          map.setView([start.lat, start.lng], Math.max(map.getZoom(), 16), { animate: false });
+          pinSettled.current = true;
+        }
+      }
+      return;
+    }
+    pinSettled.current = false;
     // Refit only when what is shown has actually changed (not on every driver tick of the same trip).
     const key = JSON.stringify([p && [p.lat, p.lng], d && [d.lat, d.lng], line?.length ?? 0, padRef.current, !!driver, pinMode, fitTick]);
     if (key === lastFit.current && !(driver && isValidLatLng(driver))) return;
-    if (pinMode) {
-      // The rider is placing a pin: leave the map where it is unless nothing is chosen yet.
-      if (lastFit.current === '') {
-        const start = p ?? (userLocation && isValidLatLng(userLocation) ? userLocation : null);
-        if (start) map.setView([start.lat, start.lng], Math.max(map.getZoom(), 16), { animate: false });
-      }
-      lastFit.current = key;
-      return;
-    }
     lastFit.current = key;
     const pad = padRef.current;
     if (pts.length >= 2) {
@@ -196,7 +218,7 @@ function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, p
     } else if (userLocation && isValidLatLng(userLocation)) {
       map.setView([userLocation.lat, userLocation.lng], 14, { animate: false });
     }
-  }, [ready, pickup?.lat, pickup?.lng, drop?.lat, drop?.lng, driver?.lat, driver?.lng, driver?.stale, userLocation?.lat, userLocation?.lng, path, basePath, padding.top, padding.left, padding.right, padding.bottom, pinMode, fitTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, pickup?.lat, pickup?.lng, drop?.lat, drop?.lng, driver?.lat, driver?.lng, driver?.stale, userLocation?.lat, userLocation?.lng, path, basePath, padding.top, padding.left, padding.right, padding.bottom, pinMode, pinStart?.lat, pinStart?.lng, fitTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Entering pin mode reports the starting centre so the caller can show its address.
   useEffect(() => {
@@ -218,6 +240,7 @@ function LeafletRouteMap({ pickup, drop, driver, userLocation, path, basePath, p
     setLocating(true);
     try {
       const pos = await onLocate();
+      pinSettled.current = true;
       if (pos && isValidLatLng(pos) && mapRef.current) mapRef.current.setView([pos.lat, pos.lng], 16, { animate: true });
     } finally {
       setLocating(false);

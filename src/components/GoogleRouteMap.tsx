@@ -19,6 +19,8 @@ interface Props {
   padding: MapPadding;
   pinMode?: 'pickup' | 'drop' | null;
   onCenterChange?: (p: LatLng) => void;
+  /** Pin mode only: where the map opens (the field's selection); see RouteMap. */
+  pinStart?: LatLng | null;
   /** Finds the device's position for the locate button; the map then centres on it. */
   onLocate?: () => Promise<LatLng | null>;
   className?: string;
@@ -31,7 +33,7 @@ const markerIcon = (maps: any, color: string) => ({
   fillColor: color, fillOpacity: 1, strokeColor: '#fff', strokeWeight: 1.5, scale: 1.25, anchor: new maps.Point(12, 22),
 });
 
-export function GoogleRouteMap({ pickup, drop, driver, userLocation, path, basePath, padding, pinMode = null, onCenterChange, onLocate, className = '', label, onLoadError }: Props) {
+export function GoogleRouteMap({ pickup, drop, driver, userLocation, path, basePath, padding, pinMode = null, onCenterChange, pinStart = null, onLocate, className = '', label, onLoadError }: Props) {
   const host = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const overlays = useRef<any[]>([]);
@@ -39,6 +41,10 @@ export function GoogleRouteMap({ pickup, drop, driver, userLocation, path, baseP
   centerCb.current = onCenterChange;
   const pinModeRef = useRef(pinMode);
   pinModeRef.current = pinMode;
+  // Pin mode: true once the map sits on its starting point or the rider has dragged it.
+  const pinSettled = useRef(false);
+  const startRef = useRef(pinStart);
+  startRef.current = pinStart;
   const [ready, setReady] = useState(false);
   const [fitTick, setFitTick] = useState(0);
   const [locating, setLocating] = useState(false);
@@ -48,7 +54,12 @@ export function GoogleRouteMap({ pickup, drop, driver, userLocation, path, baseP
     const stopFailureListener = onGoogleMapsFailure(() => { if (alive) onLoadError(); });
     loadGoogleMaps().then((maps) => {
       if (!alive || !host.current) return;
-      mapRef.current = new maps.Map(host.current, { center: DEFAULT_CENTER, zoom: 12, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, clickableIcons: false, gestureHandling: 'greedy' });
+      const opening = pinModeRef.current && startRef.current && isValidLatLng(startRef.current) ? startRef.current : null;
+      if (opening) pinSettled.current = true;
+      mapRef.current = new maps.Map(host.current, { center: opening ? { lat: opening.lat, lng: opening.lng } : DEFAULT_CENTER, zoom: opening ? 16 : 12, mapTypeControl: false, streetViewControl: false, fullscreenControl: false, clickableIcons: false, gestureHandling: 'greedy' });
+      mapRef.current.addListener('dragstart', () => {
+        pinSettled.current = true;
+      });
       mapRef.current.addListener('idle', () => {
         if (!pinModeRef.current || !centerCb.current) return;
         const c = mapRef.current.getCenter();
@@ -82,14 +93,18 @@ export function GoogleRouteMap({ pickup, drop, driver, userLocation, path, baseP
     if (userLocation && isValidLatLng(userLocation)) add(new maps.Marker({ map, position: userLocation, title: 'You', icon: { path: maps.SymbolPath.CIRCLE, fillColor: '#2563eb', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3, scale: 7 } }));
     if (driver && isValidLatLng(driver)) { add(new maps.Marker({ map, position: driver, title: driver.label ?? 'Driver', label: { text: '🚕', fontSize: '22px' } })); addPoint(driver); }
     if (pinMode) {
-      const start = p ?? (userLocation && isValidLatLng(userLocation) ? userLocation : null);
-      if (start) { map.setCenter(start); map.setZoom(16); }
+      // Placed once (the field's selection, else the device's position); later fixes never move the rider's pin.
+      if (!pinSettled.current) {
+        const start = pinStart && isValidLatLng(pinStart) ? pinStart : p ?? (userLocation && isValidLatLng(userLocation) ? userLocation : null);
+        if (start) { map.setCenter({ lat: start.lat, lng: start.lng }); map.setZoom(16); pinSettled.current = true; }
+      }
       return;
     }
+    pinSettled.current = false;
     if (count > 1) map.fitBounds(bounds, padding);
     else if (count === 1) { map.setCenter(bounds.getCenter()); map.setZoom(15); }
     else if (userLocation && isValidLatLng(userLocation)) { map.setCenter(userLocation); map.setZoom(14); }
-  }, [ready, pickup?.lat, pickup?.lng, drop?.lat, drop?.lng, driver?.lat, driver?.lng, driver?.stale, userLocation?.lat, userLocation?.lng, path, basePath, padding.top, padding.right, padding.bottom, padding.left, pinMode, fitTick]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [ready, pickup?.lat, pickup?.lng, drop?.lat, drop?.lng, driver?.lat, driver?.lng, driver?.stale, userLocation?.lat, userLocation?.lng, path, basePath, padding.top, padding.right, padding.bottom, padding.left, pinMode, pinStart?.lat, pinStart?.lng, fitTick]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const recenter = async () => {
     if (!onLocate) return setFitTick((n) => n + 1);
@@ -97,6 +112,7 @@ export function GoogleRouteMap({ pickup, drop, driver, userLocation, path, baseP
     setLocating(true);
     try {
       const pos = await onLocate();
+      pinSettled.current = true;
       const map = mapRef.current;
       if (pos && isValidLatLng(pos) && map) {
         map.setCenter({ lat: pos.lat, lng: pos.lng });
