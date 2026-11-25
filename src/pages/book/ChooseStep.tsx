@@ -12,6 +12,7 @@ import { useOnline } from '@/lib/hooks';
 import { categoryGroup, categoryName, categoryPhoto, type CategoryGroup } from '@/lib/categories';
 import { tripTypeLabel } from '@/lib/services';
 import type { FuelChoice } from '@/shared/components/CabParts';
+import { draftFuelOf, fuelOfDraft, lowestTaxable, quoteForFuel, quoteMatchesFuel, type Fuel } from '@/lib/fuelQuote';
 import { FareDialog, FlowBar, PromoControl } from './parts';
 import { ACCENTS, RoundVehiclePackage, vehicleTabLabel } from './RoundVehiclePackage';
 import { EditTripDialog } from './EditTripDialog';
@@ -41,20 +42,21 @@ function LineIcon({ name, size = 16 }: { name: keyof typeof LINE_GLYPHS; size?: 
   );
 }
 
-/** Diesel / CNG as a compact segmented control. Same radio semantics and handler as before; a click never toggles the card. */
-function FuelSegment({ name, value, disabled, onChange }: { name: string; value: FuelChoice; disabled?: boolean; onChange: (v: FuelChoice) => void }) {
-  const opts: { id: FuelChoice; label: string; icon: keyof typeof LINE_GLYPHS }[] = [
+/** The booking's one fuel: Diesel / CNG as a compact segmented control (radio buttons), above the cab list. */
+function SharedFuel({ value, onChange }: { value: Fuel; onChange: (v: Fuel) => void }) {
+  const opts: { id: Fuel; label: string; icon: keyof typeof LINE_GLYPHS }[] = [
     { id: 'diesel', label: 'Diesel', icon: 'pump' },
     { id: 'cng', label: 'CNG', icon: 'leaf' },
   ];
   return (
-    <div className="cs-fuel" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-      <span className="cs-fuel__label" aria-hidden="true"><LineIcon name="pump" size={14} /> Fuel</span>
-      <div className="cs-fuel__seg" role="radiogroup" aria-label="Fuel type">
+    <div className="cs-sfuel">
+      <span className="cs-sfuel__label" id="cs-fuel-label"><LineIcon name="pump" size={18} /> Fuel</span>
+      <span className="cs-sfuel__sep" aria-hidden="true" />
+      <div className="cs-sfuel__seg" role="radiogroup" aria-labelledby="cs-fuel-label">
         {opts.map((o) => (
-          <label key={o.id} className={`cs-fuel__opt cs-fuel__opt--${o.id} ${value === o.id ? 'is-on' : ''}`}>
-            <input type="radio" name={name} value={o.id} checked={value === o.id} disabled={disabled} onChange={() => onChange(o.id)} />
-            <LineIcon name={o.icon} size={14} />
+          <label key={o.id} className={`cs-sfuel__opt cs-sfuel__opt--${o.id} ${value === o.id ? 'is-on' : ''}`}>
+            <input type="radio" name="booking-fuel" value={o.id} checked={value === o.id} onChange={() => onChange(o.id)} />
+            <LineIcon name={o.icon} size={18} />
             <span>{o.label}</span>
           </label>
         ))}
@@ -100,7 +102,7 @@ export function ChooseStep() {
   useEffect(() => {
     if (!categoryId || !q.hidden.has(categoryId)) return;
     const next = visible.find((c) => !q.unavailable.has(c.id)) ?? visible[0];
-    if (next) update({ categoryId: next.id, fuelType: '' });
+    if (next) update({ categoryId: next.id });
   }, [categoryId, q.hidden, q.unavailable, visible, update]);
 
   if (!pickup || !drop) return null;
@@ -109,15 +111,25 @@ export function ChooseStep() {
   const selected = q.category;
   const quote = q.quote;
   const roundPick = tripType === 'Round Trip' && !draft.multicity;
-  const canContinue = q.authoritative && !!quote && !tooFar && !!selected && !q.unavailable.has(selected.id);
   const cngOf = (c: RideCategory) => q.entries.get(c.id)?.cng ?? null;
+  // One fuel for the whole booking (draft.fuelType). Every cab card shows the server's quote on that fuel; a cab without a
+  // quote on it (e.g. no CNG rate card) is shown as not offered on that fuel, never priced with the other fuel's fare.
+  const sharedFuel: Fuel = fuelOfDraft(draft.fuelType);
+  const fuelQuote = (c: RideCategory) => quoteForFuel(q.entries.get(c.id), sharedFuel);
+  const offersCng = sharedFuel === 'cng' || visible.some((c) => !!cngOf(c));
+  const chooseSharedFuel = (f: Fuel) => update({ fuelType: draftFuelOf(f) });
+  // Continue: a quoted cab, and the booking's current quote must be that cab's quote on the chosen fuel.
+  const canContinue = q.authoritative && !!quote && !tooFar && !!selected && !q.unavailable.has(selected.id) && (roundPick || quoteMatchesFuel(quote, q.entries.get(selected.id), sharedFuel));
+  const selectedFuelMissing = !roundPick && !!selected && !q.unavailable.has(selected.id) && !!q.entries.get(selected.id)?.ok && !fuelQuote(selected);
+  // Round trips keep their own per-vehicle fuel choice inside the Vehicle & Package view (package fares are per vehicle).
   const fuelOf = (c: RideCategory): FuelChoice => (cngOf(c) ? fuelPick[c.id] ?? (c.id === categoryId && draft.fuelType === 'cng' ? 'cng' : 'diesel') : 'diesel');
-  const chooseCategory = (c: RideCategory) => update({ categoryId: c.id, fuelType: fuelOf(c) === 'cng' ? 'cng' : '' });
+  const chooseCategory = (c: RideCategory) => (roundPick ? update({ categoryId: c.id, fuelType: fuelOf(c) === 'cng' ? 'cng' : '' }) : update({ categoryId: c.id }));
   const chooseFuel = (c: RideCategory, f: FuelChoice) => {
     setFuelPick((p) => ({ ...p, [c.id]: f }));
     update({ categoryId: c.id, fuelType: f === 'cng' ? 'cng' : '' });
   };
   const breakupFor = (c: RideCategory) => {
+    if (!roundPick) return fuelQuote(c)?.breakup ?? (fuelQuote(c) ? breakupFromFare(fuelQuote(c)!.fare) : null);
     const alt = fuelOf(c) === 'cng' ? cngOf(c) : null;
     if (alt) return alt.breakup;
     // The server's own breakup for this vehicle: it carries the night allowance and the platform fee when they apply.
@@ -128,8 +140,8 @@ export function ChooseStep() {
     return f ? breakupFromFare(f) : null;
   };
 
-  const priced = shown.map((c) => (fuelOf(c) === 'cng' ? cngOf(c)?.fare : q.quotes.get(c.id))?.taxableAmount).filter((n): n is number => typeof n === 'number' && n > 0);
-  const lowestFare = priced.length > 1 && new Set(priced).size > 1 ? Math.min(...priced) : -1;
+  // "Lowest fare": only among the cabs quoted on the chosen fuel, and only when there is a real difference.
+  const lowestFare = lowestTaxable(shown.filter((c) => !q.unavailable.has(c.id)).map(fuelQuote)) ?? -1;
 
   const handleNext = () => {
     if (canContinue) navigate('/book/confirm');
@@ -141,7 +153,7 @@ export function ChooseStep() {
         <div className="choose">
           <div className="choose__main">
             <section className="trip-sum trip-sum--compact" aria-label="Trip summary">
-              {roundPick ? <h1 className="sr-only">Choose your vehicle</h1> : null}
+              <h1 className="sr-only">Choose your vehicle</h1>
               <div className="trip-sum__body ts2">
                 {scheduledAt ? (
                   <div className="ts2__when">
@@ -269,7 +281,7 @@ export function ChooseStep() {
               />
             ) : null}
 
-            {roundPick ? null : <h1 className="cs-title">Choose your cab</h1>}
+            {roundPick || !offersCng ? null : <SharedFuel value={sharedFuel} onChange={chooseSharedFuel} />}
 
             {roundPick ? null : <div className="fcabs" role="radiogroup" aria-label="Available cabs">
               {categoryStatus === 'loading' && categories.length === 0 ? (
@@ -282,19 +294,20 @@ export function ChooseStep() {
 
               {shown.map((c, index) => {
                 const isSelected = c.id === categoryId;
-                const cngAlt = fuelOf(c) === 'cng' ? cngOf(c) : null;
-                const fare = cngAlt ? cngAlt.fare : q.quotes.get(c.id);
+                const fq = fuelQuote(c);
+                const fare = fq?.fare;
                 const unavailable = q.unavailable.has(c.id);
-                const disabled = unavailable || tooFar;
+                // Quoted by the server, but not on the chosen fuel (no CNG rate card for this cab).
+                const fuelMissing = !unavailable && !!q.entries.get(c.id)?.ok && !fq;
+                const disabled = unavailable || fuelMissing || tooFar;
                 const photo = categoryPhoto(c);
                 const name = categoryName(c);
                 const entry = q.entries.get(c.id);
-                const strikeTotal = (cngAlt ? cngAlt.strikeTotal : entry?.strikeTotal) ?? 0;
+                const strikeTotal = fq?.strikeTotal ?? 0;
                 const strike = fare && strikeTotal > 0 && fare.total > 0 ? Math.round((fare.taxableAmount * strikeTotal) / fare.total) : 0;
                 const cheapest = !!fare && fare.taxableAmount === lowestFare;
-                // The kilometres this fare includes, as the server quoted them (not the route estimate).
-                const includedKm = entry?.ok && typeof entry.includedKm === 'number' && entry.includedKm > 0 ? entry.includedKm : 0;
-                const hasCng = !!cngOf(c);
+                // The kilometres this fare includes, as the server quoted them for this fuel (never the route estimate).
+                const includedKm = fq?.includedKm ?? 0;
 
                 return (
                   <div
@@ -331,13 +344,22 @@ export function ChooseStep() {
                       <li><Icon name="luggage" size={14} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
                     </ul>
 
-                    {hasCng || includedKm ? (
-                      <div className="cs-row">
-                        {hasCng ? <FuelSegment name={`fuel-${c.id}`} value={fuelOf(c)} disabled={disabled} onChange={(f) => !disabled && chooseFuel(c, f)} /> : <span />}
+                    {fq ? (
+                      <p className="cs-strip">
+                        <span className={`cs-strip__fuel cs-strip__fuel--${sharedFuel}`}>
+                          <span className="cs-well"><LineIcon name={sharedFuel === 'cng' ? 'leaf' : 'pump'} size={14} /></span>
+                          {sharedFuel === 'cng' ? 'CNG' : 'Diesel'}
+                        </span>
                         {includedKm ? (
-                          <span className="cs-km"><LineIcon name="road" size={14} /> <span><b>{+includedKm.toFixed(1)} km</b> included</span></span>
+                          <>
+                            <span className="cs-strip__sep" aria-hidden="true" />
+                            <span className="cs-strip__km">
+                              <span className="cs-well cs-well--blue"><LineIcon name="road" size={14} /></span>
+                              <b>{+includedKm.toFixed(1)} km</b> <small>included</small>
+                            </span>
+                          </>
                         ) : null}
-                      </div>
+                      </p>
                     ) : null}
 
                     <div className="fcab__foot">
@@ -351,6 +373,8 @@ export function ChooseStep() {
                               </>
                             ) : unavailable ? (
                               <span className="fcab__na">{q.unavailable.get(c.id) || 'Unavailable for this route'}</span>
+                            ) : fuelMissing ? (
+                              <span className="fcab__na">CNG is not offered for this cab. Switch to Diesel to book it.</span>
                             ) : (
                               <span className="fcab__price-skel skeleton" />
                             )}
@@ -478,7 +502,7 @@ export function ChooseStep() {
         hideFare
         onBack={() => navigate(tripType === 'Local Rental' ? '/local-rentals?mode=hourly' : draft.multicity ? '/book?service=multicity' : '/book')}
         backLabel="Back"
-        onHome={() => navigate('/')}
+        backText
       />
 
       {fareFor && breakupFor(fareFor) ? (

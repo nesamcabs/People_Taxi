@@ -440,6 +440,8 @@ export function Shell() {
   // so it keeps the normal always-visible header; Local Taxi's live map screen still goes full-bleed.
   const isLocalPage = /^\/local-taxi\/?$/.test(location.pathname);
   const isLanding = location.pathname === '/' || location.pathname === '/book' || isLocalPage;
+  // The cab-selection step is a focused screen with its own Back / Continue bar: no site header (and no space kept for it).
+  const hideHeader = location.pathname === '/book/ride';
   // The header is always on screen, on phones and tablets too (it takes its own space above the page).
 
   useEffect(() => {
@@ -448,7 +450,7 @@ export function Shell() {
   }, [location.pathname]);
 
   return (
-    <div className={`shell ${isLanding ? 'shell--scroll-header' : ''} ${isLocalPage ? 'shell--local-page' : ''} ${isImmersive ? 'shell--immersive' : ''} ${isFlow ? '' : 'shell--dock'}`}>
+    <div className={`shell ${isLanding ? 'shell--scroll-header' : ''} ${isLocalPage ? 'shell--local-page' : ''} ${isImmersive ? 'shell--immersive' : ''} ${isFlow ? '' : 'shell--dock'} ${hideHeader ? 'shell--no-header' : ''}`}>
       <a
         className="skip-link"
         href="#main"
@@ -469,79 +471,81 @@ export function Shell() {
         </div>
       ) : null}
 
-      <header className={`topbar ${live ? 'topbar--notice' : ''}`}>
-        <div className="topbar__inner">
-          <button type="button" className="menu-btn" aria-label="Open profile" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
-            <BrandIcon name="menu" size={28} />
-          </button>
-          <Brand />
-          <nav className="topnav" aria-label="Main">
-            {TOP_NAV.map((n) => (
-              <NavLink
-                key={n.to}
-                to={n.to}
-                aria-label={n.to === '/notifications' && unreadCount > 0 ? `${n.label}, ${unreadCount} unread` : n.label}
-                title={n.label}
-                className={({ isActive }) => `topnav__link ${isActive || (n.to === '/book' && location.pathname === '/') ? 'is-active' : ''}`}
-              >
-                {n.art ? <BrandIcon name={n.art} size={26} /> : <Icon name={n.icon} size={19} />}
-                <span className="lbl-long">{n.label}</span>
-                {n.to === '/notifications' && unreadCount > 0 ? (
-                  <em className="count" aria-label={`${unreadCount} unread`}>
-                    {unreadCount > 9 ? '9+' : unreadCount}
-                  </em>
-                ) : null}
-              </NavLink>
-            ))}
-          </nav>
-          <RideBanner />
-          <div className="topbar__right">
-            <Link to="/support" className="help-link" aria-label="Help and support" title="Help">
-              <BrandIcon name="support" size={26} />
-              <span className="help-link__text">Help</span>
-            </Link>
-            <a className="help-link help-link--phone" href={`tel:${SUPPORT_PHONE}`} aria-label={`Call People Taxi support ${SUPPORT_PHONE_DISPLAY}`} title={SUPPORT_PHONE_DISPLAY}>
-              <BrandIcon name="contact" size={24} />
-              <span className="num">{SUPPORT_PHONE_DISPLAY}</span>
-            </a>
-            <SupportMenu onAsk={() => setAiOpen(true)} />
-            <ProfileMenu />
-          </div>
-          <div className="topbar__mobile">
-            <SupportMenu onAsk={() => setAiOpen(true)} />
-            <NavLink
-              to="/trips"
-              className={({ isActive }) => `icon-btn ${isActive ? 'is-active' : ''}`}
-              aria-label="My trips"
-              title="My trips"
-            >
-              <BrandIcon name="trips" size={30} />
-            </NavLink>
-            {!profile ? (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => openLoginModal({ title: 'Sign in to People Taxi' })}
-              >
-                Sign in
-              </Button>
-            ) : (
-              <>
+      {hideHeader ? null : (
+        <header className={`topbar ${live ? 'topbar--notice' : ''}`}>
+          <div className="topbar__inner">
+            <button type="button" className="menu-btn" aria-label="Open profile" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+              <BrandIcon name="menu" size={28} />
+            </button>
+            <Brand />
+            <nav className="topnav" aria-label="Main">
+              {TOP_NAV.map((n) => (
                 <NavLink
-                  to="/notifications"
-                  className={({ isActive }) => `icon-btn icon-btn--badge ${isActive ? 'is-active' : ''}`}
-                  aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
-                  title="Notifications"
+                  key={n.to}
+                  to={n.to}
+                  aria-label={n.to === '/notifications' && unreadCount > 0 ? `${n.label}, ${unreadCount} unread` : n.label}
+                  title={n.label}
+                  className={({ isActive }) => `topnav__link ${isActive || (n.to === '/book' && location.pathname === '/') ? 'is-active' : ''}`}
                 >
-                  <BrandIcon name="bell" size={28} />
-                  {unreadCount > 0 ? <em className="count" aria-hidden="true">{unreadCount > 9 ? '9+' : unreadCount}</em> : null}
+                  {n.art ? <BrandIcon name={n.art} size={26} /> : <Icon name={n.icon} size={19} />}
+                  <span className="lbl-long">{n.label}</span>
+                  {n.to === '/notifications' && unreadCount > 0 ? (
+                    <em className="count" aria-label={`${unreadCount} unread`}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </em>
+                  ) : null}
                 </NavLink>
-              </>
-            )}
+              ))}
+            </nav>
+            <RideBanner />
+            <div className="topbar__right">
+              <Link to="/support" className="help-link" aria-label="Help and support" title="Help">
+                <BrandIcon name="support" size={26} />
+                <span className="help-link__text">Help</span>
+              </Link>
+              <a className="help-link help-link--phone" href={`tel:${SUPPORT_PHONE}`} aria-label={`Call People Taxi support ${SUPPORT_PHONE_DISPLAY}`} title={SUPPORT_PHONE_DISPLAY}>
+                <BrandIcon name="contact" size={24} />
+                <span className="num">{SUPPORT_PHONE_DISPLAY}</span>
+              </a>
+              <SupportMenu onAsk={() => setAiOpen(true)} />
+              <ProfileMenu />
+            </div>
+            <div className="topbar__mobile">
+              <SupportMenu onAsk={() => setAiOpen(true)} />
+              <NavLink
+                to="/trips"
+                className={({ isActive }) => `icon-btn ${isActive ? 'is-active' : ''}`}
+                aria-label="My trips"
+                title="My trips"
+              >
+                <BrandIcon name="trips" size={30} />
+              </NavLink>
+              {!profile ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => openLoginModal({ title: 'Sign in to People Taxi' })}
+                >
+                  Sign in
+                </Button>
+              ) : (
+                <>
+                  <NavLink
+                    to="/notifications"
+                    className={({ isActive }) => `icon-btn icon-btn--badge ${isActive ? 'is-active' : ''}`}
+                    aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+                    title="Notifications"
+                  >
+                    <BrandIcon name="bell" size={28} />
+                    {unreadCount > 0 ? <em className="count" aria-hidden="true">{unreadCount > 9 ? '9+' : unreadCount}</em> : null}
+                  </NavLink>
+                </>
+              )}
+            </div>
+            <HeaderNotice />
           </div>
-          <HeaderNotice />
-        </div>
-      </header>
+        </header>
+      )}
 
       {/* The footer waits for the page: while a screen loads, only its placeholder shows. */}
       <Suspense

@@ -112,6 +112,7 @@ export function FlowBar({
   onHome,
   above,
   nextIcon,
+  backText = false,
 }: {
   onBack?: () => void;
   onNext?: () => void;
@@ -130,6 +131,8 @@ export function FlowBar({
   above?: ReactNode;
   /** An icon after the main button's label (for example an arrow on Continue). */
   nextIcon?: string;
+  /** Show the Back label next to its arrow (the icon-only Back stays the default). */
+  backText?: boolean;
 }) {
   return (
     <div className="flow-bar">
@@ -137,8 +140,9 @@ export function FlowBar({
       {total !== undefined && onNext ? (
         <div className={`flow-bar__total ${hideFare ? 'flow-bar__total--solo' : ''} ${hideFare && (onBack || onHome) ? 'flow-bar__total--with-icons' : ''}`}>
           {hideFare && onBack ? (
-            <button type="button" className="flow-bar__icon" aria-label={backLabel} title={backLabel} onClick={onBack}>
+            <button type="button" className={`flow-bar__icon ${backText ? 'flow-bar__icon--text' : ''}`} aria-label={backText ? undefined : backLabel} title={backText ? undefined : backLabel} onClick={onBack}>
               <Icon name="arrow-left" size={20} />
+              {backText ? <span>{backLabel}</span> : null}
             </button>
           ) : null}
           {hideFare ? null : (

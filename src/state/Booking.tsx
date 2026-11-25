@@ -253,9 +253,12 @@ export function useBookingQuote(): BookingQuote {
     const finalQuotes = new Map<string, FareBreakdown>();
     if (server) for (const x of byId.values()) if (x.ok && x.fare) finalQuotes.set(x.categoryId, x.fare);
     const chosen = category ? byId.get(category.id) : undefined;
-    // The CNG rate card applies when the rider picked CNG and this vehicle offers it.
+    // The CNG rate card applies when the rider picked CNG and this vehicle offers it. With CNG picked and no CNG rate card
+    // for this vehicle there is no matching fare: the Diesel fare must not stand in for it (the booking would say CNG).
     const cngChoice = draft.fuelType === 'cng' && chosen?.ok && chosen.cng ? chosen.cng : null;
-    const serverFare = cngChoice ? cngChoice.fare : chosen?.ok && chosen.fare ? chosen.fare : null;
+    // (Time-based round trips keep their own per-vehicle fuel choice and previous behaviour.)
+    const strictFuel = draft.fuelType === 'cng' && !(tripType === 'Round Trip' && !draft.multicity);
+    const serverFare = strictFuel ? cngChoice?.fare ?? null : cngChoice ? cngChoice.fare : chosen?.ok && chosen.fare ? chosen.fare : null;
     const authoritative = !!serverFare;
     const checkCoupon = (code: string): CouponResult => {
       if (!category || !route) return { ok: false, message: 'Choose a ride first.' };
@@ -290,12 +293,12 @@ export function useBookingQuote(): BookingQuote {
       pickupTime, checkCoupon, authoritative,
       quoteLoading: serverQuote.status === 'loading',
       quoteError: serverQuote.status === 'error' ? serverQuote.error : '',
-      breakup: (cngChoice ? cngChoice.breakup : chosen?.breakup) ?? null,
+      breakup: (strictFuel ? cngChoice?.breakup : cngChoice ? cngChoice.breakup : chosen?.breakup) ?? null,
       entries: byId, unavailable, hidden, days, packages, selectedPackage, autoDays: source?.autoDays === true, customQuote, retryQuote: serverQuote.retry,
       hillStations: server?.hillStations ?? [],
       trip: server?.trip ?? null,
     };
-  }, [categories, categoryId, route, tripType, pickupTime, adjustment, coupons, trips, promoCode, pickup, drop, serverQuote, draft.fuelType, draft.timePackage]);
+  }, [categories, categoryId, route, tripType, pickupTime, adjustment, coupons, trips, promoCode, pickup, drop, serverQuote, draft.fuelType, draft.timePackage, draft.multicity]);
 
   // Auto-Days sync (Customer UX v8): choosing an overnight package (Morning Return, Next-Day Return) when 1 day was asked for makes the
   // trip 2 days — the form's Days and the summary change together. Those auto days follow the package both ways (the server is still asked

@@ -17,12 +17,6 @@ html body .flow-page--cabs {
 html body .flow-page--cabs .cs-ico { flex: none; display: block; }
 html body .flow-page--cabs .icon svg, html body .flow-page--cabs svg.icon { stroke-width: 1.75; }
 
-/* ── Heading ─────────────────────────────────────────────────────────────── */
-html body .flow-page--cabs .cs-title {
-  margin: 16px 0 16px; color: var(--cs-navy); font-size: 1.375rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.2; text-align: center;
-}
-@media (min-width: 680px) { html body .flow-page--cabs .cs-title { margin: 24px 0; font-size: 1.75rem; } }
-
 /* ── Trip summary: date | time, route with origin dot → pin, Modify, then type · distance · duration ── */
 html body .flow-page--cabs .choose .trip-sum.trip-sum--compact {
   margin: 0 0 8px; padding: 16px; border: 1px solid var(--cs-line); border-radius: 16px; background: #fff; box-shadow: 0 2px 8px -4px rgb(15 23 42 / .12);
@@ -44,7 +38,7 @@ html body .flow-page--cabs .ts2__stop { display: contents; margin: 0; }
 html body .flow-page--cabs .ts2__stop strong { grid-column: 2; align-self: center; color: var(--cs-navy); font-size: 1.0625rem; font-weight: 900; letter-spacing: -0.01em; line-height: 1.3; overflow-wrap: anywhere; }
 html body .flow-page--cabs .ts2__dot { grid-column: 1; align-self: start; margin-top: 5px; justify-self: center; width: 12px; height: 12px; box-sizing: border-box; border: 2px solid var(--cs-blue); border-radius: 50%; background: #fff; }
 html body .flow-page--cabs .ts2__pin { grid-column: 1; align-self: start; margin-top: 2px; justify-self: center; display: grid; color: var(--cs-blue); }
-html body .flow-page--cabs .ts2__line { grid-column: 1; justify-self: center; width: 2px; height: 16px; margin: 4px 0; background: radial-gradient(circle, #94a3b8 1px, transparent 1.2px) center top / 2px 5px repeat-y; }
+html body .flow-page--cabs .ts2__line { grid-column: 1; justify-self: center; width: 2px; height: 10px; margin: 2px 0; background: radial-gradient(circle, #94a3b8 1px, transparent 1.2px) center top / 2px 5px repeat-y; }
 html body .flow-page--cabs .ts2__via { grid-column: 2; margin: 4px 0 0; display: flex; align-items: center; gap: 6px; color: var(--cs-muted); font-size: .8rem; font-weight: 600; }
 html body .flow-page--cabs .ts2__via .cs-ico { color: var(--cs-blue); }
 
@@ -124,29 +118,21 @@ html body .flow-page--cabs .fcab__facts li { gap: 6px; min-height: 32px; padding
 html body .flow-page--cabs .fcab__facts li > .icon { color: var(--cs-blue); }
 html body .flow-page--cabs .fcab__facts b { color: var(--cs-navy); font-weight: 700; }
 
-/* Fuel (left) and included distance (right): always one line. */
-html body .flow-page--cabs .cs-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-html body .flow-page--cabs .cs-fuel { display: flex; align-items: center; gap: 8px; min-width: 0; }
-html body .flow-page--cabs .cs-fuel__label { display: inline-flex; align-items: center; gap: 4px; color: #64748b; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
-html body .flow-page--cabs .cs-fuel__seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: #f1f5f9; box-shadow: 0 0 0 1px #e2e8f0 inset; }
-/* Only the selected fuel (from the existing value) is coloured and gets the tinted pill. The ring is an inset shadow, so the size never changes. */
-html body .flow-page--cabs .cs-fuel__opt { --fuel: #b45309; --fuel-bg: #fff7ed; --fuel-line: #fdba74; position: relative; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px; border-radius: 8px; color: var(--fuel); font-size: .76rem; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; transition: background-color var(--dur), box-shadow var(--dur); }
-html body .flow-page--cabs .cs-fuel__opt--cng { --fuel: #047857; --fuel-bg: #ecfdf5; --fuel-line: #6ee7b7; }
-html body .flow-page--cabs .cs-fuel__opt .cs-ico { color: inherit; }
-/* Unselected: neutral slate. Only the option matching the selected fuel value takes its colour. */
-html body .flow-page--cabs .cs-fuel__opt:not(.is-on) { color: #64748b; }
-html body .flow-page--cabs .cs-fuel__opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
-html body .flow-page--cabs .cs-fuel__opt.is-on,
-html body .flow-page--cabs .cs-fuel__opt--cng.is-on { background: var(--fuel-bg); color: var(--fuel); box-shadow: 0 0 0 1px var(--fuel-line) inset, 0 1px 3px rgb(15 23 42 / .1); }
-html body .flow-page--cabs .cs-fuel__opt:not(.is-on):hover:not(:has(input:disabled)) { background: rgb(255 255 255 / .7); }
-html body .flow-page--cabs .cs-fuel__opt:has(input:focus-visible) { outline: 2px solid var(--cs-blue); outline-offset: 1px; }
-html body .flow-page--cabs .cs-fuel__opt:has(input:disabled) { cursor: not-allowed; }
-html body .flow-page--cabs .cs-fuel__opt:has(input:disabled) input { cursor: not-allowed; }
-html body .flow-page--cabs .cs-km {
-  flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 1px solid var(--cs-blue-line); border-radius: 10px;
-  background: var(--cs-blue-wash); color: var(--cs-blue); font-size: .76rem; font-weight: 600; white-space: nowrap;
+/* Fuel + included distance: one compact white strip, centred, display only (the fuel is chosen above the list). */
+html body .flow-page--cabs .cs-strip {
+  display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 6px 12px; border: 1px solid #dbe6fb; border-radius: 12px;
+  background: #fff; box-shadow: 0 1px 3px rgb(15 23 42 / .05); color: var(--cs-navy); font-size: .85rem; font-weight: 700; line-height: 1.2; white-space: nowrap;
 }
-html body .flow-page--cabs .cs-km b { font-weight: 800; }
+html body .flow-page--cabs .cs-strip__fuel,
+html body .flow-page--cabs .cs-strip__km { display: inline-flex; align-items: center; gap: 6px; min-width: 0; }
+html body .flow-page--cabs .cs-strip__fuel--diesel { color: #b45309; }
+html body .flow-page--cabs .cs-strip__fuel--cng { color: #047857; }
+html body .flow-page--cabs .cs-well { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: #fff7ed; }
+html body .flow-page--cabs .cs-strip__fuel--cng .cs-well { background: #ecfdf5; }
+html body .flow-page--cabs .cs-well--blue { background: var(--cs-blue-wash); color: var(--cs-blue); }
+html body .flow-page--cabs .cs-strip__sep { flex: none; width: 1px; height: 20px; background: #d5dce8; }
+html body .flow-page--cabs .cs-strip__km b { color: var(--cs-blue); font-weight: 800; }
+html body .flow-page--cabs .cs-strip__km small { color: #64748b; font-size: .8rem; font-weight: 600; }
 
 /* Price (left) and Fare details (right). */
 html body .flow-page--cabs .fcab__foot { gap: 12px; padding-top: 12px; border-top: 1px solid var(--cs-line); }
@@ -158,18 +144,12 @@ html body .flow-page--cabs .fcab__price small { color: var(--cs-muted); font-siz
 html body .flow-page--cabs .fcab__details { gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--cs-blue-line); border-radius: 10px; background: var(--cs-blue-wash); color: var(--cs-blue); font-size: .8rem; }
 html body .flow-page--cabs .fcab__details:hover { background: #dde8ff; box-shadow: none; }
 
-/* Narrow phones (320–360px): tighter type and padding so fuel + included km stay on one line. */
+/* Narrow phones (320–360px): tighter type and padding. */
 @media (max-width: 374.98px) {
   html body .flow-page--cabs .fcab { padding: 12px; }
   html body .flow-page--cabs .fcab__photo, html body .flow-page--cabs .fcab__photo img { width: 72px; height: 46px; }
   html body .flow-page--cabs .fcab__facts { gap: 6px; }
   html body .flow-page--cabs .fcab__facts li { font-size: .7rem; padding: 4px; }
-  html body .flow-page--cabs .cs-row { gap: 6px; }
-  html body .flow-page--cabs .cs-fuel { gap: 4px; }
-  html body .flow-page--cabs .cs-fuel__label .cs-ico { display: none; }
-  html body .flow-page--cabs .cs-fuel__label { font-size: .6rem; letter-spacing: .04em; }
-  html body .flow-page--cabs .cs-fuel__opt { gap: 3px; padding: 0 6px; font-size: .7rem; }
-  html body .flow-page--cabs .cs-km { gap: 4px; padding: 0 6px; font-size: .7rem; }
   html body .flow-page--cabs .fcab__price b, html body .flow-page--cabs .fcab.is-on .fcab__price b { font-size: 1.3rem; }
 }
 
@@ -189,4 +169,56 @@ html body .flow-page--cabs .flow-bar .flow-bar__icon:active { background: var(--
 @media (max-width: 999.98px) {
   html body main .flow-page--cabs { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
 }
-@media (prefers-reduced-motion: reduce) { html body .flow-page--cabs .cs-fuel__opt { transition: none; } }
+@media (prefers-reduced-motion: reduce) { html body .flow-page--cabs .cs-sfuel__opt { transition: none; } }
+
+/* ── Page without the site header: start close to the top, below any notch. ── */
+html body .flow-page--cabs .flow-page__wrap { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+html body .flow-page--cabs .choose .trip-sum.trip-sum--compact { margin-bottom: 12px; }
+html body .flow-page--cabs .fcab { gap: 10px; padding: 14px; }
+html body .flow-page--cabs .fcabs { gap: 12px; }
+
+/* ── One shared fuel selector, under the trip summary ── */
+html body .flow-page--cabs .cs-sfuel { display: flex; align-items: center; gap: 12px; margin: 0 0 12px; }
+html body .flow-page--cabs .cs-sfuel__label { flex: none; display: inline-flex; align-items: center; gap: 6px; color: #475569; font-size: .8rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+html body .flow-page--cabs .cs-sfuel__sep { flex: none; width: 1px; height: 28px; background: #d5dce8; }
+html body .flow-page--cabs .cs-sfuel__seg { flex: 1 1 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; min-width: 0; padding: 3px; border: 1px solid #d5dce8; border-radius: 14px; background: #fff; }
+html body .flow-page--cabs .cs-sfuel__opt {
+  --fuel: #b45309; --fuel-bg: #fff7ed; --fuel-line: #fdba74;
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 0 12px; border-radius: 11px;
+  color: #64748b; font-size: .95rem; font-weight: 800; white-space: nowrap; cursor: pointer; transition: background-color var(--dur), box-shadow var(--dur), color var(--dur);
+}
+html body .flow-page--cabs .cs-sfuel__opt--cng { --fuel: #047857; --fuel-bg: #ecfdf5; --fuel-line: #6ee7b7; }
+html body .flow-page--cabs .cs-sfuel__opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+html body .flow-page--cabs .cs-sfuel__opt.is-on { background: var(--fuel-bg); color: var(--fuel); box-shadow: 0 0 0 1.5px var(--fuel-line) inset; }
+html body .flow-page--cabs .cs-sfuel__opt:not(.is-on):hover { background: #f8fafc; }
+html body .flow-page--cabs .cs-sfuel__opt:has(input:focus-visible) { outline: 2px solid var(--cs-blue); outline-offset: 2px; }
+@media (max-width: 374.98px) {
+  html body .flow-page--cabs .cs-sfuel { gap: 8px; }
+  html body .flow-page--cabs .cs-sfuel__label { font-size: .72rem; }
+  html body .flow-page--cabs .cs-sfuel__opt { gap: 6px; padding: 0 8px; font-size: .88rem; }
+  html body .flow-page--cabs .cs-strip { gap: 6px; padding: 6px 8px; font-size: .8rem; }
+  html body .flow-page--cabs .cs-strip__km small { font-size: .74rem; }
+}
+
+/* ── Footer: outlined "← Back" and solid blue "Continue →" sharing the row ── */
+html body .flow-page--cabs .flow-bar .flow-bar__total--with-icons { display: flex; gap: 12px; }
+html body .flow-page--cabs .flow-bar .flow-bar__icon--text {
+  flex: 0 0 calc(46% - 6px); width: auto; gap: 8px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--cs-blue); background: #fff; color: var(--cs-blue); font-size: 1.05rem; font-weight: 800;
+}
+html body .flow-page--cabs .flow-bar .flow-bar__total--with-icons .btn { flex: 1 1 auto; }
+html body .flow-page--cabs .flow-bar .flow-bar__nav { display: flex; gap: 12px; }
+html body .flow-page--cabs .flow-bar .flow-bar__nav .btn { min-height: 52px; border-radius: 14px; font-size: 1rem; font-weight: 800; }
+html body .flow-page--cabs .flow-bar .flow-bar__nav .btn--secondary { flex: 0 0 calc(46% - 6px); border: 1.5px solid var(--cs-blue); background: #fff; color: var(--cs-blue); }
+html body .flow-page--cabs .flow-bar .flow-bar__nav .btn--primary { flex: 1 1 auto; background: var(--cs-blue); color: #fff; }
+
+/* Desktop: the header is not shown on this step, so the same Back / Continue bar is shown (sticky) and the side card's
+   own Book Now button steps aside to avoid two buttons doing the same thing. */
+@media (min-width: 1000px) {
+  html body .flow-page--cabs .flow-bar {
+    position: sticky; bottom: 0; z-index: 90; display: grid; padding: 12px 24px calc(12px + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid var(--cs-line); background: rgb(255 255 255 / .98); box-shadow: 0 -6px 20px rgb(15 23 42 / .06);
+  }
+  html body .flow-page--cabs .flow-bar > * { width: 100%; max-width: 560px; margin-inline: auto; }
+  html body .flow-page--cabs .choose__aside .sel-card > .btn { display: none; }
+}
