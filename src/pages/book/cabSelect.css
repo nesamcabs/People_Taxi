@@ -1,0 +1,155 @@
+/* People Taxi "Choose your cab" screen (ChooseStep). Presentation only.
+   Every rule is scoped to `.flow-page--cabs`, a class only ChooseStep renders, so other pages and brands are untouched.
+   The `html body` prefix outranks the older compact / theme / colour-bar rules for the same elements. */
+html body .flow-page--cabs {
+  --cs-blue: #155eef;
+  --cs-blue-ink: #0b46c4;
+  --cs-blue-wash: #eaf1ff;
+  --cs-blue-line: #c7d8fb;
+  --cs-navy: #0f172a;
+  --cs-muted: #5b6478;
+  --cs-line: #e3e8f1;
+  --cs-sunken: #eef1f6;
+  --cs-bg: #f6f8fc;
+  --cs-r: 16px;
+  background: var(--cs-bg);
+}
+html body .flow-page--cabs .cs-ico { flex: none; display: block; }
+html body .flow-page--cabs .icon svg, html body .flow-page--cabs svg.icon { stroke-width: 1.75; }
+
+/* ── Heading ─────────────────────────────────────────────────────────────── */
+html body .flow-page--cabs .cs-title {
+  margin: 16px 0 16px; color: var(--cs-navy); font-size: 1.375rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.2; text-align: center;
+}
+@media (min-width: 680px) { html body .flow-page--cabs .cs-title { margin: 24px 0; font-size: 1.75rem; } }
+
+/* ── Trip summary ───────────────────────────────────────────────────────── */
+html body .flow-page--cabs .choose .trip-sum.trip-sum--compact {
+  margin: 0 0 8px; padding: 16px; border: 1px solid var(--cs-line); border-radius: 20px; background: #fff;
+  box-shadow: 0 8px 24px -16px rgb(15 23 42 / .25);
+}
+html body .flow-page--cabs .choose .trip-sum--compact .trip-sum__body { gap: 12px; }
+html body .flow-page--cabs .choose .trip-sum__headrow { align-items: center; gap: 12px; }
+html body .flow-page--cabs .choose .trip-sum.trip-sum--compact .route-title { gap: 4px 10px; color: var(--cs-navy); font-size: 1.125rem; font-weight: 900; line-height: 1.25; }
+html body .flow-page--cabs .choose .trip-sum.trip-sum--compact .route-title > span { min-width: 0; overflow-wrap: anywhere; }
+html body .flow-page--cabs .choose .trip-sum.trip-sum--compact .route-title .icon { width: 12px; height: 12px; padding: 5px; background: var(--cs-blue); }
+html body .flow-page--cabs .choose .trip-sum.trip-sum--compact .trip-sum__meta { gap: 8px; }
+html body .flow-page--cabs .choose .ts-chip { gap: 6px; padding: 4px 12px; background: #fff; box-shadow: 0 0 0 1px var(--cs-line) inset; color: var(--cs-navy); font-size: .8rem; font-weight: 600; }
+html body .flow-page--cabs .choose .ts-chip svg { width: 14px; height: 14px; color: var(--cs-blue); }
+html body .flow-page--cabs .choose .ts-chip--type { padding: 4px 12px; background: var(--cs-blue-wash); box-shadow: none; color: var(--cs-blue); font-size: .8rem; font-weight: 800; letter-spacing: 0; }
+html body .flow-page--cabs .choose .trip-sum__dist {
+  display: flex; align-items: center; gap: 12px; margin: 0; padding: 8px 12px; border-radius: 12px; background: var(--cs-sunken); color: var(--cs-navy); font-size: .85rem; font-weight: 600;
+}
+html body .flow-page--cabs .choose .trip-sum__dist > span:not(.trip-sum__dist-sep) { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+html body .flow-page--cabs .choose .trip-sum__dist b { font-weight: 800; }
+html body .flow-page--cabs .choose .trip-sum__dist > span:first-child svg { color: var(--cs-blue); }
+html body .flow-page--cabs .choose .trip-sum__dist > span:last-child svg { color: var(--cs-muted); }
+html body .flow-page--cabs .choose .trip-sum__dist-sep { flex: none; width: 1px; height: 18px; background: #c9d1de; }
+
+/* Modify: compact pale-blue button with a pencil in a small white square. */
+html body .flow-page--cabs .choose .trip-sum__edit {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 0 12px 0 4px; border: 1px solid var(--cs-blue-line); border-radius: 12px;
+  background: var(--cs-blue-wash); color: var(--cs-blue); font-size: .85rem; font-weight: 800; box-shadow: none;
+}
+html body .flow-page--cabs .choose .trip-sum__edit:hover { background: #dde8ff; }
+html body .flow-page--cabs .choose .trip-sum__edit:focus-visible { outline: 2px solid var(--cs-blue); outline-offset: 2px; }
+html body .flow-page--cabs .choose .trip-sum__edit-ico { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 8px; background: #fff; box-shadow: 0 0 0 1px var(--cs-blue-line) inset; }
+@media (min-width: 1000px) {
+  html body .flow-page--cabs .choose .trip-sum.trip-sum--compact { padding: 24px; border-radius: 24px; }
+  html body .flow-page--cabs .choose .trip-sum.trip-sum--compact .route-title { font-size: 1.5rem; }
+  html body .flow-page--cabs .choose .ts-chip { padding: 6px 14px; font-size: .9rem; }
+  html body .flow-page--cabs .choose .trip-sum__dist { padding: 12px 16px; font-size: .95rem; }
+  html body .flow-page--cabs .choose .trip-sum__edit { min-height: 44px; padding: 0 16px 0 6px; font-size: .95rem; }
+  html body .flow-page--cabs .choose .trip-sum__edit-ico { width: 32px; height: 32px; }
+}
+
+/* ── Cab cards ───────────────────────────────────────────────────────────── */
+html body .flow-page--cabs .fcabs { gap: 16px; padding-top: 0; }
+html body .flow-page--cabs .fcab,
+html body .flow-page--cabs .fcab[data-acc] { --a: var(--cs-blue); --a-ink: var(--cs-blue-ink); --a-wash: var(--cs-blue-wash); }
+html body .flow-page--cabs .fcab {
+  gap: 12px; padding: 16px; border: 1.5px solid var(--cs-line); border-radius: var(--cs-r); background: #fff;
+  box-shadow: 0 6px 18px -14px rgb(15 23 42 / .35);
+}
+html body .flow-page--cabs .fcab::before { content: none; }
+html body .flow-page--cabs .fcab:hover:not(.is-disabled) { box-shadow: 0 10px 24px -14px rgb(21 94 239 / .45); }
+html body .flow-page--cabs .fcab.is-on { border-color: var(--cs-blue); box-shadow: 0 0 0 3px rgb(21 94 239 / .12), 0 10px 24px -14px rgb(21 94 239 / .5); }
+html body .flow-page--cabs .fcab:has(.fcab__badge) { padding-top: 12px; }
+
+html body .flow-page--cabs .fcab__badge {
+  position: static; align-self: flex-start; gap: 4px; margin: 0 0 -4px; padding: 2px 10px; border: 1px solid #bfe8cf; background: #e9f8ef; color: #12804a;
+  font-size: .72rem; font-weight: 800; line-height: 1.5; box-shadow: none;
+}
+html body .flow-page--cabs .fcab__top { gap: 12px; }
+html body .flow-page--cabs .fcab__photo { width: 88px; height: 56px; border-radius: 12px; background: transparent; box-shadow: none; }
+html body .flow-page--cabs .fcab__photo img { width: 88px; height: 54px; }
+html body .flow-page--cabs .fcab__ttl { gap: 4px; }
+html body .flow-page--cabs .fcab__ttl strong { color: var(--cs-navy); font-size: 1.05rem; font-weight: 900; line-height: 1.25; overflow-wrap: anywhere; }
+html body .flow-page--cabs .fcab__ttl small { padding: 1px 8px; border-radius: 6px; background: var(--cs-blue-wash); color: var(--cs-blue); font-size: .68rem; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+html body .flow-page--cabs .fcab__tick { width: 24px; height: 24px; border: 1.75px solid #b8c2d3; background: #fff; }
+html body .flow-page--cabs .fcab.is-on .fcab__tick { border-color: var(--cs-blue); background: var(--cs-blue); transform: none; box-shadow: none; }
+
+html body .flow-page--cabs .fcab__facts { gap: 8px; }
+html body .flow-page--cabs .fcab__facts li { gap: 6px; min-height: 32px; padding: 4px 6px; border-radius: 10px; background: #fff; box-shadow: 0 0 0 1px var(--cs-line) inset; color: var(--cs-navy); font-size: .76rem; font-weight: 600; }
+html body .flow-page--cabs .fcab__facts li > .icon { color: var(--cs-blue); }
+html body .flow-page--cabs .fcab__facts b { color: var(--cs-navy); font-weight: 700; }
+
+/* Fuel (left) and included distance (right): always one line. */
+html body .flow-page--cabs .cs-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+html body .flow-page--cabs .cs-fuel { display: flex; align-items: center; gap: 8px; min-width: 0; }
+html body .flow-page--cabs .cs-fuel__label { display: inline-flex; align-items: center; gap: 4px; color: var(--cs-muted); font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
+html body .flow-page--cabs .cs-fuel__seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--cs-sunken); }
+html body .flow-page--cabs .cs-fuel__opt { position: relative; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px; border-radius: 8px; color: var(--cs-muted); font-size: .76rem; font-weight: 700; white-space: nowrap; cursor: pointer; transition: background-color var(--dur), color var(--dur), box-shadow var(--dur); }
+html body .flow-page--cabs .cs-fuel__opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
+html body .flow-page--cabs .cs-fuel__opt.is-on { background: #fff; color: var(--cs-navy); box-shadow: 0 1px 3px rgb(15 23 42 / .14); }
+html body .flow-page--cabs .cs-fuel__opt--cng.is-on { color: #12804a; }
+html body .flow-page--cabs .cs-fuel__opt:has(input:focus-visible) { outline: 2px solid var(--cs-blue); outline-offset: 1px; }
+html body .flow-page--cabs .cs-fuel__opt:has(input:disabled) { cursor: not-allowed; }
+html body .flow-page--cabs .cs-km {
+  flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 10px; border: 1px solid var(--cs-blue-line); border-radius: 10px;
+  background: var(--cs-blue-wash); color: var(--cs-blue); font-size: .76rem; font-weight: 600; white-space: nowrap;
+}
+html body .flow-page--cabs .cs-km b { font-weight: 800; }
+
+/* Price (left) and Fare details (right). */
+html body .flow-page--cabs .fcab__foot { gap: 12px; padding-top: 12px; border-top: 1px solid var(--cs-line); }
+html body .flow-page--cabs .fcab__price { column-gap: 8px; }
+html body .flow-page--cabs .fcab__price b,
+html body .flow-page--cabs .fcab.is-on .fcab__price b { color: var(--cs-navy); font-size: 1.5rem; font-weight: 900; }
+html body .flow-page--cabs .fcab__price s { color: #8a93a6; font-size: .78rem; }
+html body .flow-page--cabs .fcab__price small { color: var(--cs-muted); font-size: .76rem; font-weight: 600; }
+html body .flow-page--cabs .fcab__details { gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--cs-blue-line); border-radius: 10px; background: var(--cs-blue-wash); color: var(--cs-blue); font-size: .8rem; }
+html body .flow-page--cabs .fcab__details:hover { background: #dde8ff; box-shadow: none; }
+
+/* Narrow phones (320–360px): tighter type and padding so fuel + included km stay on one line. */
+@media (max-width: 374.98px) {
+  html body .flow-page--cabs .fcab { padding: 12px; }
+  html body .flow-page--cabs .fcab__photo, html body .flow-page--cabs .fcab__photo img { width: 72px; height: 46px; }
+  html body .flow-page--cabs .fcab__facts { gap: 6px; }
+  html body .flow-page--cabs .fcab__facts li { font-size: .7rem; padding: 4px; }
+  html body .flow-page--cabs .cs-row { gap: 6px; }
+  html body .flow-page--cabs .cs-fuel { gap: 4px; }
+  html body .flow-page--cabs .cs-fuel__label .cs-ico { display: none; }
+  html body .flow-page--cabs .cs-fuel__label { font-size: .6rem; letter-spacing: .04em; }
+  html body .flow-page--cabs .cs-fuel__opt { gap: 3px; padding: 0 6px; font-size: .7rem; }
+  html body .flow-page--cabs .cs-km { gap: 4px; padding: 0 6px; font-size: .7rem; }
+  html body .flow-page--cabs .fcab__price b, html body .flow-page--cabs .fcab.is-on .fcab__price b { font-size: 1.3rem; }
+}
+
+/* ── Bottom bar: quiet outlined Back / Home, solid blue Continue ─────────── */
+html body .flow-page--cabs .flow-bar .flow-bar__total--with-icons { gap: 12px; }
+html body .flow-page--cabs .flow-bar .flow-bar__total--with-icons .btn {
+  min-height: 52px; border: 0; border-radius: 14px; background: var(--cs-blue); color: #fff; font-size: 1.05rem; font-weight: 800; box-shadow: 0 10px 20px -10px rgb(21 94 239 / .7); filter: none;
+}
+html body .flow-page--cabs .flow-bar .flow-bar__total--with-icons .btn:hover:not(:disabled) { background: var(--cs-blue-ink); }
+html body .flow-page--cabs .flow-bar .flow-bar__total--with-icons .btn:disabled { background: #e6eaf1; color: #8a93a6; box-shadow: none; }
+html body .flow-page--cabs .flow-bar .flow-bar__icon {
+  width: 52px; height: 52px; border: 1.5px solid var(--cs-blue-line); border-radius: 14px; background: #fff; color: var(--cs-blue); box-shadow: none; filter: none;
+}
+html body .flow-page--cabs .flow-bar .flow-bar__icon:hover { border-color: var(--cs-blue); background: var(--cs-blue-wash); color: var(--cs-blue); box-shadow: none; filter: none; }
+html body .flow-page--cabs .flow-bar .flow-bar__icon:active { background: var(--cs-blue-wash); filter: none; }
+/* The fixed bar (compact.css) is ~84px tall plus the safe area: keep the last card clear of it. */
+@media (max-width: 999.98px) {
+  html body main .flow-page--cabs { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) { html body .flow-page--cabs .cs-fuel__opt { transition: none; } }

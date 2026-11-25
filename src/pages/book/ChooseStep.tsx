@@ -11,23 +11,54 @@ import { useBooking, useBookingQuote } from '@/state/Booking';
 import { useOnline } from '@/lib/hooks';
 import { categoryGroup, categoryName, categoryPhoto, type CategoryGroup } from '@/lib/categories';
 import { tripTypeLabel } from '@/lib/services';
-import { CabIcon, FuelPick, type FuelChoice } from '@/shared/components/CabParts';
-import { ChooseHero, FareDialog, FlowBar, PromoControl } from './parts';
+import type { FuelChoice } from '@/shared/components/CabParts';
+import { FareDialog, FlowBar, PromoControl } from './parts';
 import { ACCENTS, RoundVehiclePackage, vehicleTabLabel } from './RoundVehiclePackage';
 import { EditTripDialog } from './EditTripDialog';
 import './tripSummary.css';
 import './choosePage.css';
+import './cabSelect.css';
 import { packageClock, packageDay } from '@core/utils/timePackages';
 
 const TOO_FAR_KM = 1500;
-/** The line under the banner: what this kind of trip gives the customer. */
-const heroLine = (tripType: string, multicity?: boolean): string =>
-  multicity ? 'Multicity · One driver · Every stop planned'
-  : tripType === 'Airport Taxi' ? 'Airport Taxi · Fixed fares · On-time pickup'
-  : tripType === 'Local Rental' ? 'Local Rental · Hourly packages · Driver included'
-  : tripType === 'One Way' ? 'One Way · Pay for one side only · Upfront fares'
-  : `${tripType} · Upfront fares · No hidden charges`;
 type Sort = 'recommended' | 'low' | 'high';
+
+/** Crisp 1.75px outline glyphs for this screen only (pencil, fuel pump, leaf, road). */
+const LINE_GLYPHS = {
+  pencil: <path d="M4 20h4L18.5 9.5a2.83 2.83 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4" />,
+  pump: <path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M7 8h4M14 10h2a2 2 0 0 1 2 2v4.5a1.5 1.5 0 0 0 3 0V8.5L18 5.5" />,
+  leaf: <path d="M5 19c0-8 5.5-13 15-14-.5 9.5-6 15-14 15M5 19c2.5-4 5.5-6.5 9-8.5" />,
+  road: <path d="M8 3 4 21M16 3l4 18M12 4v2.5M12 10.5v3M12 17.5V20" />,
+} as const;
+function LineIcon({ name, size = 16 }: { name: keyof typeof LINE_GLYPHS; size?: number }) {
+  return (
+    <svg className="cs-ico" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      {LINE_GLYPHS[name]}
+    </svg>
+  );
+}
+
+/** Diesel / CNG as a compact segmented control. Same radio semantics and handler as before; a click never toggles the card. */
+function FuelSegment({ name, value, disabled, onChange }: { name: string; value: FuelChoice; disabled?: boolean; onChange: (v: FuelChoice) => void }) {
+  const opts: { id: FuelChoice; label: string; icon: keyof typeof LINE_GLYPHS }[] = [
+    { id: 'diesel', label: 'Diesel', icon: 'pump' },
+    { id: 'cng', label: 'CNG', icon: 'leaf' },
+  ];
+  return (
+    <div className="cs-fuel" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      <span className="cs-fuel__label" aria-hidden="true"><LineIcon name="pump" size={14} /> Fuel</span>
+      <div className="cs-fuel__seg" role="radiogroup" aria-label="Fuel type">
+        {opts.map((o) => (
+          <label key={o.id} className={`cs-fuel__opt cs-fuel__opt--${o.id} ${value === o.id ? 'is-on' : ''}`}>
+            <input type="radio" name={name} value={o.id} checked={value === o.id} disabled={disabled} onChange={() => onChange(o.id)} />
+            <LineIcon name={o.icon} size={14} />
+            <span>{o.label}</span>
+          </label>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function ChooseStep() {
   const navigate = useNavigate();
@@ -102,12 +133,12 @@ export function ChooseStep() {
   };
 
   return (
-    <div className="flow-page flow-page--choose">
+    <div className="flow-page flow-page--choose flow-page--cabs">
       <div className="wrap flow-page__wrap">
         <div className="choose">
           <div className="choose__main">
             <section className="trip-sum trip-sum--compact" aria-label="Trip summary">
-              <h1 className="sr-only">Choose your vehicle</h1>
+              {roundPick ? <h1 className="sr-only">Choose your vehicle</h1> : null}
               <div className="trip-sum__body">
                 <div className="trip-sum__headrow">
                   <div className="trip-sum__routebox">
@@ -119,19 +150,30 @@ export function ChooseStep() {
                     {roundVia.length ? <p className="trip-sum__via"><Icon name="route" size={13} /> Via {roundVia.map((stop) => stop.name).join(' → ')}</p> : null}
                   </div>
                   {tripType !== 'Local Rental' ? (
-                    <button type="button" className="trip-sum__edit" onClick={() => setEditOpen(true)} aria-label="Edit pickup date, time and trip days">
-                      <Icon name="edit" size={13} /> Edit
+                    <button type="button" className="trip-sum__edit" onClick={() => setEditOpen(true)} aria-label="Modify pickup date, time and trip days">
+                      <span className="trip-sum__edit-ico"><LineIcon name="pencil" size={14} /></span> Modify
                     </button>
                   ) : null}
                 </div>
                 <p className="trip-sum__meta">
                   <span className="ts-chip ts-chip--type">{tripTypeLabel(draft.multicity ? 'Multicity' : tripType)}</span>
-                  {scheduledAt ? <span className="ts-chip trip-sum__when"><Icon name="calendar" size={14} /> {formatDate(scheduledAt)}, {formatTime(scheduledAt)}</span> : null}
+                  {scheduledAt ? (
+                    <>
+                      <span className="ts-chip trip-sum__when"><Icon name="calendar" size={14} /> {formatDate(scheduledAt)}</span>
+                      <span className="ts-chip trip-sum__when"><Icon name="clock" size={14} /> {formatTime(scheduledAt)}</span>
+                    </>
+                  ) : null}
                   {roundPick && q.selectedPackage ? (
                     <span className="ts-chip trip-sum__when"><Icon name="clock" size={14} /> {q.selectedPackage.days} calendar {q.selectedPackage.days === 1 ? 'day' : 'days'} · Return by {packageDay(new Date(q.selectedPackage.endAt))}, {packageClock(new Date(q.selectedPackage.endAt))}</span>
                   ) : null}
-                  {route && tripType !== 'Local Rental' ? <span className="ts-chip"><Icon name="route" size={14} /> {formatDistance(q.trip?.distanceKm ?? route.totalDistanceKm ?? route.distanceKm)} · about {formatDuration(q.trip?.durationMin ?? route.totalDurationMin ?? route.durationMin)}</span> : null}
                 </p>
+                {route && tripType !== 'Local Rental' ? (
+                  <p className="trip-sum__dist">
+                    <span><Icon name="route" size={18} /> <b>{formatDistance(q.trip?.distanceKm ?? route.totalDistanceKm ?? route.distanceKm)}</b></span>
+                    <span className="trip-sum__dist-sep" aria-hidden="true" />
+                    <span><Icon name="clock" size={18} /> about {formatDuration(q.trip?.durationMin ?? route.totalDurationMin ?? route.durationMin)}</span>
+                  </p>
+                ) : null}
               </div>
             </section>
             {editOpen ? <EditTripDialog onClose={() => setEditOpen(false)} /> : null}
@@ -225,13 +267,7 @@ export function ChooseStep() {
               />
             ) : null}
 
-            {roundPick ? null : (
-              <ChooseHero
-                title={['Choose ', 'Your Vehicle', '']}
-                sub={heroLine(tripType, draft.multicity)}
-                photo={selected ? categoryPhoto(selected) : shown[0] ? categoryPhoto(shown[0]) : ''}
-              />
-            )}
+            {roundPick ? null : <h1 className="cs-title">Choose your cab</h1>}
 
             {roundPick ? null : <div className="fcabs" role="radiogroup" aria-label="Available cabs">
               {categoryStatus === 'loading' && categories.length === 0 ? (
@@ -254,6 +290,9 @@ export function ChooseStep() {
                 const strikeTotal = (cngAlt ? cngAlt.strikeTotal : entry?.strikeTotal) ?? 0;
                 const strike = fare && strikeTotal > 0 && fare.total > 0 ? Math.round((fare.taxableAmount * strikeTotal) / fare.total) : 0;
                 const cheapest = !!fare && fare.taxableAmount === lowestFare;
+                // The kilometres this fare includes, as the server quoted them (not the route estimate).
+                const includedKm = entry?.ok && typeof entry.includedKm === 'number' && entry.includedKm > 0 ? entry.includedKm : 0;
+                const hasCng = !!cngOf(c);
 
                 return (
                   <div
@@ -290,7 +329,14 @@ export function ChooseStep() {
                       <li><Icon name="luggage" size={14} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
                     </ul>
 
-                    {cngOf(c) ? <FuelPick name={`fuel-${c.id}`} value={fuelOf(c)} onChange={(f) => !disabled && chooseFuel(c, f)} /> : null}
+                    {hasCng || includedKm ? (
+                      <div className="cs-row">
+                        {hasCng ? <FuelSegment name={`fuel-${c.id}`} value={fuelOf(c)} disabled={disabled} onChange={(f) => !disabled && chooseFuel(c, f)} /> : <span />}
+                        {includedKm ? (
+                          <span className="cs-km"><LineIcon name="road" size={14} /> <span><b>{+includedKm.toFixed(1)} km</b> included</span></span>
+                        ) : null}
+                      </div>
+                    ) : null}
 
                     <div className="fcab__foot">
                       <div className="fcab__foot-price">
