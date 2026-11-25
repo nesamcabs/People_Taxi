@@ -38,6 +38,7 @@ import './styles/placefield.css';
 import './styles/brand-icons.css';
 import './styles/keyboard.css';
 import './styles/colour-bars.css';
+import './styles/service-bar.css';
 import { keepHomeBehindEveryScreen } from './lib/homeNav';
 import { installStaleVersionReload, installVersionCheck } from '@/shared/components/RouteErrorBoundary';
 import { prefetchWhenIdle, registerDeviceCache } from '@/lib/deviceCache';

@@ -1,0 +1,31 @@
+/* People Taxi phone service bar (Shell BottomNav, `.tabbar`): approved white bar with a blue outline. Presentation only;
+   loaded last so it settles the earlier bar rules (bottom-nav, brand-icons, colour-bars). Position, size and the
+   selected service (`.is-active`, from the existing route state) are unchanged. */
+@media (max-width: 899.98px) {
+  html body .tabbar {
+    border: 2px solid #155eef;
+    background: #fff;
+    background-image: none;
+    box-shadow: 0 6px 18px -8px rgb(15 23 42 / 0.18), 0 1px 3px rgb(15 23 42 / 0.06);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  /* Five equal columns; every label the same size so they share one baseline. */
+  html body .tabbar .tabbar__link { color: #0f172a; }
+  html body .tabbar .tabbar__link.is-active { color: #155eef; }
+  html body .tabbar .tabbar__label,
+  html body .tabbar .tabbar__link--wide .tabbar__label {
+    font-size: clamp(10px, 2.9vw, 13px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+  /* Selected (and hovered, as before): a white disc with a blue outline behind the existing 3D icon, gently raised. */
+  html body .tabbar .tabbar__icon::before { border: 2px solid #155eef; background: #fff; }
+  html body .tabbar .tabbar__link.is-active .tabbar__icon::before {
+    background: #fff;
+    box-shadow: 0 6px 12px -6px rgb(15 23 42 / 0.28);
+  }
+  html body .tabbar .tabbar__link:focus-visible { outline: 2px solid #155eef; outline-offset: 3px; border-radius: 12px; }
+}
