@@ -12,7 +12,7 @@
  *
  * Bump VERSION to drop every cache this file created.
  */
-const VERSION = 'v1';
+const VERSION = 'v2'; // v2: drops caches that may hold an HTML page saved under a script's name (see cacheFirst)
 const PREFIX = 'peopletaxi';
 const STATIC = `${PREFIX}-static-${VERSION}`;
 const IMAGES = `${PREFIX}-img-${VERSION}`;
@@ -54,13 +54,18 @@ async function trim(cache, max) {
   for (let i = 0; i < keys.length - max; i += 1) await cache.delete(keys[i]);
 }
 
-/** Hashed files: saved once, served from the device forever. */
+/**
+ * Hashed files: saved once, served from the device forever. A file from an older release that the server no longer has
+ * must never be saved: a host that answers unknown paths with the page itself (200, text/html) would otherwise store that
+ * page under the script's name, and every later load of that script would fail.
+ */
 async function cacheFirst(request, cacheName) {
   const cache = await caches.open(cacheName);
   const hit = await cache.match(request);
   if (hit) return hit;
   const res = await fetch(request);
-  if (res.ok && res.type === 'basic') await cache.put(request, res.clone());
+  const type = res.headers.get('content-type') || '';
+  if (res.ok && res.type === 'basic' && !/text\/html/i.test(type)) await cache.put(request, res.clone());
   return res;
 }
 
@@ -128,16 +133,14 @@ async function tileImage(event, request, cacheName, max) {
 async function page(event, request) {
   const cache = await caches.open(PAGES);
   const fallback = async () => (await cache.match(request)) || (await cache.match('/')) || Response.error();
+  const key = new URL(request.url).pathname === '/' ? '/' : request;
+  // The live page is saved whenever it arrives, even after the saved one was shown because it was slow:
+  // the next load (e.g. the one-time reload after a new release) then starts from the current release.
+  const live = fetch(request);
+  // Registered before the page is handed over, so the copy is taken before the browser reads the original.
+  event.waitUntil(live.then((res) => (res.ok && res.type === 'basic' ? cache.put(key, res.clone()) : undefined)).catch(() => undefined));
   try {
-    const res = await Promise.race([
-      fetch(request),
-      new Promise((_, reject) => setTimeout(() => reject(new Error('slow')), PAGE_TIMEOUT_MS)),
-    ]);
-    if (res.ok && res.type === 'basic') {
-      const url = new URL(request.url);
-      event.waitUntil(cache.put(url.pathname === '/' ? '/' : request, res.clone()));
-    }
-    return res;
+    return await Promise.race([live, new Promise((_, reject) => setTimeout(() => reject(new Error('slow')), PAGE_TIMEOUT_MS))]);
   } catch {
     return fallback();
   }

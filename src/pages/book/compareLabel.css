@@ -1,6 +1,0 @@
-/* "Compare" on the home booking form: People Taxi blue, white icons. Scoped to the form's submit button. */
-html body .bf .bf-submit.bf-submit--compare { background: #155eef; background-image: none; color: #fff; }
-html body .bf .bf-submit.bf-submit--compare:hover:not(:disabled) { background: #0b46c4; }
-html body .bf .bf-submit.bf-submit--compare:focus-visible { outline: 3px solid rgb(21 94 239 / .45); outline-offset: 2px; }
-.bf-compare { display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
-.bf-compare__ico { flex: none; display: block; color: #fff; }

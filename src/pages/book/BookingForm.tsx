@@ -27,7 +27,7 @@ import { ServiceNote } from '@/components/ServiceNote';
 import { LOCAL_RENTALS_LABEL, SERVICES, SERVICE_TITLE, isLocalRentals, type ServiceId } from '@/lib/services';
 import { AIRPORTS, QUICK_CITIES, isAirportPlace } from './content';
 import { MulticityForm } from './MulticityForm';
-import { CompareLabel } from './CompareLabel';
+import { FindCabLabel } from './FindCabLabel';
 import { ServiceIcon } from '@/components/ServiceIcon';
 
 type Field = 'pickup' | 'drop' | 'stops' | 'hours' | 'date' | 'time' | 'retDate' | 'retTime' | 'form';
@@ -580,8 +580,8 @@ export function BookingForm({
               {errors.form}
             </p>
           ) : null}
-          <Button type="submit" size="lg" block className={`bf-submit ${service === 'local' ? '' : 'bf-submit--compare'}`}>
-            {service === 'local' ? 'See fares' : <CompareLabel />}
+          <Button type="submit" size="lg" block className={`bf-submit ${service === 'local' ? '' : 'bf-submit--findcab'}`}>
+            {service === 'local' ? 'See fares' : <FindCabLabel />}
           </Button>
         </form>
       )}

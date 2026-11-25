@@ -1,0 +1,7 @@
+/* "Find Cab" on the home booking form: People Taxi blue, white outline icons. Scoped to the form's submit button. */
+html body .bf .bf-submit.bf-submit--findcab { background: #155eef; background-image: none; color: #fff; }
+html body .bf .bf-submit.bf-submit--findcab:hover:not(:disabled) { background: #0b46c4; }
+html body .bf .bf-submit.bf-submit--findcab:focus-visible { outline: 3px solid rgb(21 94 239 / .45); outline-offset: 2px; }
+.bf-findcab { display: inline-flex; align-items: center; justify-content: center; gap: 12px; }
+.bf-findcab__ico { flex: none; display: block; color: #fff; }
+.bf-findcab__sep { flex: none; width: 1px; height: 22px; background: rgb(255 255 255 / .45); }

@@ -27,8 +27,9 @@ export const isStaleFileError = (error: unknown) => STALE_FILE.test(`${(error as
 /** Call once at startup: a page file that fails to download after a new publish triggers the one-time reload. */
 export function installStaleVersionReload(): void {
   window.addEventListener('vite:preloadError', (event) => {
-    event.preventDefault();
-    reloadForNewVersion();
+    // Cancelling the error makes Vite resolve the page import with `undefined`, so only cancel it when the page is really
+    // reloading. Otherwise (a reload just happened) the real load error must reach the page, which then shows its message.
+    if (reloadForNewVersion()) event.preventDefault();
   });
 }
 

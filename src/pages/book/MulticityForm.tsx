@@ -1,7 +1,7 @@
 // Multicity tour form for People Taxi: pickup, any number of cities along the way, the final drop, and the departure and
-// return schedule. "Compare" turns it into a booking draft (a Round Trip through those cities, priced from the Multicity
+// return schedule. "Find Cab" turns it into a booking draft (a Round Trip through those cities, priced from the Multicity
 // rates) and opens the normal flow: cabs with their fares, review, then Confirm booking.
-import { CompareLabel } from './CompareLabel';
+import { FindCabLabel } from './FindCabLabel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ClockIcon } from '@/shared/components/CabParts';
 import { useNavigate } from 'react-router-dom';
@@ -406,9 +406,9 @@ export function MulticityForm() {
           variant="primary"
           size="lg"
           block
-          className="bf-submit bf-submit--compare"
+          className="bf-submit bf-submit--findcab"
         >
-          <CompareLabel />
+          <FindCabLabel />
         </Button>
       </div>
 
