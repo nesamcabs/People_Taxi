@@ -1,4 +1,4 @@
-// The booking form on the People Taxi home page: service, route, schedule and "Search Cabs".
+ // The booking form on the People Taxi home page: service, route, schedule and "Search Cabs".
 // Places are real coordinates (search, device location, saved/recent places, map pin); the
 // schedule follows the booking server's rules; fares are only ever priced by the server.
 import { useEffect, useMemo, useRef, useState } from 'react';
