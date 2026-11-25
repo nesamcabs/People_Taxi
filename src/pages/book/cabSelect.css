@@ -129,10 +129,12 @@ html body .flow-page--cabs .cs-row { display: flex; align-items: center; justify
 html body .flow-page--cabs .cs-fuel { display: flex; align-items: center; gap: 8px; min-width: 0; }
 html body .flow-page--cabs .cs-fuel__label { display: inline-flex; align-items: center; gap: 4px; color: #64748b; font-size: .68rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; white-space: nowrap; }
 html body .flow-page--cabs .cs-fuel__seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: #f1f5f9; box-shadow: 0 0 0 1px #e2e8f0 inset; }
-/* Each fuel keeps its own colour; only the selected one gets the tinted pill. The ring is an inset shadow, so the size never changes. */
+/* Only the selected fuel (from the existing value) is coloured and gets the tinted pill. The ring is an inset shadow, so the size never changes. */
 html body .flow-page--cabs .cs-fuel__opt { --fuel: #b45309; --fuel-bg: #fff7ed; --fuel-line: #fdba74; position: relative; display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 8px; border-radius: 8px; color: var(--fuel); font-size: .76rem; font-weight: 700; line-height: 1; white-space: nowrap; cursor: pointer; transition: background-color var(--dur), box-shadow var(--dur); }
 html body .flow-page--cabs .cs-fuel__opt--cng { --fuel: #047857; --fuel-bg: #ecfdf5; --fuel-line: #6ee7b7; }
-html body .flow-page--cabs .cs-fuel__opt .cs-ico { color: var(--fuel); }
+html body .flow-page--cabs .cs-fuel__opt .cs-ico { color: inherit; }
+/* Unselected: neutral slate. Only the option matching the selected fuel value takes its colour. */
+html body .flow-page--cabs .cs-fuel__opt:not(.is-on) { color: #64748b; }
 html body .flow-page--cabs .cs-fuel__opt input { position: absolute; inset: 0; margin: 0; opacity: 0; cursor: pointer; }
 html body .flow-page--cabs .cs-fuel__opt.is-on,
 html body .flow-page--cabs .cs-fuel__opt--cng.is-on { background: var(--fuel-bg); color: var(--fuel); box-shadow: 0 0 0 1px var(--fuel-line) inset, 0 1px 3px rgb(15 23 42 / .1); }

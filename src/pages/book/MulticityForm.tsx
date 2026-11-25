@@ -1,6 +1,7 @@
 // Multicity tour form for People Taxi: pickup, any number of cities along the way, the final drop, and the departure and
-// return schedule. "Let's Go" turns it into a booking draft (a Round Trip through those cities, priced from the Multicity
+// return schedule. "Compare" turns it into a booking draft (a Round Trip through those cities, priced from the Multicity
 // rates) and opens the normal flow: cabs with their fares, review, then Confirm booking.
+import { CompareLabel } from './CompareLabel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ClockIcon } from '@/shared/components/CabParts';
 import { useNavigate } from 'react-router-dom';
@@ -405,9 +406,9 @@ export function MulticityForm() {
           variant="primary"
           size="lg"
           block
-          className="bf-submit"
+          className="bf-submit bf-submit--compare"
         >
-          Let&apos;s Go !
+          <CompareLabel />
         </Button>
       </div>
 
