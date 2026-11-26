@@ -117,6 +117,19 @@ function BottomNav() {
   const current: ServiceId | null = onRentals ? (params.get('mode') === 'hourly' ? 'rental' : 'pickup') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'outstation' : serviceOfTrip(draft.tripType, draft.multicity))) : null;
   const navRef = useRef<HTMLElement>(null);
   const [outline, setOutline] = useState('');
+  // The service under the finger: its icon zooms in. Held for a moment after release, so even a quick tap shows the zoom
+  // before it springs back (phones often skip :active on a fast tap, and the tap navigates straight away).
+  const [pressed, setPressed] = useState<BarId | null>(null);
+  const pressTimer = useRef(0);
+  const press = (id: BarId) => {
+    window.clearTimeout(pressTimer.current);
+    setPressed(id);
+  };
+  const release = () => {
+    window.clearTimeout(pressTimer.current);
+    pressTimer.current = window.setTimeout(() => setPressed(null), 380);
+  };
+  useEffect(() => () => window.clearTimeout(pressTimer.current), []);
 
   // Measure the bar and the selected ring, and redraw the outline whenever either moves (resize, selection, the lift animation).
   useEffect(() => {
@@ -164,7 +177,7 @@ function BottomNav() {
       {BAR.map((s) => {
         const active = current === s.id || (s.id === 'pickup' && current === 'local');
         return (
-          <Link key={s.id} to={s.to} replace={onRentals && s.to.startsWith('/local-rentals')} className={`tabbar__link tabbar__link--${s.id} ${s.wide ? 'tabbar__link--wide' : ''} ${active ? 'is-active' : ''}`} aria-label={s.full} aria-current={active ? 'page' : undefined}>
+          <Link key={s.id} to={s.to} replace={onRentals && s.to.startsWith('/local-rentals')} className={`tabbar__link tabbar__link--${s.id} ${s.wide ? 'tabbar__link--wide' : ''} ${active ? 'is-active' : ''} ${pressed === s.id ? 'is-pressed' : ''}`} aria-label={s.full} aria-current={active ? 'page' : undefined} onPointerDown={() => press(s.id)} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}>
             <span className="tabbar__icon">
               <img className="tabbar__img" src={s.image} alt="" width={s.size} height={s.size} draggable={false} />
             </span>
