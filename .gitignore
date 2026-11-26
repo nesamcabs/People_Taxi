@@ -1,0 +1,55 @@
+# ── Web App (Vite + React + TypeScript) ──────────────────────────
+
+# Dependencies
+node_modules/
+.pnpm-store/
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+dist-ssr/
+build/
+out/
+.vite/
+
+# Environment files (contain Firebase API keys — use .env.example instead)
+.env
+.env.*
+!.env.example
+*.local
+
+# Vercel / Firebase local state
+.vercel/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+
+# Logs & caches
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.tmp
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+coverage/
+.nyc_output/
+
+# Signing keys / credentials
+*.pem
+*.key
+*.p12
+*.jks
+*.keystore
+**/service-account*.json
+**/*-firebase-adminsdk-*.json
+
+# IDE & OS
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp

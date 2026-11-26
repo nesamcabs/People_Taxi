@@ -1,0 +1,104 @@
+/* The service note under the tabs, and its Details dialog: a neat card with a round icon, a title, a short line (wraps, never cut off) and a Details pill. */
+.svc-note { position: relative; display: flex; align-items: center; gap: 10px; margin: 8px 0 10px; padding: 9px 10px 9px 14px; overflow: hidden; border: 1px solid color-mix(in srgb, var(--brand, #c8181f) 18%, #fff); border-radius: 14px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand, #c8181f) 9%, #fff) 0%, color-mix(in srgb, var(--brand, #c8181f) 2%, #fff) 100%); box-shadow: 0 6px 16px -10px color-mix(in srgb, var(--brand, #c8181f) 55%, transparent), 0 1px 0 #fff inset; }
+.svc-note::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: linear-gradient(180deg, var(--brand, #c8181f), color-mix(in srgb, var(--brand, #c8181f) 55%, #fff)); }
+.svc-note__icon { flex: none; box-sizing: content-box; width: 16px; height: 16px; padding: 6px; border-radius: 12px; background: linear-gradient(145deg, color-mix(in srgb, var(--brand, #c8181f) 80%, #fff), var(--brand, #c8181f)); color: #fff; box-shadow: 0 4px 10px -3px color-mix(in srgb, var(--brand, #c8181f) 65%, transparent); }
+.svc-note__text { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.svc-note__text strong { color: var(--brand-ink, var(--ink, #14171c)); font-size: 0.84rem; font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+.svc-note__text span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; color: var(--muted, #5b6472); font-size: 0.74rem; font-weight: 500; line-height: 1.35; }
+.svc-note__more { flex: none; align-self: center; display: inline-flex; align-items: center; gap: 2px; min-height: 30px; padding: 0 9px 0 13px; border: 1px solid color-mix(in srgb, var(--brand, #c8181f) 35%, #fff); border-radius: 999px; background: #fff; color: var(--brand-ink, var(--brand, #c8181f)); font: inherit; font-size: 0.74rem; font-weight: 800; cursor: pointer; box-shadow: 0 3px 8px -4px color-mix(in srgb, var(--brand, #c8181f) 60%, transparent); transition: background 140ms ease, color 140ms ease, border-color 140ms ease, transform 140ms ease; }
+.svc-note__more svg { transition: transform 140ms ease; }
+.svc-note__more:hover { background: var(--brand, #c8181f); border-color: var(--brand, #c8181f); color: #fff; }
+.svc-note__more:hover svg { transform: translateX(2px); }
+.svc-note__more:active { transform: scale(0.97); }
+.svc-note__more:focus-visible { outline: 2px solid var(--brand, #c8181f); outline-offset: 2px; }
+@media (max-width: 359.98px) { .svc-note { gap: 8px; padding-inline: 8px; } .svc-note__icon { display: none; } }
+
+/* Ticker look: a deep-blue strip, like a station departure board. A white info badge sits still on the left while the points
+   run right to left behind a soft fade, each after a glowing dot. Tap anywhere on it for the full details; it pauses while
+   touched or hovered, and stands still (wrapping instead) for people who prefer less motion. */
+.svc-note.svc-note--ticker {
+  width: 100%;
+  min-height: 38px;
+  gap: 0;
+  padding: 4px 0;
+  border: 1.5px solid var(--brand, #1665e8);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 6px 14px -10px rgb(22 101 232 / 0.6);
+  color: var(--brand, #1665e8);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.svc-note.svc-note--ticker::before { display: none; }
+.svc-note.svc-note--ticker:focus-visible { outline: 2px solid var(--brand, #1665e8); outline-offset: 2px; }
+.svc-tick__badge {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1451d6;
+  box-shadow: 0 0 0 3px rgb(255 255 255 / 0.18), 0 3px 8px -2px rgb(0 0 0 / 0.3);
+}
+.svc-tick__view {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-mask: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%);
+  mask: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 22px), transparent 100%);
+}
+.svc-tick__track {
+  display: flex;
+  width: max-content;
+  animation: svc-tick-run 16s linear infinite;
+}
+.svc-note--ticker:hover .svc-tick__track,
+.svc-note--ticker:active .svc-tick__track,
+.svc-note--ticker:focus-visible .svc-tick__track { animation-play-state: paused; }
+.svc-tick__run { display: flex; flex: none; }
+.svc-tick__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 18px 0 10px;
+  color: #d92d20;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+.svc-tick__item.is-lead { color: #d92d20; font-weight: 800; letter-spacing: 0.01em; }
+.svc-tick__dot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand, #1665e8);
+  box-shadow: 0 0 0 3px rgb(22 101 232 / 0.15);
+}
+@keyframes svc-tick-run {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .svc-tick__track { width: auto; animation: none; }
+  .svc-tick__run { flex-wrap: wrap; row-gap: 6px; padding-block: 4px; }
+  .svc-tick__run + .svc-tick__run { display: none; }
+  .svc-note.svc-note--ticker { border-radius: 18px; }
+}
+
+.svc-dialog { max-width: 440px; }
+.svc-dialog__intro { margin: 0 0 14px; padding: 10px 12px; border-left: 4px solid var(--brand, #c8181f); border-radius: 10px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand, #c8181f) 9%, #fff), color-mix(in srgb, var(--brand, #c8181f) 2%, #fff)); color: var(--ink, #14171c); font-size: 0.875rem; font-weight: 600; line-height: 1.5; }
+.svc-dialog__list { list-style: none; display: grid; gap: 8px; margin: 0; padding: 0; }
+.svc-dialog__list li { display: flex; gap: 12px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line, #e3e7ee); border-radius: 12px; background: var(--surface, #fff); }
+.svc-dialog__list strong { display: block; color: var(--ink, #14171c); font-size: 0.875rem; font-weight: 800; }
+.svc-dialog__list p { margin: 2px 0 0; color: var(--muted, #5b6472); font-size: 0.8125rem; line-height: 1.5; }
+.svc-dialog__mark { flex: none; display: grid; place-items: center; width: 22px; height: 22px; margin-top: 1px; border-radius: 50%; background: #e7f5ec; color: #1a7a3f; }
+.svc-dialog__mark.is-no { background: var(--danger-soft, #fef1f0); color: var(--danger-ink, #b42318); }
+.svc-dialog__ok { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand, #c8181f) 85%, #fff), var(--brand, #c8181f)); box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--brand, #c8181f) 70%, transparent); color: #fff; font: inherit; font-size: 1rem; font-weight: 800; cursor: pointer; }
+.svc-dialog__ok:hover { background: var(--brand-hover, #b3141a); }

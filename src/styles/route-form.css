@@ -1,0 +1,51 @@
+/* One Way, Local and Airport on phones and narrow cards: the same look as Round Trip. Pickup and drop are separate, full-width
+   cards that line up evenly (the drop card is no longer pushed in), with no dotted line between them; the green dot and the red
+   pin sit inside their cards, before the text. The swap button stays on the gap between the two cards. The wide two-column
+   form and Rental are untouched. Loaded last: it settles the many earlier .bf-route rules (bookform, theme, phone-fit). */
+@container (max-width: 759.98px) {
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single) {
+    padding-left: 0;
+  }
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single)::before {
+    display: none;
+    content: none;
+    border: 0;
+  }
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single) > .bf-route__cell:last-of-type {
+    margin-left: 0;
+  }
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single) .bf-field {
+    padding-left: 14px;
+  }
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single) .bf-pin,
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single) .bf-pin.bf-pin--drop {
+    position: relative;
+    top: auto;
+    right: auto;
+    left: auto;
+    flex: none;
+    translate: none;
+    margin: 0 4px 0 0;
+  }
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single) .bf-pin {
+    box-sizing: content-box;
+    width: 12px;
+    height: 12px;
+    border: 4px solid rgb(34 168 90 / 0.3);
+    border-radius: 50%;
+    background: #22a85a;
+    background-clip: padding-box;
+    box-shadow: none;
+    rotate: none;
+  }
+  html body .bf .bf-form .bf-route:not(.bf-route--round):not(.bf-route--single) .bf-pin.bf-pin--drop {
+    box-sizing: border-box;
+    width: 17px;
+    height: 17px;
+    margin: 0 8px 0 3px;
+    border: 0;
+    border-radius: 50% 50% 50% 0;
+    background: #e8344c;
+    rotate: -45deg;
+  }
+}

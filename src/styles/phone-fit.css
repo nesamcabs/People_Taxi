@@ -1,0 +1,337 @@
+/* Phone fit: the booking form, from the header down to "Find Cab", always sits fully above the bottom service bar on the
+   first screen, on every phone height (a 568px-high small phone up to a 900px+ tall one).
+
+   How: every vertical size on the phone home (header, logo, slogan, card, tabs, note, fields, date/time, button) and the
+   bottom bar itself is a clamp() of the screen height: it keeps today's size on tall screens and shrinks smoothly, down to a
+   safe minimum, as the screen gets shorter. Below those minimums the least important lines (slogan, note detail) give way, so
+   the form is never pushed behind the bar. Inputs keep a 16px font so iOS never zooms in on focus.
+
+   Loaded last: it settles the many earlier phone rules (mobile, bookform, theme, bottom-nav, service-bar...). Presentation
+   only. No markup, no state, no behaviour changes. The desktop and tablet (768px and up) hero is untouched. */
+
+/* 1svh is the visible height with the browser's address bar showing (the shortest the screen gets), so the layout never
+   depends on the bar hiding. Browsers without svh fall back to vh. */
+:root { --pt-vh: 1vh; }
+@supports (height: 1svh) { :root { --pt-vh: 1svh; } }
+
+/* ═══ Bottom service bar: phones and small tablets ═══════════════════════════════════════════════════════════════════
+   Size, lift from the edge and clearance all come from the same variables, so --tabbar-occupied (used by the page
+   padding, the local-rentals sheet and floating buttons) always matches the bar actually drawn. */
+@media (max-width: 899.98px) {
+  :root {
+    --pt-icon: clamp(30px, calc(var(--pt-vh) * 5.7), 48px);
+    --pt-bar-lh: clamp(13px, calc(var(--pt-vh) * 2.1), 18px);
+    --pt-bar-pad: clamp(20px, calc(var(--pt-vh) * 3.1), 26px);
+    --tabbar-h: calc(var(--pt-icon) + var(--pt-bar-lh) + var(--pt-bar-pad));
+    --tabbar-gap: clamp(8px, calc(var(--pt-vh) * 1.9), 16px);
+  }
+  html body .tabbar {
+    box-sizing: border-box;
+    height: var(--tabbar-h);
+    bottom: calc(var(--tabbar-gap) + env(safe-area-inset-bottom, 0px));
+    padding: clamp(5px, calc(var(--pt-vh) * 0.95), 8px) 4px clamp(6px, calc(var(--pt-vh) * 1.2), 10px);
+    border-radius: clamp(22px, calc(var(--pt-vh) * 3.8), 32px);
+  }
+  html body .tabbar .tabbar__link { gap: clamp(1px, calc(var(--pt-vh) * 0.4), 4px); }
+  html body .tabbar .tabbar__icon,
+  html body .tabbar .tabbar__img {
+    width: var(--pt-icon);
+    height: var(--pt-icon);
+  }
+  html body .tabbar .tabbar__label,
+  html body .tabbar .tabbar__link--wide .tabbar__label { line-height: var(--pt-bar-lh); }
+  /* The selected service rises out of the bar in proportion to the icon (7px at full size, as before). */
+  html body .tabbar .tabbar__link.is-active .tabbar__icon { transform: translateY(calc(var(--pt-icon) * -0.15)); }
+  html body .tabbar .tabbar__icon::before { inset: calc(var(--pt-icon) * -0.125); }
+}
+
+/* A phone on its side: only the icons (every link keeps its aria-label), so the bar takes as little height as possible. */
+@media (max-width: 899.98px) and (max-height: 440px) {
+  :root { --pt-bar-lh: 0px; --pt-bar-pad: 18px; --tabbar-gap: 6px; }
+  html body .tabbar .tabbar__label { display: none; }
+}
+
+/* ═══ Phone home: header, hero and the booking card ═════════════════════════════════════════════════════════════════ */
+@media (max-width: 767.98px) {
+  /* ── Header: the pill is a little slimmer on short screens ── */
+  .shell--scroll-header {
+    --pt-top-pad: clamp(4px, calc(var(--pt-vh) * 1), 8px);
+    --pt-top-inner: clamp(44px, calc(var(--pt-vh) * 6.6), 56px);
+    --nav-h: calc(var(--pt-top-pad) + var(--pt-top-inner) + clamp(2px, calc(var(--pt-vh) * 0.9), 8px));
+  }
+  html body .shell--scroll-header .topbar { padding-top: var(--pt-top-pad); }
+  html body .shell--scroll-header .topbar__inner { height: var(--pt-top-inner); }
+
+  /* ── Hero: logo, slogan, then the card ── */
+  html body .home .home-hero {
+    gap: clamp(6px, calc(var(--pt-vh) * 1.5), 14px);
+    padding: clamp(2px, calc(var(--pt-vh) * 0.5), 4px) var(--gutter) clamp(10px, calc(var(--pt-vh) * 2), 24px);
+  }
+  html body .home .hero-logo { margin: 0 auto; }
+  html body .home .hero-logo img.people-wordmark {
+    width: auto;
+    max-width: 100%;
+    height: clamp(36px, calc(var(--pt-vh) * 10), 92px);
+  }
+  html body .home .hero-copy h1,
+  html body .home .hero-copy h1.journey-slogan {
+    margin-top: 0;
+    font-size: clamp(0.8125rem, min(4.65vw, calc(var(--pt-vh) * 2.6)), 1.65rem);
+    line-height: 1.22;
+  }
+  html body .home .hero-copy h1.multicity-slogan {
+    margin-top: 0;
+    font-size: clamp(0.9375rem, min(5.4vw, calc(var(--pt-vh) * 2.9)), 1.65rem);
+    line-height: 1.18;
+  }
+  html body .home .hero-copy h1 .hero-accent { margin-top: 1px; }
+
+  /* ── Card: shared sizes (each one a function of the screen height) ── */
+  .home-hero > .bf {
+    --pt-gap: clamp(6px, calc(var(--pt-vh) * 1.2), 10px);
+    --pt-field: clamp(44px, calc(var(--pt-vh) * 7.4), 64px);
+    --pt-dt: clamp(46px, calc(var(--pt-vh) * 7), 62px);
+    --pt-btn: clamp(42px, calc(var(--pt-vh) * 6.4), 54px);
+    --pt-tab: clamp(32px, calc(var(--pt-vh) * 5.2), 44px);
+    --pt-swap: clamp(28px, calc(var(--pt-vh) * 4.4), 40px);
+    --pt-pad: clamp(8px, calc(var(--pt-vh) * 1.5), 12px);
+  }
+  /* The longer forms (Round Trip, Multicity) carry more rows, so they run a notch denser from the start. */
+  .home-hero:has(.bf-route--round, .bf-multicity) > .bf {
+    --pt-gap: clamp(6px, calc(var(--pt-vh) * 1.1), 9px);
+    --pt-field: clamp(40px, calc(var(--pt-vh) * 6.2), 56px);
+    --pt-dt: clamp(44px, calc(var(--pt-vh) * 6.2), 56px);
+    --pt-btn: clamp(40px, calc(var(--pt-vh) * 5.8), 50px);
+    --pt-tab: clamp(30px, calc(var(--pt-vh) * 4.6), 40px);
+    --pt-swap: clamp(26px, calc(var(--pt-vh) * 4), 36px);
+  }
+  html body .home .home-hero:has(.bf-route--round, .bf-multicity) .hero-logo img.people-wordmark {
+    height: clamp(28px, calc(var(--pt-vh) * 6.4), 64px);
+  }
+  html body .home .home-hero > .bf { padding: var(--pt-pad); }
+
+  /* ── Tabs (One Way / Round Trip, To / From airport) ── */
+  html body .home .home-hero > .bf .bf-journey.tabs {
+    margin-top: 0;
+    padding: clamp(3px, calc(var(--pt-vh) * 0.6), 5px);
+  }
+  html body .home .home-hero > .bf .bf-journey.tabs .tab {
+    min-height: var(--pt-tab);
+    padding-block: 0;
+    font-size: clamp(0.875rem, calc(var(--pt-vh) * 2.3), 1.0625rem);
+    line-height: 1.15;
+  }
+
+  /* ── Service note ("Direct pickup & drop · Details") ── */
+  html body .home .home-hero > .bf .svc-note {
+    gap: clamp(6px, calc(var(--pt-vh) * 1.1), 10px);
+    margin: var(--pt-gap) 0 0;
+    padding: clamp(5px, calc(var(--pt-vh) * 1), 9px) clamp(8px, calc(var(--pt-vh) * 1.2), 10px) clamp(5px, calc(var(--pt-vh) * 1), 9px) clamp(11px, calc(var(--pt-vh) * 1.6), 14px);
+    border-radius: clamp(10px, calc(var(--pt-vh) * 1.7), 14px);
+  }
+  html body .home .home-hero > .bf .svc-note .svc-note__icon {
+    width: clamp(12px, calc(var(--pt-vh) * 2.2), 16px);
+    height: clamp(12px, calc(var(--pt-vh) * 2.2), 16px);
+    padding: clamp(4px, calc(var(--pt-vh) * 0.9), 6px);
+  }
+  html body .home .home-hero > .bf .svc-note__text { gap: 1px; }
+  html body .home .home-hero > .bf .svc-note__text strong { font-size: clamp(0.75rem, calc(var(--pt-vh) * 1.9), 0.84rem); line-height: 1.2; }
+  html body .home .home-hero > .bf .svc-note__text span { font-size: clamp(0.65rem, calc(var(--pt-vh) * 1.6), 0.74rem); line-height: 1.3; }
+  html body .home .home-hero > .bf .svc-note__more {
+    min-height: clamp(26px, calc(var(--pt-vh) * 3.8), 30px);
+    padding: 0 clamp(10px, calc(var(--pt-vh) * 1.5), 13px);
+  }
+
+  /* ── Form spacing ── */
+  html body .home .home-hero > .bf .bf-form { gap: var(--pt-gap); margin-top: var(--pt-gap); }
+  html body .home .home-hero > .bf .bf-form .bf-route { gap: clamp(8px, calc(var(--pt-vh) * 1.4), 10px); }
+
+  /* ── Pickup / Drop cards ── */
+  html body .home .home-hero > .bf .bf-form .bf-route .bf-field {
+    min-height: var(--pt-field);
+    padding-block: clamp(4px, calc(var(--pt-vh) * 0.9), 9px);
+  }
+  html body .home .home-hero > .bf .bf-form .bf-route .bf-label {
+    font-size: clamp(0.6875rem, calc(var(--pt-vh) * 1.7), 0.75rem);
+    line-height: 1.15;
+  }
+  /* 16px keeps iOS from zooming the page when the field is tapped (it was 17px). */
+  html body .home .home-hero > .bf .bf-form .bf-route .bf-trigger {
+    padding-top: 0;
+    font-size: 1rem;
+    line-height: 1.25;
+  }
+  html body .home .home-hero > .bf .bf-form .bf-route .pf__btn {
+    width: clamp(28px, calc(var(--pt-vh) * 4.4), 32px);
+    height: clamp(28px, calc(var(--pt-vh) * 4.4), 32px);
+  }
+  /* The curved rail runs from the middle of the pickup card to the middle of the drop card. */
+  html body .home .home-hero > .bf .bf-form .bf-route::before,
+  html body .home .home-hero > .bf .bf-form .bf-route.bf-route--round::before {
+    top: calc(var(--pt-field) / 2);
+    bottom: calc(var(--pt-field) / 2);
+  }
+  /* Swap button: sits on the gap between the two cards (its negative margins cancel its own height). */
+  html body .home .home-hero > .bf .bf-form .bf-route .bf-swap {
+    width: var(--pt-swap);
+    height: var(--pt-swap);
+    margin-block: calc(var(--pt-swap) / -2);
+  }
+  html body .home .home-hero > .bf .bf-form .bf-route .bf-swap svg {
+    width: clamp(16px, calc(var(--pt-vh) * 2.8), 22px);
+    height: clamp(16px, calc(var(--pt-vh) * 2.8), 22px);
+  }
+  /* Round Trip: the "+ Add stop" row, with the swap on its right. */
+  html body .home .home-hero > .bf .bf-form .bf-route.bf-route--round .bf-route__tools { min-height: clamp(32px, calc(var(--pt-vh) * 5), 44px); }
+  html body .home .home-hero > .bf .bf-form .bf-route .bf-route__tools .bf-swap { margin-block: 0; }
+  html body .home .home-hero > .bf .bf-form .bf-route .bf-route__tools .bf-round-stop-add {
+    min-height: clamp(28px, calc(var(--pt-vh) * 4.4), 38px);
+    font-size: clamp(0.8125rem, calc(var(--pt-vh) * 2.2), 0.9375rem);
+  }
+  html body .home .home-hero > .bf .bf-form .bf-route > .bf-stop-field .bf-stop-remove { width: 32px; height: 32px; flex-basis: 32px; }
+
+  /* ── Pickup date and time ── */
+  html body .home .home-hero > .bf .bf-form .bf-row { gap: var(--pt-gap); }
+  html body .home .home-hero > .bf .bf-form .bf-cell--schedule .bf-datewrap .bf-input,
+  html body .home .home-hero > .bf .bf-form .bf-cell--schedule .bf-time,
+  html body .home .home-hero > .bf .bf-form .bf-row .bf-cell--schedule .bf-datewrap .bf-input,
+  html body .home .home-hero > .bf .bf-form .bf-row .bf-cell--schedule .bf-time,
+  html body .home .home-hero > .bf .bf-form .bf-row--round-schedule .bf-cell--schedule .bf-datewrap .bf-input,
+  html body .home .home-hero > .bf .bf-form .bf-row--round-schedule .bf-cell--schedule .bf-time {
+    box-sizing: border-box;
+    height: var(--pt-dt);
+    min-height: var(--pt-dt);
+    padding-top: calc(var(--pt-dt) * 0.34);
+    padding-bottom: 2px;
+  }
+  html body .home .home-hero > .bf .bf-form .bf-cell--schedule > .bf-label--out {
+    top: calc(var(--pt-dt) * 0.13);
+    font-size: clamp(0.5625rem, calc(var(--pt-vh) * 1.5), 0.65rem);
+  }
+  html body .home .home-hero > .bf .bf-chip { top: calc(var(--pt-gap) * -1); }
+  /* Round Trip: the "Days" card is one slim row. */
+  html body .home .home-hero > .bf .bf-form .bf-row--round-schedule .bf-round-days { padding: clamp(5px, calc(var(--pt-vh) * 1.1), 12px) 12px; }
+  html body .home .home-hero > .bf .bf-duration-stepper { padding: 3px; }
+  html body .home .home-hero > .bf .bf-duration-stepper button,
+  html body .home .home-hero > .bf .bf-form .bf-round-days .bf-duration-stepper .bf-days__input {
+    height: clamp(26px, calc(var(--pt-vh) * 4), 34px);
+  }
+
+  /* ── Find Cab ── */
+  html body .home .home-hero > .bf .bf-submit {
+    min-height: var(--pt-btn);
+    margin-top: 0;
+    padding-block: 4px;
+    font-size: clamp(0.9375rem, calc(var(--pt-vh) * 2.4), 1.0625rem);
+  }
+
+  /* ── Multicity: the same sizes, in its own markup ── */
+  html body .home .home-hero > .bf .bf-multicity {
+    gap: var(--pt-gap);
+    margin-top: var(--pt-gap);
+    padding: clamp(6px, calc(var(--pt-vh) * 1.2), 12px);
+  }
+  html body .home .home-hero > .bf .bf-multicity .bf-fieldset { gap: var(--pt-gap); }
+  html body .home .home-hero > .bf .bf-multicity .bf-section { gap: clamp(8px, calc(var(--pt-vh) * 1.4), 10px); }
+  html body .home .home-hero > .bf .bf-multicity .bf-section[aria-label='Route and stops']::before {
+    top: calc(var(--pt-field) / 2);
+    bottom: calc(var(--pt-field) / 2);
+  }
+  html body .home .home-hero > .bf .bf-multicity .bf-field {
+    min-height: var(--pt-field);
+    padding-block: clamp(4px, calc(var(--pt-vh) * 0.9), 9px);
+  }
+  html body .home .home-hero > .bf .bf-multicity .bf-label { font-size: clamp(0.6875rem, calc(var(--pt-vh) * 1.7), 0.75rem); line-height: 1.15; }
+  html body .home .home-hero > .bf .bf-multicity .bf-trigger { padding-top: 0; font-size: 1rem; line-height: 1.25; }
+  html body .home .home-hero > .bf .bf-multicity .bf-add-city { min-height: clamp(36px, calc(var(--pt-vh) * 5.6), 46px); }
+  html body .home .home-hero > .bf .bf-multicity .bf-route__tools { min-height: clamp(32px, calc(var(--pt-vh) * 5), 44px); }
+  html body .home .home-hero > .bf .bf-multicity .bf-round-stop-add {
+    min-height: clamp(28px, calc(var(--pt-vh) * 4.4), 38px);
+    font-size: clamp(0.8125rem, calc(var(--pt-vh) * 2.2), 0.9375rem);
+  }
+  html body .home .home-hero > .bf .bf-multicity .bf-cell--schedule .bf-datewrap .bf-input,
+  html body .home .home-hero > .bf .bf-multicity .bf-cell--schedule .bf-time {
+    box-sizing: border-box;
+    height: var(--pt-dt);
+    min-height: var(--pt-dt);
+    padding-top: calc(var(--pt-dt) * 0.34);
+    padding-bottom: 2px;
+  }
+  html body .home .home-hero > .bf .bf-multicity .bf-cell--schedule > .bf-label--out {
+    top: calc(var(--pt-dt) * 0.13);
+    font-size: clamp(0.5625rem, calc(var(--pt-vh) * 1.5), 0.625rem);
+  }
+  html body .home .home-hero > .bf .bf-multicity .bf-row { gap: var(--pt-gap); }
+  html body .home .home-hero > .bf .bf-multicity .bf-chip { top: calc(var(--pt-gap) * -1); }
+  html body .home .home-hero > .bf .bf-multicity .bf-submit { min-height: var(--pt-btn); }
+}
+
+/* ═══ Short phones: the least important lines give way, in steps, so the form still fits above the bar ═════════════ */
+/* Service note: the detail line shortens to one line, then goes (its "Details" button still opens everything). */
+@media (max-width: 767.98px) and (max-height: 620px) {
+  html body .home .home-hero > .bf .svc-note__text span { -webkit-line-clamp: 1; line-clamp: 1; }
+}
+@media (max-width: 767.98px) and (max-height: 580px) {
+  html body .home .home-hero > .bf .svc-note__text span { display: none; }
+  html body .home .home-hero > .bf .svc-note { align-items: center; }
+}
+/* The longer forms drop the note's detail line a step earlier. */
+@media (max-width: 767.98px) and (max-height: 780px) {
+  html body .home .home-hero:has(.bf-route--round, .bf-multicity) > .bf .svc-note__text span { display: none; }
+}
+/* Round Trip is the tallest form (pickup, "Add stop", drop, date, time, days): on the shortest screens its note makes way too. */
+@media (max-width: 767.98px) and (max-height: 600px) {
+  html body .home .home-hero:has(.bf-route--round) > .bf .svc-note { display: none; }
+}
+/* Very short screens (about 480px high, or a phone on its side): the note and the big logo make way; the header shows the logo
+   instead (it takes over by itself when the hero logo is not on screen), and "Details" is still on the full-size screens. */
+@media (max-width: 767.98px) and (max-height: 500px) {
+  html body .home .home-hero > .bf .svc-note { display: none; }
+}
+@media (max-width: 767.98px) and (max-height: 440px) {
+  html body .home .hero-logo { display: none; }
+}
+@media (max-width: 767.98px) and (max-height: 400px) {
+  .shell--scroll-header { --pt-top-inner: 40px; }
+  .home-hero > .bf,
+  .home-hero:has(.bf-route--round, .bf-multicity) > .bf {
+    --pt-gap: 5px;
+    --pt-field: 40px;
+    --pt-dt: 42px;
+    --pt-btn: 38px;
+    --pt-tab: 28px;
+    --pt-swap: 26px;
+    --pt-pad: 6px;
+  }
+}
+/* The slogan: kept for screen readers (it is the page's h1), hidden from sight when the form needs the room. */
+@media (max-width: 767.98px) and (max-height: 540px) {
+  html body .home .hero-copy h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (max-width: 767.98px) and (max-height: 600px) {
+  html body .home .home-hero:has(.bf-route--round, .bf-multicity) .hero-copy h1 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* ═══ Very narrow phones (320px): keep the two-column date/time row and the slogan inside the screen ═══════════════ */
+@media (max-width: 359.98px) {
+  html body .home .home-hero > .bf .bf-form .bf-row:not(.bf-row--single) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html body .home .home-hero > .bf .bf-journey.tabs .tab { padding-inline: 6px; }
+}

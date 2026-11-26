@@ -1,0 +1,63 @@
+import { SCHEDULE_MAX_DAYS, SCHEDULE_MIN_LEAD_MIN } from '@core/config/constants';
+import type { LocationErrorKind } from '@core/services/geoService';
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/** yyyy-mm-dd in the browser's zone, for <input type="date">. */
+export const toDateInput = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+/** hh:mm in the browser's zone, for <input type="time">. */
+export const toTimeInput = (d: Date) => `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+export function combineDateTime(date: string, time: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return null;
+  const [y, m, d] = date.split('-').map(Number) as [number, number, number];
+  const [hh, mm] = time.split(':').map(Number) as [number, number];
+  const out = new Date(y, m - 1, d, hh, mm, 0, 0);
+  return Number.isNaN(out.getTime()) ? null : out;
+}
+
+/** The earliest pickup the booking server accepts, rounded up to the next 5 minutes. */
+export function earliestPickup(now = Date.now()): Date {
+  const t = new Date(now + (SCHEDULE_MIN_LEAD_MIN + 5) * 60000);
+  t.setSeconds(0, 0);
+  t.setMinutes(Math.ceil(t.getMinutes() / 5) * 5);
+  return t;
+}
+
+/** The earliest pickup a rider can choose: the minimum lead time (30 min) after now, rounded up to the next 5 minutes. */
+export function earliestSlot(now = Date.now()): Date {
+  return new Date(Math.ceil((now + SCHEDULE_MIN_LEAD_MIN * 60000) / 300000) * 300000);
+}
+
+/** The default pickup: today, 30 minutes from now (rounded up to the next 5 minutes). Past midnight it is the next day's date. */
+export function defaultPickup(now = Date.now()): { date: string; time: string } {
+  const at = earliestSlot(now);
+  return { date: toDateInput(at), time: toTimeInput(at) };
+}
+
+/**
+ * The pickup times worth offering for a day: for today only times from the earliest slot onward (the first entry is the
+ * earliest itself, for example 6:35 PM, then the usual half-hour slots after it); other days get every slot.
+ */
+export function pickupTimeOptions(date: string, slots: readonly string[], now = Date.now()): string[] {
+  const first = earliestSlot(now);
+  const out: string[] = [];
+  if (date === toDateInput(first)) out.push(toTimeInput(first));
+  for (const t of slots) {
+    const at = combineDateTime(date, t);
+    if (!at || at.getTime() <= first.getTime() || at.getTime() > now + SCHEDULE_MAX_DAYS * 86400000) continue;
+    out.push(t);
+  }
+  return out;
+}
+
+export const latestPickup = (now = Date.now()) => new Date(now + SCHEDULE_MAX_DAYS * 86400000);
+
+/** Location problems explained for a browser (the shared texts talk about phone settings). */
+export const LOCATION_HELP: Record<LocationErrorKind, string> = {
+  denied: 'Location permission was not granted. Allow it in your browser, or search for your pickup.',
+  blocked: 'Location is blocked for this site. Allow it from the address bar’s site settings, or search for your pickup.',
+  disabled: 'Your device’s location is switched off. Turn it on, or search for your pickup.',
+  unavailable: 'We couldn’t get a location fix. Search for your pickup instead.',
+  timeout: 'Getting your location is taking too long. Try again or search for your pickup.',
+};

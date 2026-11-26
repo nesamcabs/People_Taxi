@@ -1,0 +1,35 @@
+import { callBackend } from './backend';
+
+/** Error whose message is safe to show to the driver. */
+export class ActionError extends Error {
+  code?: string;
+  details?: unknown;
+  constructor(message: string, details?: unknown) {
+    super(message);
+    this.details = details;
+  }
+}
+
+export function describeCallError(err: unknown): string {
+  const code = (err as { code?: string }).code || '';
+  const message = (err as { message?: string }).message || '';
+  if (/^functions\/(invalid-argument|failed-precondition|permission-denied|not-found|unavailable|unauthenticated|already-exists|resource-exhausted)$/.test(code) && message) return message;
+  // A timeout from our own client carries advice about writes that may have gone through: keep it.
+  if (code === 'functions/deadline-exceeded') return (err as { details?: { reason?: string } }).details?.reason === 'timeout' && message ? message : 'The server took too long to respond. Please try again.';
+  // The reference names the real cause: "internal" = a server fault, "unknown" = no code at all.
+  return `The server could not complete the request. Check your connection and try again. (Ref: ${code.replace('functions/', '') || 'unknown'})`;
+}
+
+/** Calls a booking-server function; a failure becomes an ActionError with a readable message. */
+export async function callFunction<Req, Res>(name: string, data: Req, timeout = 60000): Promise<Res> {
+  try {
+    return await callBackend<Req, Res>(name, data, timeout);
+  } catch (err) {
+    const error = new ActionError(describeCallError(err), (err as { details?: unknown }).details);
+    error.code = (err as { code?: string }).code;
+    throw error;
+  }
+}
+
+/** One id per user action, so a retry or double tap is recognised by the server. */
+export const newId = (prefix: string) => `${prefix}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}${Math.random().toString(36).slice(2, 8)}`;

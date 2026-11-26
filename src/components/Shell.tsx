@@ -1,0 +1,674 @@
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { Link, NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { useCustomerData } from '@core/context/CustomerData';
+import { formatPhone } from '@core/utils/format';
+import { COMPANY_LEGAL_NAME, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@core/config/constants';
+import { useInbox } from '@/state/Inbox';
+import { useAuth } from '@/state/Auth';
+import { useBooking } from '@/state/Booking';
+import { useOnline } from '@/lib/hooks';
+import { scrollToBookingForm } from '@/lib/scrollToForm';
+import { parseService, serviceHref, serviceOfTrip, type ServiceId } from '@/lib/services';
+import { Avatar, Button, Dialog, PageLoader } from './ui';
+import { Icon } from './Icon';
+import { BrandIcon, navIconSrc, type BrandIconName } from './BrandIcon';
+import { RideBanner } from './RideBanner';
+import { BellIcon, HeadsetIcon } from './HeaderIcons';
+import { RouteErrorBoundary } from '@/shared/components/RouteErrorBoundary';
+import { SideDrawer } from './SideDrawer';
+import { HeaderNotice } from './HeaderNotice';
+import { useBackToHome } from '@/lib/backToHome';
+import { AiChatbot } from './AiChatbot';
+import { ALL_ROUTES } from '@/pages/routes/routesData';
+
+export function Brand({ compact = false, light = false }: { compact?: boolean; light?: boolean }) {
+  return (
+    <Link to="/" className={`brand ${compact ? 'brand--compact' : ''} ${light ? 'brand--light' : ''}`} aria-label="People Taxi — book a ride">
+      <img
+        src={compact ? '/brand/peopletaxi-symbol.png' : '/brand/peopletaxi-transparent.webp'}
+        alt="People Taxi"
+        width={compact ? 44 : 192}
+        height={compact ? 44 : 44}
+        style={{ objectFit: 'contain' }}
+      />
+    </Link>
+  );
+}
+
+const NAV: readonly { to: string; label: string; short: string; icon: string; art?: BrandIconName }[] = [
+  { to: '/book', label: 'Book a ride', short: 'Book', icon: 'car' },
+  { to: '/trips', label: 'My trips', short: 'Trips', icon: 'trip-history', art: 'trips' },
+  { to: '/notifications', label: 'Notifications', short: 'Alerts', icon: 'notifications', art: 'bell' },
+];
+
+
+/** Desktop header links. Account lives in the profile menu there. On phones the bottom bar holds the four
+    services, and the header holds Notifications. Account and My trips are in the side menu. */
+const TOP_NAV: typeof NAV = [NAV[0]!, NAV[1]!, { to: '/offers', label: 'Offers', short: 'Offers', icon: 'offers', art: 'offers' }, NAV[2]!];
+
+/** Active booking flow pages where the phone bottom tab bar steps aside for the sticky FlowBar. */
+const FLOW = [/^\/book\/(ride|confirm|done\/[^/]+)$/, /^\/ride\//, /^\/trips\/[^/]+$/];
+const IMMERSIVE = [/^\/ride\//, /^\/local-rentals(\/|$)/, /^\/trips\/[^/]+$/];
+
+/** Phone bottom bar, left to right: Local Pickup & Drop · Hourly Rental · Outstation (the middle one) · Multicity · Airport Taxi.
+    My trips is in the header. The selected service rises in its brand color. */
+type BarId = 'pickup' | 'rental' | 'outstation' | 'multicity' | 'airport';
+const BAR: { id: BarId; label: string; full: string; to: string; image: string; size: number; wide?: boolean }[] = [
+  { id: 'pickup', label: 'Local', full: 'Local Pickup & Drop', to: '/local-rentals?mode=pickup', image: navIconSrc('local'), size: 44, wide: true },
+  { id: 'rental', label: 'Rental', full: 'Hourly Rental', to: '/local-rentals?mode=hourly', image: navIconSrc('rental'), size: 44, wide: true },
+  { id: 'outstation', label: 'Outstation', full: 'Outstation', to: serviceHref('outstation'), image: navIconSrc('outstation'), size: 46 },
+  { id: 'multicity', label: 'Multicity', full: 'Multicity', to: serviceHref('multicity'), image: navIconSrc('multicity'), size: 44 },
+  { id: 'airport', label: 'Airport', full: 'Airport Taxi', to: serviceHref('airport'), image: navIconSrc('airport'), size: 44 },
+];
+
+/** The bar's outline as one SVG path: a rounded rectangle whose top line rises in a smooth bump around the selected
+ *  service's ring. Small fillets join the straight line to the ring, so the line flows up and over the circle. Below the bar's
+ *  top line the ring has no stroke, so the circle and the bar read as one shape. */
+function barOutline(w: number, h: number, radius: number, ring: { cx: number; cy: number; r: number } | null): string {
+  const s = 1; // half the stroke width: the line sits just inside the box
+  const rad = Math.max(0, Math.min(radius - s, (h - 2 * s) / 2, (w - 2 * s) / 2));
+  const L = s, T = s, R = w - s, B = h - s;
+  const p = (x: number, y: number) => `${x.toFixed(2)} ${y.toFixed(2)}`;
+  const tlCorner = `A ${rad} ${rad} 0 0 1 ${p(L + rad, T)}`;
+  const trCorner = `L ${p(R - rad, T)} A ${rad} ${rad} 0 0 1 ${p(R, T + rad)}`;
+  let top = `${tlCorner} ${trCorner}`;
+  if (ring && ring.r > ring.cy - T) {
+    const f = 9; // fillet radius
+    const dy = ring.cy - (T - f);
+    const dx = Math.sqrt(Math.max(0, (ring.r + f) ** 2 - dy ** 2));
+    const k = ring.r / (ring.r + f);
+    const lx = ring.cx - dx, rx = ring.cx + dx;
+    const pL = { x: ring.cx + (lx - ring.cx) * k, y: ring.cy + (T - f - ring.cy) * k };
+    const pR = { x: ring.cx + (rx - ring.cx) * k, y: pL.y };
+    const large = pL.y > ring.cy ? 1 : 0;
+    // Clockwise tangent of the ring at a point (screen coordinates, y down), as a unit vector.
+    const tan = (q: { x: number; y: number }) => ({ x: -(q.y - ring.cy) / ring.r, y: (q.x - ring.cx) / ring.r });
+    // Near the bar's rounded ends there is no room for a fillet and a straight run: the bump then flows straight into that
+    // end's curve with one smooth Bézier (vertical where it meets the side, tangent to the ring where it meets the circle).
+    const mergeL = lx < L + rad + 2;
+    const mergeR = rx > R - rad - 2;
+    let left: string;
+    if (mergeL) {
+      const t = tan(pL);
+      const len = Math.hypot(pL.x - L, pL.y - (T + rad)) * 0.45;
+      left = `C ${p(L, T + rad - len)} ${p(pL.x - t.x * len, pL.y - t.y * len)} ${p(pL.x, pL.y)}`;
+    } else {
+      left = `${tlCorner} L ${p(lx, T)} A ${f} ${f} 0 0 0 ${p(pL.x, pL.y)}`;
+    }
+    let right: string;
+    if (mergeR) {
+      const t = tan(pR);
+      const len = Math.hypot(R - pR.x, T + rad - pR.y) * 0.45;
+      right = `C ${p(pR.x + t.x * len, pR.y + t.y * len)} ${p(R, T + rad - len)} ${p(R, T + rad)}`;
+    } else {
+      right = `A ${f} ${f} 0 0 0 ${p(rx, T)} ${trCorner}`;
+    }
+    top = `${left} A ${ring.r} ${ring.r} 0 ${large} 1 ${p(pR.x, pR.y)} ${right}`;
+  }
+  return `M ${p(L, T + rad)} ${top} L ${p(R, B - rad)} A ${rad} ${rad} 0 0 1 ${p(R - rad, B)} L ${p(L + rad, B)} A ${rad} ${rad} 0 0 1 ${p(L, B - rad)} Z`;
+}
+
+function BottomNav() {
+  const location = useLocation();
+  const [params] = useSearchParams();
+  const { draft } = useBooking();
+  const onHome = location.pathname === '/book' || location.pathname === '/';
+  const onRentals = /^\/local-rentals(\/|$)/.test(location.pathname);
+  const current: ServiceId | null = onRentals ? (params.get('mode') === 'hourly' ? 'rental' : 'pickup') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'outstation' : serviceOfTrip(draft.tripType, draft.multicity))) : null;
+  const navRef = useRef<HTMLElement>(null);
+  const [outline, setOutline] = useState('');
+
+  // Measure the bar and the selected ring, and redraw the outline whenever either moves (resize, selection, the lift animation).
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) return undefined;
+    let frame = 0;
+    const draw = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const box = nav.getBoundingClientRect();
+        if (!box.width || !box.height) return setOutline('');
+        const radius = parseFloat(getComputedStyle(nav).borderTopLeftRadius) || 0;
+        const icon = nav.querySelector<HTMLElement>('.tabbar__link.is-active .tabbar__icon');
+        let ring: { cx: number; cy: number; r: number } | null = null;
+        if (icon) {
+          const ib = icon.getBoundingClientRect();
+          const inset = parseFloat(getComputedStyle(icon, '::before').top) || 0;
+          ring = { cx: ib.left + ib.width / 2 - box.left, cy: ib.top + ib.height / 2 - box.top, r: ib.width / 2 - inset - 1 };
+        }
+        setOutline(barOutline(box.width, box.height, radius, ring));
+      });
+    };
+    draw();
+    const settle = window.setTimeout(draw, 350);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(draw) : null;
+    ro?.observe(nav);
+    nav.addEventListener('transitionend', draw);
+    window.addEventListener('resize', draw);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.clearTimeout(settle);
+      ro?.disconnect();
+      nav.removeEventListener('transitionend', draw);
+      window.removeEventListener('resize', draw);
+    };
+  }, [current]);
+
+  return (
+    <nav ref={navRef} className={`tabbar ${outline ? 'tabbar--outlined' : ''}`} aria-label="Services">
+      {outline ? (
+        <svg className="tabbar__outline" aria-hidden="true" focusable="false">
+          <path d={outline} />
+        </svg>
+      ) : null}
+      {BAR.map((s) => {
+        const active = current === s.id || (s.id === 'pickup' && current === 'local');
+        return (
+          <Link key={s.id} to={s.to} replace={onRentals && s.to.startsWith('/local-rentals')} className={`tabbar__link tabbar__link--${s.id} ${s.wide ? 'tabbar__link--wide' : ''} ${active ? 'is-active' : ''}`} aria-label={s.full} aria-current={active ? 'page' : undefined}>
+            <span className="tabbar__icon">
+              <img className="tabbar__img" src={s.image} alt="" width={s.size} height={s.size} draggable={false} />
+            </span>
+            <span className="tabbar__label">{s.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** One header button that opens two choices: chat with the AI assistant, or call the 24/7 desk. */
+function SupportMenu({ onAsk, phone = false }: { onAsk: () => void; phone?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const down = (e: MouseEvent | TouchEvent) => {
+      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', down);
+    document.addEventListener('touchstart', down, { passive: true });
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('touchstart', down);
+      document.removeEventListener('keydown', key);
+    };
+  }, [open]);
+
+  return (
+    <div className="support-menu" ref={root}>
+      <button
+        type="button"
+        className={`support-menu__btn${phone ? ' hdr-btn hdr-btn--help' : ''}${open ? ' is-open' : ''}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Help: ask NESAM or call us"
+        title="Help"
+        onClick={() => setOpen((o) => !o)}
+      >
+        {phone ? (
+          <>
+            <HeadsetIcon size={25} />
+            <i className="hdr-btn__live" aria-hidden="true" />
+          </>
+        ) : (
+          <BrandIcon name="support" size={30} />
+        )}
+      </button>
+      {open ? (
+        <div className="support-menu__panel" role="menu">
+          <button
+            type="button"
+            role="menuitem"
+            className="support-menu__item"
+            onClick={() => {
+              setOpen(false);
+              onAsk();
+            }}
+          >
+            <span className="support-menu__icon support-menu__icon--ai" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" focusable="false">
+                <path d="M10 3l2 6.2 6.2 2-6.2 2-2 6.2-2-6.2-6.2-2 6.2-2z" />
+                <path d="M19 2l.9 2.1L22 5l-2.1.9L19 8l-.9-2.1L16 5l2.1-.9z" />
+              </svg>
+            </span>
+            <span className="support-menu__text">
+              <strong>Ask NESAM</strong>
+              <small>Instant travel help</small>
+            </span>
+          </button>
+          <a role="menuitem" className="support-menu__item" href={`tel:${SUPPORT_PHONE}`} onClick={() => setOpen(false)}>
+            <span className="support-menu__icon support-menu__icon--call" aria-hidden="true">
+              <BrandIcon name="contact" size={24} />
+            </span>
+            <span className="support-menu__text">
+              <strong>Call us</strong>
+              <small>24/7 booking · {SUPPORT_PHONE_DISPLAY}</small>
+            </span>
+          </a>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ProfileMenu() {
+  const { profile } = useCustomerData();
+  const { signOut, openLoginModal } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const [error, setError] = useState('');
+  const root = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  useEffect(() => setOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (!open) return undefined;
+    const down = (e: MouseEvent) => {
+      if (root.current && !root.current.contains(e.target as Node)) setOpen(false);
+    };
+    const key = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', down);
+    document.addEventListener('keydown', key);
+    return () => {
+      document.removeEventListener('mousedown', down);
+      document.removeEventListener('keydown', key);
+    };
+  }, [open]);
+
+  if (!profile) {
+    return (
+      <Button
+        variant="primary"
+        size="sm"
+        onClick={() => openLoginModal({ title: 'Sign in to People Taxi' })}
+      >
+        <BrandIcon name="profile" size={20} /> Sign in
+      </Button>
+    );
+  }
+
+  const first = profile.name.split(' ')[0] || 'Account';
+  return (
+    <div className="menu" ref={root}>
+      <button type="button" className="menu__trigger" aria-haspopup="menu" aria-expanded={open} aria-label={`Account menu, ${first}`} title={profile.name} onClick={() => setOpen((o) => !o)}>
+        <Avatar name={profile.name} photoUrl={profile.photoUrl} size={38} />
+        <span className="menu__name">{first}</span>
+        <Icon name="chevron-down" size={16} />
+      </button>
+      {open ? (
+        <div className="menu__panel" role="menu">
+          <div className="menu__who">
+            <strong className="truncate">{profile.name}</strong>
+            <span className="muted small">{formatPhone(profile.phone)}</span>
+          </div>
+          <Link role="menuitem" to="/account">
+            <BrandIcon name="profile" size={22} /> Account
+          </Link>
+          <Link role="menuitem" to="/account/places">
+            <Icon name="saved-place" /> Saved places
+          </Link>
+          <Link role="menuitem" to="/account/payments">
+            <BrandIcon name="payments" size={22} /> Payments
+          </Link>
+          <Link role="menuitem" to="/legal">
+            <BrandIcon name="terms" size={22} /> Terms &amp; privacy
+          </Link>
+          <button role="menuitem" type="button" onClick={() => setConfirm(true)}>
+            <BrandIcon name="logout" size={22} /> Log out
+          </button>
+        </div>
+      ) : null}
+      {confirm ? (
+        <Dialog
+          title="Log out of People Taxi?"
+          onClose={() => setConfirm(false)}
+          footer={
+            <>
+              <Button variant="secondary" onClick={() => setConfirm(false)}>
+                Stay signed in
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() =>
+                  signOut().catch(() => {
+                    setError('We couldn’t log you out. Please try again.');
+                  })
+                }
+              >
+                Log out
+              </Button>
+            </>
+          }
+        >
+          <p className="muted">You’ll need to verify your mobile number again to sign back in.</p>
+          {error ? <p className="field__error">{error}</p> : null}
+        </Dialog>
+      ) : null}
+    </div>
+  );
+}
+
+function Footer() {
+  const scrollToConsole = () => scrollToBookingForm();
+
+  return (
+    <footer className="footer">
+      <div className="footer__inner">
+        <div className="footer__cta">
+          <div className="footer__cta-copy">
+            <h3>Ready to travel? Book your cab online in seconds.</h3>
+            <p className="footer__cta-sub">
+              Verified drivers, upfront transparent fares, and air-conditioned cars across South India.
+            </p>
+          </div>
+          <div className="footer__cta-actions">
+            <Link to="/" className="btn btn--sun btn--lg" onClick={scrollToConsole}>
+              Book a Ride Now <Icon name="arrow-right" size={18} />
+            </Link>
+            <a href={`tel:${SUPPORT_PHONE}`} className="btn btn--ghost-light btn--lg">
+              <Icon name="phone" size={18} /> {SUPPORT_PHONE_DISPLAY}
+            </a>
+          </div>
+        </div>
+        <div className="footer__grid">
+          <div className="footer__brand">
+            <Brand light />
+            <p className="muted">
+              Tamil Nadu and South India's trusted cab network for outstation one-way drops, round trips, airport transfers, and hourly rentals.
+            </p>
+          </div>
+          <nav className="footer__col" aria-label="Services">
+            <h2>Services</h2>
+            <ul>
+              <li>
+                <Link to="/services/one-way-drop-taxi">One Way Drop Taxi</Link>
+              </li>
+              <li>
+                <Link to="/services/outstation-round-trip">Round Trips</Link>
+              </li>
+              <li>
+                <Link to="/services/airport-taxi">Airport Transfers</Link>
+              </li>
+              <li>
+                <Link to="/services/local-rental">Hourly City Rental</Link>
+              </li>
+              <li>
+                <Link to="/services/pilgrimage-tours">Temple &amp; Pilgrimage Tours</Link>
+              </li>
+              <li>
+                <Link to="/?service=multicity" onClick={scrollToConsole}>Multicity Itineraries</Link>
+              </li>
+            </ul>
+          </nav>
+          <nav className="footer__col" aria-label="Popular routes">
+            <h2>Popular Routes</h2>
+            <ul>
+              {ALL_ROUTES.map((r) => (
+                <li key={r.slug}>
+                  <Link to={`/routes/${r.slug}`}>
+                    {r.origin} to {r.destination}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+          <nav className="footer__col" aria-label="Support">
+            <h2>Support</h2>
+            <ul>
+              <li>
+                <Link to="/support">Help &amp; Support</Link>
+              </li>
+              <li>
+                <Link to="/offers">Special Offers</Link>
+              </li>
+              <li>
+                <a href={`tel:${SUPPORT_PHONE}`}>Call {SUPPORT_PHONE_DISPLAY}</a>
+              </li>
+            </ul>
+          </nav>
+          <nav className="footer__col" aria-label="Policies">
+            <h2>Policies</h2>
+            <ul>
+              <li>
+                <Link to="/about">About People Taxi</Link>
+              </li>
+              <li>
+                <Link to="/legal#terms">Terms &amp; Conditions</Link>
+              </li>
+              <li>
+                <Link to="/legal#privacy">Privacy &amp; Location</Link>
+              </li>
+              <li>
+                <Link to="/legal#cancellation">Cancellation Policy</Link>
+              </li>
+              <li>
+                <Link to="/legal#refund">Refund Policy</Link>
+              </li>
+              <li>
+                <Link to="/legal#payment">Fare &amp; Payment Policy</Link>
+              </li>
+              <li>
+                <Link to="/legal#deletion">Account &amp; Data Deletion</Link>
+              </li>
+            </ul>
+          </nav>
+        </div>
+        <div className="footer__legal">
+          <span>© {new Date().getFullYear()} People Taxi · A Unit of {COMPANY_LEGAL_NAME}</span>
+          <span>Cash or UPI to your driver · nothing is charged when you book</span>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/**
+ * Publishes how much of the viewport's bottom edge is covered (floating tab bar, sticky flow bar,
+ * bottom sheet) as --dock-h, so toasts and other floating UI always clear it. Measured from the
+ * elements themselves, so safe-area insets and responsive visibility are accounted for.
+ */
+function useDockInset() {
+  useEffect(() => {
+    const root = document.documentElement;
+    const SELECTOR = '.tabbar, .flow-bar, .done-actions, .overlay > .dialog';
+    let frame = 0;
+    let watched = new Set<HTMLElement>();
+    const resize = new ResizeObserver(() => schedule());
+    const measure = () => {
+      frame = 0;
+      const vh = window.innerHeight;
+      let covered = 0;
+      const present = new Set(Array.from(document.querySelectorAll<HTMLElement>(SELECTOR)));
+      for (const el of watched) if (!present.has(el)) resize.unobserve(el);
+      for (const el of present) if (!watched.has(el)) resize.observe(el);
+      watched = present;
+      for (const el of present) {
+        if (el.getClientRects().length === 0) continue;
+        const r = el.getBoundingClientRect();
+        // Only what touches the bottom edge matters; a near full-screen page covers everything, so ignore it.
+        if (r.bottom < vh - 48 || r.top >= vh) continue;
+        const height = vh - r.top;
+        if (height < vh * 0.6) covered = Math.max(covered, height);
+      }
+      root.style.setProperty('--dock-h', `${Math.round(covered)}px`);
+    };
+    function schedule() {
+      if (!frame) frame = window.requestAnimationFrame(measure);
+    }
+    const mutate = new MutationObserver(schedule);
+    mutate.observe(document.body, { childList: true, subtree: true });
+    window.addEventListener('scroll', schedule, { passive: true });
+    window.addEventListener('resize', schedule);
+    schedule();
+    return () => {
+      mutate.disconnect();
+      resize.disconnect();
+      watched.clear();
+      window.removeEventListener('scroll', schedule);
+      window.removeEventListener('resize', schedule);
+      if (frame) window.cancelAnimationFrame(frame);
+      root.style.removeProperty('--dock-h');
+    };
+  }, []);
+}
+
+export function Shell() {
+  useDockInset();
+  const { unreadCount, live } = useInbox();
+  useBackToHome();
+  const { profile } = useCustomerData();
+  const { draft } = useBooking();
+  const { openLoginModal } = useAuth();
+  const { online, recovered } = useOnline();
+  const location = useLocation();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  // The menu closes whenever the page changes.
+  useEffect(() => setMenuOpen(false), [location.pathname]);
+  const isFlow = FLOW.some((re) => re.test(location.pathname));
+  const isImmersive = IMMERSIVE.some((re) => re.test(location.pathname));
+  // Local Rentals now only ever shows the "Coming soon" notice (no real immersive map to hide the header for),
+  // so it keeps the normal always-visible header; Local Taxi's live map screen still goes full-bleed.
+  const isLanding = location.pathname === '/' || location.pathname === '/book';
+  // The cab-selection step is a focused screen with its own Back / Continue bar: no site header (and no space kept for it).
+  const hideHeader = location.pathname === '/book/ride';
+  // The header is always on screen, on phones and tablets too (it takes its own space above the page).
+
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    document.getElementById('main')?.focus({ preventScroll: true });
+  }, [location.pathname]);
+
+  return (
+    <div className={`shell ${isLanding ? 'shell--scroll-header' : ''} ${isImmersive ? 'shell--immersive' : ''} ${isFlow ? '' : 'shell--dock'} ${hideHeader ? 'shell--no-header' : ''}`}>
+      <a
+        className="skip-link"
+        href="#main"
+        onClick={(e) => {
+          e.preventDefault();
+          document.getElementById('main')?.focus();
+        }}
+      >
+        Skip to content
+      </a>
+      {!online ? (
+        <div className="net-banner" role="status">
+          You’re offline. Bookings and live updates resume when you reconnect.
+        </div>
+      ) : recovered ? (
+        <div className="net-banner net-banner--ok" role="status">
+          Back online.
+        </div>
+      ) : null}
+
+      {hideHeader ? null : (
+        <header className={`topbar ${live ? 'topbar--notice' : ''}`}>
+          <div className="topbar__inner">
+            <button type="button" className="menu-btn" aria-label="Open profile" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+              <BrandIcon name="menu" size={28} />
+            </button>
+            <Brand />
+            <nav className="topnav" aria-label="Main">
+              {TOP_NAV.map((n) => (
+                <NavLink
+                  key={n.to}
+                  to={n.to}
+                  aria-label={n.to === '/notifications' && unreadCount > 0 ? `${n.label}, ${unreadCount} unread` : n.label}
+                  title={n.label}
+                  className={({ isActive }) => `topnav__link ${isActive || (n.to === '/book' && location.pathname === '/') ? 'is-active' : ''}`}
+                >
+                  {n.art ? <BrandIcon name={n.art} size={26} /> : <Icon name={n.icon} size={19} />}
+                  <span className="lbl-long">{n.label}</span>
+                  {n.to === '/notifications' && unreadCount > 0 ? (
+                    <em className="count" aria-label={`${unreadCount} unread`}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </em>
+                  ) : null}
+                </NavLink>
+              ))}
+            </nav>
+            <RideBanner />
+            <div className="topbar__right">
+              <Link to="/support" className="help-link" aria-label="Help and support" title="Help">
+                <BrandIcon name="support" size={26} />
+                <span className="help-link__text">Help</span>
+              </Link>
+              <a className="help-link help-link--phone" href={`tel:${SUPPORT_PHONE}`} aria-label={`Call People Taxi support ${SUPPORT_PHONE_DISPLAY}`} title={SUPPORT_PHONE_DISPLAY}>
+                <BrandIcon name="contact" size={24} />
+                <span className="num">{SUPPORT_PHONE_DISPLAY}</span>
+              </a>
+              <SupportMenu onAsk={() => setAiOpen(true)} />
+              <ProfileMenu />
+            </div>
+            <div className="topbar__mobile">
+              <SupportMenu phone onAsk={() => setAiOpen(true)} />
+              <NavLink
+                to="/trips"
+                className={({ isActive }) => `icon-btn hdr-btn ${isActive ? 'is-active' : ''}`}
+                aria-label="My trips"
+                title="My trips"
+              >
+                <BrandIcon name="trips" size={28} />
+              </NavLink>
+              {!profile ? (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => openLoginModal({ title: 'Sign in to People Taxi' })}
+                >
+                  Sign in
+                </Button>
+              ) : (
+                <>
+                  <NavLink
+                    to="/notifications"
+                    className={({ isActive }) => `icon-btn icon-btn--badge hdr-btn ${unreadCount > 0 ? 'has-unread' : ''} ${isActive ? 'is-active' : ''}`}
+                    aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+                    title="Notifications"
+                  >
+                    <BellIcon size={25} />
+                    {unreadCount > 0 ? <em className="count" aria-hidden="true">{unreadCount > 9 ? '9+' : unreadCount}</em> : null}
+                  </NavLink>
+                </>
+              )}
+            </div>
+            <HeaderNotice />
+          </div>
+        </header>
+      )}
+
+      {/* The footer waits for the page: while a screen loads, only its placeholder shows. */}
+      <Suspense
+        fallback={
+          <main id="main" tabIndex={-1} className="main">
+            <PageLoader />
+          </main>
+        }
+      >
+        <main id="main" tabIndex={-1} className="main">
+          <RouteErrorBoundary resetKey={location.pathname}>
+            <Outlet />
+          </RouteErrorBoundary>
+        </main>
+        {!isImmersive ? <Footer /> : null}
+      </Suspense>
+
+      {!isFlow ? <BottomNav /> : null}
+      <SideDrawer open={menuOpen} onClose={() => setMenuOpen(false)} brand={<Brand />} />
+      {/* Support lives in the header (Ask AI / Call us): no floating buttons to cover fares or actions. */}
+      <AiChatbot
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+        hideLauncher
+        customer={profile ? { name: profile.name, phone: profile.phone, email: profile.email } : undefined}
+        tripContext={{ pickup: draft.pickup?.name, drop: draft.drop?.name, service: draft.multicity ? 'Multicity' : draft.tripType }}
+      />
+    </div>
+  );
+}
+export default Shell;

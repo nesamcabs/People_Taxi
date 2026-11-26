@@ -1,0 +1,358 @@
+/* Route and service landing pages (SEO pages). Same People Taxi language as the home: a rounded blue hero,
+   pastel tiles, a soft fare table and round accordions. */
+
+.lp-crumbs {
+  padding-top: 4px;
+  padding-bottom: 8px;
+}
+.lp-crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  color: var(--muted);
+}
+.lp-crumbs a {
+  color: var(--muted);
+}
+.lp-crumbs a:hover {
+  color: var(--brand);
+}
+.lp-crumbs li[aria-current='page'] {
+  color: var(--ink);
+}
+
+.lp-hero {
+  position: relative;
+  width: calc(100% - var(--gutter) * 2);
+  max-width: calc(var(--max) - var(--gutter) * 2);
+  margin: 4px auto 0;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(circle at 95% 10%, rgb(255 197 61 / 0.95) 0 52px, transparent 53px),
+    radial-gradient(60% 90% at 100% 100%, rgb(76 155 255 / 0.5), transparent 70%),
+    var(--brand-gradient);
+  color: var(--on-dark);
+  /* Contains the decorative circle that extends past the card's edge. */
+  overflow: hidden;
+}
+.lp-hero::after {
+  content: '';
+  position: absolute;
+  right: -90px;
+  bottom: -150px;
+  width: 540px;
+  height: 540px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.07);
+  pointer-events: none;
+}
+.lp-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: start;
+  gap: 18px;
+  padding: clamp(28px, 4vw, 72px) clamp(22px, 4vw, 80px);
+}
+.lp-hero__inner > * {
+  max-width: 960px;
+}
+@media (min-width: 1200px) {
+  .lp-hero__inner:has(.lp-facts) {
+    grid-template-columns: minmax(0, 1fr) 360px;
+    column-gap: clamp(32px, 6vw, 120px);
+    align-items: start;
+  }
+  .lp-hero__inner:has(.lp-facts) > * {
+    grid-column: 1;
+  }
+  .lp-hero__inner:has(.lp-facts) > .lp-facts {
+    grid-column: 2;
+    grid-row: 1 / span 5;
+    flex-direction: column;
+    align-self: center;
+    width: 100%;
+  }
+  .lp-hero__inner:has(.lp-facts) .lp-facts li {
+    padding: 18px 24px 18px 20px;
+    border-radius: 28px;
+  }
+}
+.lp-hero h1 {
+  color: #fff;
+  font-size: clamp(2rem, 1.3rem + 2.6vw, 3.5rem);
+  font-weight: 900;
+  line-height: 1.08;
+  letter-spacing: -0.03em;
+}
+.lp-hero__lead {
+  color: var(--on-dark-muted);
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  max-width: 64ch;
+}
+.lp-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.lp-facts li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 20px 10px 16px;
+  border-radius: var(--r-pill);
+  background: rgb(255 255 255 / 0.16);
+  backdrop-filter: blur(6px);
+}
+.lp-facts .icon {
+  color: var(--sun);
+}
+.lp-facts small {
+  display: block;
+  color: var(--on-dark-muted);
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+.lp-facts strong {
+  color: #fff;
+  font-weight: 900;
+}
+.lp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.lp-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #fff;
+  box-shadow: var(--shadow-2);
+}
+.lp-table {
+  width: 100%;
+  min-width: 780px;
+  border-collapse: collapse;
+  text-align: left;
+}
+.lp-table th {
+  padding: 16px 20px;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: var(--fs-sm);
+  font-weight: 900;
+  white-space: nowrap;
+}
+.lp-table td {
+  padding: 16px 20px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-weight: 600;
+}
+.lp-table__cat {
+  color: var(--ink) !important;
+  font-weight: 900 !important;
+}
+.lp-table__fare {
+  color: var(--brand) !important;
+  font-size: var(--fs-lg);
+  font-weight: 900 !important;
+}
+.lp-table__end {
+  text-align: right !important;
+}
+.lp-note {
+  margin-top: 14px;
+}
+
+.lp-prose {
+  max-width: 840px;
+  margin-inline: auto;
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-weight: 600;
+  line-height: 1.8;
+}
+.lp-prose p + p {
+  margin-top: 16px;
+}
+.lp-stops {
+  margin-top: 44px;
+}
+.lp-stops h3 {
+  margin-bottom: 22px;
+  text-align: center;
+  font-size: var(--fs-2xl);
+  font-weight: 900;
+}
+
+.lp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 20px;
+}
+.lp-tile {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  padding: 24px;
+  border-radius: var(--r-lg);
+  background: var(--brand-soft);
+  transition: transform 320ms var(--ease);
+}
+.lp-tile:nth-child(4n + 2) {
+  background: var(--sun-soft);
+}
+.lp-tile:nth-child(4n + 3) {
+  background: var(--mint-soft);
+}
+.lp-tile:nth-child(4n + 4) {
+  background: var(--rose-soft);
+}
+.lp-tile:hover {
+  transform: translateY(-5px);
+}
+.lp-tile strong,
+.lp-tile h3 {
+  color: var(--ink);
+  font-size: var(--fs-lg);
+  font-weight: 900;
+}
+.lp-tile p {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+.lp-link-card {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  height: 100%;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: #fff;
+  box-shadow: var(--shadow-1);
+  color: inherit;
+  transition: transform 320ms var(--ease), box-shadow 320ms var(--ease-out);
+}
+.lp-link-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-3);
+  text-decoration: none;
+}
+.lp-link-card strong {
+  color: var(--ink);
+  font-size: var(--fs-lg);
+  font-weight: 900;
+}
+.lp-link-card span {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.lp-link-card em {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--brand);
+  font-style: normal;
+  font-weight: 800;
+}
+
+.lp-faq {
+  max-width: 840px;
+  margin-inline: auto;
+}
+.lp-rules {
+  max-width: 840px;
+  margin: 40px auto 0;
+  padding: 28px;
+  border-radius: var(--r-lg);
+  background: var(--sun-soft);
+}
+.lp-rules h3 {
+  margin-bottom: 12px;
+  font-size: var(--fs-xl);
+  font-weight: 900;
+}
+.lp-rules li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 24px;
+  padding: 12px 0;
+  border-top: 2px dotted var(--sun);
+}
+.lp-rules strong {
+  color: var(--ink);
+  font-weight: 900;
+}
+.lp-rules span {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.lp-missing {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  padding-block: 72px;
+  text-align: center;
+}
+
+@media (max-width: 759.98px) {
+  .lp-hero {
+    border-radius: var(--r-lg);
+  }
+  .lp-actions .btn {
+    width: 100%;
+  }
+}
+
+/* Route fare chart on a phone: each vehicle becomes a card (name + fare on top, details as label / value rows, a full-width Book button). */
+@media (max-width: 720px) {
+  .lp-table-wrap { overflow: visible; border: 0; background: transparent; box-shadow: none; }
+  .lp-table, .lp-table tbody { display: block; width: 100%; min-width: 0; }
+  .lp-table thead { display: none; }
+  .lp-table tr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 12px; margin: 0 0 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-card, var(--r-md)); background: var(--surface, #fff); box-shadow: var(--shadow-1); }
+  .lp-table td { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; padding: 0; border: 0; font-size: .88rem; text-align: right; }
+  .lp-table td[data-label]::before { content: attr(data-label); color: var(--muted); font-size: .8rem; font-weight: 500; text-align: left; }
+  .lp-table td.lp-table__cat { grid-column: 1; grid-row: 1; justify-content: flex-start; font-size: 1.05rem; text-align: left; }
+  .lp-table td.lp-table__fare { grid-column: 2; grid-row: 1; font-size: 1.15rem; }
+  .lp-table td:not(.lp-table__cat):not(.lp-table__fare):not(.lp-table__end) { grid-column: 1 / -1; padding-top: 6px; border-top: 1px dashed var(--line); }
+  .lp-table td.lp-table__end { grid-column: 1 / -1; display: block; padding-top: 6px; }
+  .lp-table td.lp-table__end .btn { width: 100%; min-height: 44px; }
+}
+
+/* Route fare chart, colourful: each vehicle row takes its own accent (same palette as the booking cards). */
+.lp-table tr[data-acc] { --a: #1665e8; --a-ink: #0b3a94; --a-wash: #e9f2ff; }
+.lp-table tr[data-acc='green'] { --a: #12a150; --a-ink: #0b6b34; --a-wash: #e4f8ec; }
+.lp-table tr[data-acc='orange'] { --a: #f26b0f; --a-ink: #a84300; --a-wash: #fff0e0; }
+.lp-table tr[data-acc='purple'] { --a: #7a4dff; --a-ink: #4b25c4; --a-wash: #f0eaff; }
+.lp-table tr[data-acc='teal'] { --a: #0b9fb3; --a-ink: #086373; --a-wash: #dff6f9; }
+.lp-table tr[data-acc='pink'] { --a: #e0287a; --a-ink: #a1135a; --a-wash: #ffe8f2; }
+.lp-table tr[data-acc] td.lp-table__cat { color: var(--ink); font-weight: 900; box-shadow: inset 4px 0 0 var(--a); }
+.lp-table tr[data-acc] td.lp-table__fare { color: var(--a-ink); font-weight: 900; }
+.lp-table tr[data-acc] .btn--primary { border: 0; border-radius: var(--r-pill); background: var(--brand-gradient); box-shadow: 0 8px 14px -6px rgb(22 101 232 / .6); font-weight: 800; }
+@media (min-width: 721px) {
+  .lp-table tr[data-acc]:hover td { background: var(--a-wash); }
+}
+@media (max-width: 720px) {
+  .lp-table tr[data-acc] { position: relative; overflow: hidden; border: 2px solid color-mix(in srgb, var(--a) 16%, #fff); border-radius: 22px; background: linear-gradient(115deg, var(--a-wash) 0%, #fff 55%, var(--a-wash) 100%); box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--a) 45%, transparent); }
+  .lp-table tr[data-acc]::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(150px 56px at 100% 118%, color-mix(in srgb, var(--a) 18%, transparent) 98%, transparent 100%), radial-gradient(64px 64px at 94% 10%, color-mix(in srgb, var(--a) 11%, transparent) 98%, transparent 100%); }
+  .lp-table tr[data-acc] td { position: relative; }
+  .lp-table tr[data-acc] td.lp-table__cat { box-shadow: none; font-size: 1.1rem; }
+  .lp-table tr[data-acc] td.lp-table__fare { align-self: center; padding: 6px 14px; border-radius: 14px; background: #fff; font-size: 1.25rem; box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--a) 40%, transparent), 0 0 0 1px color-mix(in srgb, var(--a) 16%, transparent); }
+  .lp-table tr[data-acc] td:not(.lp-table__cat):not(.lp-table__fare):not(.lp-table__end) { border-top-color: color-mix(in srgb, var(--a) 28%, #c3d2ee); }
+  .lp-table tr[data-acc] td.lp-table__end .btn { min-height: 46px; font-size: 1rem; }
+}

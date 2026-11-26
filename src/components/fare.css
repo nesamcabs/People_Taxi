@@ -1,0 +1,25 @@
+/* Fare breakup (fare details sheet, booking review, ride and receipt screens): a blue total card, then one tidy card of rows. */
+.fare { gap: 14px; }
+.fare .fare__hero {
+  position: relative; overflow: hidden; padding: 16px 18px; border-radius: 20px; color: #fff;
+  background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 120' preserveAspectRatio='xMaxYMax slice'%3E%3Ccircle cx='330' cy='30' r='50' fill='%23fff' opacity='.1'/%3E%3Cpath d='M0 96 70 54l50 30 70-44 70 48 60-30 80 40v26H0z' fill='%23fff' opacity='.09'/%3E%3Cpath d='M0 108l80-30 70 22 80-30 80 30 90-20v40H0z' fill='%23052466' opacity='.45'/%3E%3C/svg%3E") right bottom / cover no-repeat,
+    linear-gradient(120deg, #0a2f86 0%, #1451d6 55%, #2a8bff 100%);
+  box-shadow: 0 12px 24px -10px rgb(20 81 214 / .55);
+}
+.fare .fare__hero-label { color: rgb(255 255 255 / .86); font-size: .8rem; font-weight: 700; letter-spacing: .02em; }
+.fare .fare__hero-amount { color: #fff; font-size: 2rem; font-weight: 900; letter-spacing: -0.03em; }
+.fare .fare__hero-badge { padding: 5px 12px 5px 7px; border-radius: var(--r-pill); background: rgb(255 255 255 / .16); box-shadow: 0 0 0 1px rgb(255 255 255 / .35) inset; color: #fff; font-size: .78rem; font-weight: 800; }
+.fare .fare__hero-badge svg { color: #38d983; }
+
+.fare .fare__heading { display: flex; align-items: center; gap: 8px; margin: 2px 0 -4px; font-size: 1rem; font-weight: 900; }
+.fare .fare__heading::before { content: ''; width: 4px; height: 17px; border-radius: 4px; background: var(--brand-gradient); }
+
+.fare .fare__rows { gap: 0; padding: 4px 16px; border-radius: 18px; background: #fff; box-shadow: 0 0 0 1px var(--line) inset, 0 8px 18px -12px rgb(22 70 160 / .35); }
+.fare .fare__row { align-items: center; padding: 12px 0; border-bottom: 1px dashed var(--line-strong); }
+.fare .fare__row:last-child { border-bottom: 0; }
+.fare .fare__label { font-size: .9rem; font-weight: 700; }
+.fare .fare__row small { font-size: .74rem; font-weight: 600; }
+.fare .fare__value { color: var(--ink); font-size: .96rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.fare .fare__value.is-saving { color: var(--green); }
+.fare .fare__na { margin: 0; padding: 10px 12px; border-radius: 12px; background: var(--sunken); }

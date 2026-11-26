@@ -1,0 +1,174 @@
+/* People Taxi phone service bar (Shell BottomNav, `.tabbar`): approved white bar with a blue outline. Presentation only;
+   loaded last so it settles the earlier bar rules (bottom-nav, brand-icons, colour-bars). Position, size and the
+   selected service (`.is-active`, from the existing route state) are unchanged. */
+@media (max-width: 899.98px) {
+  html body .tabbar {
+    border: 0;
+    background: #fff;
+    background-image: none;
+    box-shadow: 0 6px 18px -8px rgb(15 23 42 / 0.18), 0 1px 3px rgb(15 23 42 / 0.06);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  /* Five equal columns; every label the same size so they share one baseline. */
+  html body .tabbar .tabbar__link { color: #0f172a; }
+  html body .tabbar .tabbar__link.is-active { color: #155eef; }
+  html body .tabbar .tabbar__label,
+  html body .tabbar .tabbar__link--wide .tabbar__label {
+    font-size: clamp(10px, 2.9vw, 13px);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+  /* Selected (and hovered, as before): a white disc with a blue outline behind the existing 3D icon, gently raised. */
+  html body .tabbar .tabbar__icon::before { border: 2px solid #155eef; background: #fff; }
+  html body .tabbar .tabbar__link.is-active .tabbar__icon::before {
+    background: #fff;
+    box-shadow: 0 6px 12px -6px rgb(15 23 42 / 0.28);
+  }
+  html body .tabbar .tabbar__link:focus-visible { outline: 2px solid #155eef; outline-offset: 3px; border-radius: 12px; }
+
+  /* ── Outline: a blue line round the bar that rises in a smooth bump over the selected ring (drawn by BottomNav as an SVG
+     path, `.tabbar__outline`). Where the ring sits inside the bar it has no line, so circle and bar read as one shape. ── */
+  html body .tabbar.tabbar--outlined {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  html body .tabbar .tabbar__outline {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+    /* A soft blue glow along the outline, then the usual lift shadow. */
+    filter: drop-shadow(0 0 6px rgb(21 94 239 / 0.4)) drop-shadow(0 6px 10px rgb(15 23 42 / 0.12));
+  }
+  html body .tabbar .tabbar__outline path {
+    fill: #fff;
+    stroke: #155eef;
+    stroke-width: 2;
+    stroke-linejoin: round;
+  }
+  /* The selected icon rises far enough for its ring to stand clear of the top line, so the bump has a circle to wrap. */
+  html body .tabbar.tabbar--outlined .tabbar__link.is-active .tabbar__icon {
+    transform: translateY(calc(var(--pt-icon, 48px) * -0.4));
+  }
+  /* The selected label rises with its icon, so the two stay together as one raised item. */
+  html body .tabbar.tabbar--outlined .tabbar__label { transition: transform 0.25s ease; }
+  html body .tabbar.tabbar--outlined .tabbar__link.is-active .tabbar__label {
+    transform: translateY(calc(var(--pt-icon, 48px) * -0.4));
+  }
+  html body .tabbar.tabbar--outlined .tabbar__link.is-active .tabbar__icon::before {
+    border-color: transparent;
+    background-clip: padding-box;
+    box-shadow: none;
+  }
+
+  /* ── Motion: the selected service feels "on the road" ──
+     1. A ripple goes out from the ring when a service is picked.
+     2. The selected icon gently bobs, as if driving.
+     3. A light shine sweeps across the selected label.
+     4. A tap squeezes the icon, so every press feels answered. */
+  html body .tabbar .tabbar__link.is-active .tabbar__icon::before {
+    animation: tabbar-ripple 1.1s ease-out 2;
+  }
+  html body .tabbar .tabbar__link.is-active .tabbar__img {
+    animation: tabbar-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), tabbar-drive 2.6s ease-in-out 0.5s infinite;
+  }
+  html body .tabbar .tabbar__link.is-active .tabbar__label {
+    background: linear-gradient(100deg, #155eef 0 40%, #8ab8ff 50%, #155eef 60% 100%);
+    background-size: 250% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: tabbar-shine 3.2s ease-in-out infinite;
+  }
+  html body .tabbar .tabbar__img { transition: transform 0.15s ease; }
+  html body .tabbar .tabbar__link:active .tabbar__img { transform: scale(0.9); }
+
+  /* ── Each service moves in its own way while selected ──
+     Local and Outstation drive (above). Rental: the clock ticks. Multicity: the signpost sways from its base.
+     Airport: the plane cruises through the sky. Its ring turns sky blue, clouds stream past behind it, and it banks and climbs. */
+  html body .tabbar .tabbar__link--rental.is-active .tabbar__img {
+    animation: tabbar-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), tabbar-tick 2s steps(1, end) 0.5s infinite;
+  }
+  html body .tabbar .tabbar__link--multicity.is-active .tabbar__img {
+    transform-origin: 50% 92%;
+    animation: tabbar-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), tabbar-sway 2.8s ease-in-out 0.5s infinite;
+  }
+  html body .tabbar .tabbar__link--airport.is-active .tabbar__img {
+    animation: tabbar-pop 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.25), tabbar-fly 3.6s ease-in-out 0.5s infinite;
+  }
+  html body .tabbar.tabbar--outlined .tabbar__link--airport.is-active .tabbar__icon::before {
+    background-color: transparent;
+    background-image: linear-gradient(180deg, #dcebff 0%, #f4f9ff 60%, #fff 100%);
+  }
+  html body .tabbar .tabbar__link--airport.is-active .tabbar__icon::after {
+    content: '';
+    position: absolute;
+    inset: calc(var(--pt-icon, 48px) * -0.125 + 3px);
+    z-index: -1;
+    border-radius: 50%;
+    background-image:
+      radial-gradient(ellipse 7px 3px at 25% 28%, #fff 92%, transparent 100%),
+      radial-gradient(ellipse 5px 2.5px at 75% 48%, #fff 92%, transparent 100%),
+      radial-gradient(ellipse 6px 2.5px at 45% 70%, rgb(255 255 255 / 0.9) 92%, transparent 100%);
+    /* One tile is the ring's width; the tiles slide left by exactly one width, so the clouds loop without a jump. */
+    --cloud-w: calc(var(--pt-icon, 48px) * 1.25 - 6px);
+    background-size: var(--cloud-w) 100%;
+    background-repeat: repeat-x;
+    pointer-events: none;
+    animation: tabbar-clouds 2.4s linear infinite;
+  }
+}
+@keyframes tabbar-tick {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(5deg); }
+}
+@keyframes tabbar-sway {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-6deg); }
+  65% { transform: rotate(4deg); }
+}
+@keyframes tabbar-fly {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  20% { transform: translate(2px, -3px) rotate(-5deg); }
+  45% { transform: translate(-1px, -1px) rotate(-1deg); }
+  70% { transform: translate(1.5px, -4px) rotate(-6deg); }
+  85% { transform: translate(0, -1.5px) rotate(-2deg); }
+}
+@keyframes tabbar-clouds {
+  from { background-position: 0 0; }
+  to { background-position: calc(var(--cloud-w, 54px) * -1) 0; }
+}
+@keyframes tabbar-ripple {
+  0% { box-shadow: 0 0 0 0 rgb(21 94 239 / 0.35), 0 6px 12px -6px rgb(15 23 42 / 0.28); }
+  100% { box-shadow: 0 0 0 12px rgb(21 94 239 / 0), 0 6px 12px -6px rgb(15 23 42 / 0.28); }
+}
+@keyframes tabbar-drive {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  25% { transform: translateY(-2px) rotate(-1.5deg); }
+  50% { transform: translateY(0) rotate(0deg); }
+  75% { transform: translateY(-1.5px) rotate(1.5deg); }
+}
+@keyframes tabbar-shine {
+  0%, 35% { background-position: 100% 0; }
+  70%, 100% { background-position: 0 0; }
+}
+@media (max-width: 899.98px) and (prefers-reduced-motion: reduce) {
+  html body .tabbar .tabbar__link.is-active .tabbar__icon::after,
+  html body .tabbar .tabbar__link.is-active .tabbar__icon::before,
+  html body .tabbar .tabbar__link.is-active .tabbar__img,
+  html body .tabbar .tabbar__link--rental.is-active .tabbar__img,
+  html body .tabbar .tabbar__link--multicity.is-active .tabbar__img,
+  html body .tabbar .tabbar__link--airport.is-active .tabbar__img,
+  html body .tabbar .tabbar__link--airport.is-active .tabbar__icon::after,
+  html body .tabbar .tabbar__link.is-active .tabbar__label { animation: none; }
+}

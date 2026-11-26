@@ -1,0 +1,26 @@
+/* The header is always on screen, on every screen width, and takes its own space above the page. */
+.shell--scroll-header .topbar {
+  position: sticky;
+  top: 0;
+  width: 100%;
+}
+/* Desktop keeps the logo in the header at all times. On phones and tablets the home page shows the big logo in the hero, so the
+   header leaves its own out until the hero logo has scrolled away (the rule in theme.css, driven by data-hero-logo). */
+@media (min-width: 900px) {
+  html .shell--scroll-header .topbar .brand {
+    max-width: 260px;
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+  }
+}
+
+/* Phones and tablets: the header already sits above the hero, so the hero starts right under it with no extra space. */
+@media (max-width: 899.98px) {
+  .shell--scroll-header .home-hero { padding-top: 4px; }
+}
+
+/* Local maps start below the site header. */
+.shell--local-page .lr {
+  top: var(--nav-h, 76px);
+}

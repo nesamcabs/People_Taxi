@@ -1,0 +1,134 @@
+/* Phone header buttons (Help, My trips, Notifications): one matched set in the app's clean theme. White circles with a thin
+   blue border and blue line icons; they fill blue on hover / while open or on their page. Small touches give each its own life:
+   Help has a green "we're online" dot, the trips ticket tilts on hover, and the bell swings now and then while something is
+   unread, under a red count badge. Loaded last so it settles the earlier .icon-btn / .support-menu__btn rules. */
+html body .topbar__mobile { gap: 8px; }
+html body .topbar__mobile .hdr-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  min-width: 38px;
+  padding: 0;
+  border: 1.5px solid var(--brand, #1665e8);
+  border-radius: 50%;
+  background: #fff;
+  color: var(--brand, #1665e8);
+  box-shadow: 0 4px 10px -7px rgb(22 101 232 / 0.6);
+  text-decoration: none;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+}
+/* The icons are full colour, so the buttons stay white: hover lifts them, and the open / current one gets a soft blue fill. */
+html body .topbar__mobile .hdr-btn:hover {
+  background: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 7px 14px -7px rgb(22 101 232 / 0.75);
+}
+html body .topbar__mobile .hdr-btn.is-open,
+html body .topbar__mobile .hdr-btn.is-active {
+  background: var(--brand-soft, #edf4ff);
+  box-shadow: 0 0 0 3px rgb(22 101 232 / 0.15);
+}
+html body .topbar__mobile .hdr-btn:active { transform: scale(0.92); }
+html body .topbar__mobile .hdr-btn:focus-visible { outline: 2px solid var(--brand, #1665e8); outline-offset: 2px; }
+html body .topbar__mobile .hdr-btn .hdr-icon { display: block; transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3); }
+
+/* Help: a green dot on the headset says the desk is online, with a soft pulse. */
+html body .topbar__mobile .hdr-btn__live {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: hdr-live 2.4s ease-out infinite;
+}
+html body .topbar__mobile .hdr-btn--help:hover .hdr-icon { transform: translateY(-1px) scale(1.06); }
+
+/* My trips: the ticket tilts as if being handed over. */
+html body .topbar__mobile .hdr-btn:hover .hdr-icon--ticket { transform: rotate(-12deg); }
+
+/* Notifications: a red count badge, and the bell swings every few seconds while something is unread. */
+html body .topbar__mobile .hdr-btn .count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font-size: 0.625rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 3px 6px -2px rgb(229 72 77 / 0.6);
+}
+html body .topbar__mobile .hdr-btn .hdr-icon__bell { transform-box: fill-box; transform-origin: 50% 0; }
+html body .topbar__mobile .hdr-btn.has-unread .hdr-icon__bell { animation: hdr-ring 4s ease-in-out infinite; }
+
+/* Upcoming-booking chip: text only (no car badge, no arrow), in the same clean theme as the buttons beside it.
+   A white pill with a thin blue border; a small caps label over the route, both in blue. A trip in progress turns green,
+   "rate your trip" turns amber. */
+html body .topbar .ride-chip {
+  gap: 0;
+  padding: 4px 14px;
+  border: 1.5px solid var(--brand, #1665e8);
+  background: #fff;
+  color: var(--brand, #1665e8);
+  box-shadow: 0 4px 10px -7px rgb(22 101 232 / 0.6);
+}
+html body .topbar .ride-chip--ongoing { border-color: var(--green, #0f8a4a); box-shadow: 0 4px 10px -7px rgb(15 138 74 / 0.6); }
+html body .topbar .ride-chip--soft { border-color: #e59a0e; box-shadow: 0 4px 10px -7px rgb(229 154 14 / 0.6); }
+html body .topbar .ride-chip { justify-content: center; }
+html body .topbar .ride-chip .ride-chip__text {
+  flex: 1;
+  justify-items: center;
+  padding-left: 0;
+  border-left: 0;
+  line-height: 1.2;
+  text-align: center;
+}
+html body .topbar .ride-chip .ride-chip__route { text-align: center; }
+html body .topbar .ride-chip .ride-chip__text strong {
+  color: var(--brand, #1665e8);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  opacity: 0.8;
+}
+html body .topbar .ride-chip .ride-chip__text small.ride-chip__route {
+  color: var(--brand, #1665e8);
+  font-size: 0.78125rem;
+  font-weight: 800;
+}
+html body .topbar .ride-chip--ongoing .ride-chip__text strong,
+html body .topbar .ride-chip--ongoing .ride-chip__text small.ride-chip__route { color: var(--green, #0f8a4a); }
+html body .topbar .ride-chip--soft .ride-chip__text strong,
+html body .topbar .ride-chip--soft .ride-chip__text small.ride-chip__route { color: var(--amber, #a85a00); }
+
+@keyframes hdr-live {
+  0% { box-shadow: 0 0 0 0 rgb(34 197 94 / 0.55); }
+  70%, 100% { box-shadow: 0 0 0 6px rgb(34 197 94 / 0); }
+}
+@keyframes hdr-ring {
+  0%, 70%, 100% { transform: rotate(0deg); }
+  74% { transform: rotate(14deg); }
+  78% { transform: rotate(-12deg); }
+  82% { transform: rotate(8deg); }
+  86% { transform: rotate(-5deg); }
+  90% { transform: rotate(2deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  html body .topbar__mobile .hdr-btn__live,
+  html body .topbar__mobile .hdr-btn.has-unread .hdr-icon__bell { animation: none; }
+  html body .topbar__mobile .hdr-btn,
+  html body .topbar__mobile .hdr-btn .hdr-icon { transition: none; }
+}

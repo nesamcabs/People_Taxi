@@ -1,0 +1,143 @@
+/* One-time-code entry: six boxes over one transparent input.
+   Loaded last. Uses only the shared design tokens, so it takes the colours of whichever brand it ships in. */
+
+.otp {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin-inline: auto;
+  cursor: text;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* The real input covers the boxes, so a tap anywhere lands in it. Font size 16px stops iOS zooming in. */
+.otp__input {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: transparent;
+  caret-color: transparent;
+  font-size: 16px;
+  letter-spacing: 0;
+  opacity: 0.01;
+  cursor: text;
+}
+
+.otp__boxes {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: clamp(6px, 2.4vw, 10px);
+}
+
+.otp__box {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 5 / 6;
+  min-width: 0;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  color: var(--ink);
+  font-size: clamp(1.25rem, 5.6vw, 1.625rem);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  box-shadow: 0 1px 2px rgb(12 27 61 / 0.05);
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 200ms ease, transform 160ms ease;
+  animation: otp-rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+/* A digit lands with a small pop. */
+.otp__box.is-filled {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  animation: otp-rise 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both, otp-pop 240ms cubic-bezier(0.3, 1.5, 0.5, 1);
+  animation-delay: calc(var(--i, 0) * 45ms), 0s;
+}
+
+/* The box that will take the next digit: lifted, glowing ring and a blinking caret. */
+.otp:focus-within .otp__box.is-current {
+  border-color: var(--brand);
+  background: var(--surface, #fff);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent), 0 6px 14px -8px color-mix(in srgb, var(--brand) 60%, transparent);
+  transform: translateY(-2px);
+}
+.otp:focus-within .otp__box.is-current:not(.is-filled)::after {
+  content: '';
+  width: 2px;
+  height: 46%;
+  border-radius: 2px;
+  background: var(--brand);
+  animation: otp-caret 1s steps(1) infinite;
+}
+
+/* Wrong code: red boxes and a short shake. */
+.otp.is-invalid .otp__box {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger-ink);
+  animation: otp-shake 340ms ease;
+}
+.otp.is-invalid:focus-within .otp__box.is-current {
+  border-color: var(--danger);
+  background: var(--danger-soft);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--danger) 18%, transparent);
+}
+
+/* Verifying: the boxes dim and pulse one after another. */
+.otp.is-busy .otp__box {
+  border-color: var(--brand);
+  animation: otp-busy 900ms ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+.otp.is-busy {
+  cursor: progress;
+}
+
+@keyframes otp-rise {
+  from { opacity: 0; transform: translateY(10px) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes otp-pop {
+  0% { transform: scale(0.85); }
+  60% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes otp-caret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+@keyframes otp-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(3px); }
+}
+@keyframes otp-busy {
+  0%, 100% { opacity: 0.55; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .otp__box,
+  .otp__box.is-filled,
+  .otp.is-invalid .otp__box,
+  .otp.is-busy .otp__box {
+    animation: none;
+    transition: none;
+    transform: none;
+  }
+  .otp:focus-within .otp__box.is-current:not(.is-filled)::after {
+    animation: none;
+  }
+}

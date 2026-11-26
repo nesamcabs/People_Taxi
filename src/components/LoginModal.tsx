@@ -1,0 +1,286 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { ConfirmationResult } from 'firebase/auth';
+import { isValidIndianMobile, formatPhone, isValidEmail, isValidName } from '@core/utils/format';
+import { registerCustomerProfile } from '@core/services/userService';
+import { describeError } from '@core/utils/retry';
+import { SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@core/config/constants';
+import { Button, Dialog, Notice, TextField } from '@/components/ui';
+import { Icon } from '@/components/Icon';
+import { confirmOtpCode, describePhoneAuthError, sendOtpToPhone } from '@/lib/authService';
+import { useAuth } from '@/state/Auth';
+import { useOnline } from '@/lib/hooks';
+import { CountryCodeSelect } from '@/components/CountryCodeSelect';
+import { OtpInput, OTP_LENGTH } from '@/components/OtpInput';
+
+const RESEND_SECONDS = 30;
+
+const agreement = (
+  <p className="login-modal__agree">
+    By continuing you agree to People Taxi’s{' '}
+    <Link to="/legal#terms" target="_blank" rel="noopener">
+      Terms &amp; Conditions<span className="sr-only"> (opens in a new tab)</span>
+    </Link>{' '}
+    and{' '}
+    <Link to="/legal#privacy" target="_blank" rel="noopener">
+      Privacy &amp; Location Policy<span className="sr-only"> (opens in a new tab)</span>
+    </Link>
+    .
+  </p>
+);
+
+export function LoginModal() {
+  const { isLoginModalOpen, closeLoginModal, loginModalOptions, state } = useAuth();
+  const { online } = useOnline();
+
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [mobile, setMobile] = useState('');
+  const [countryCode, setCountryCode] = useState('+91');
+  const [otp, setOtp] = useState('');
+  const [error, setError] = useState('');
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [confirmation, setConfirmation] = useState<ConfirmationResult | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  // Profile setup fields when newly registered
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileTouched, setProfileTouched] = useState(false);
+
+  // Reset local state when modal opens
+  useEffect(() => {
+    if (isLoginModalOpen) {
+      setStep('phone');
+      setOtp('');
+      setError('');
+      setSending(false);
+      setVerifying(false);
+      setConfirmation(null);
+      setCooldown(0);
+      setName('');
+      setEmail('');
+      setProfileTouched(false);
+    }
+  }, [isLoginModalOpen]);
+
+  // Resend cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return undefined;
+    const t = window.setTimeout(() => setCooldown((c) => c - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [cooldown]);
+
+  if (!isLoginModalOpen) return null;
+
+  const sendOtp = async () => {
+    if (sending) return;
+    if (mobile.length < 6 || mobile.length > 14) return setError('Enter a valid mobile number.');
+    if (!online) return setError('You’re offline. Connect to the internet to receive your code.');
+    setError('');
+    setSending(true);
+    try {
+      const res = await sendOtpToPhone(`${countryCode}${mobile}`);
+      setConfirmation(res);
+      setOtp('');
+      setStep('otp');
+      setCooldown(RESEND_SECONDS);
+    } catch (e) {
+      setError(describePhoneAuthError(e));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const verify = async (code: string) => {
+    if (verifying) return;
+    if (code.length !== OTP_LENGTH) return setError('Enter the 6-digit code.');
+    if (!confirmation) return setError('Your code expired. Request a new one.');
+    setError('');
+    setVerifying(true);
+    try {
+      await confirmOtpCode(confirmation, code);
+      // The Auth listener will transition to 'ready' or 'needs-profile'
+    } catch (e) {
+      setError(describePhoneAuthError(e));
+      setOtp('');
+      setVerifying(false);
+    }
+  };
+
+  const saveProfile = async () => {
+    setProfileTouched(true);
+    if (!isValidName(name) || (email.trim() && !isValidEmail(email)) || savingProfile) return;
+    setSavingProfile(true);
+    setError('');
+    try {
+      await registerCustomerProfile({ name, email });
+      // Auth listener handles transitioning to ready
+    } catch (e) {
+      setError(describeError(e, 'We couldn’t create your profile. Please try again.'));
+      setSavingProfile(false);
+    }
+  };
+
+  // If user just verified and needs profile setup
+  if (state.status === 'needs-profile') {
+    const nameErr = profileTouched && !isValidName(name) ? 'Enter your full name (2–60 characters).' : '';
+    const emailErr = profileTouched && email.trim() && !isValidEmail(email) ? 'Enter a valid email address.' : '';
+    return (
+      <Dialog title="Almost there" onClose={closeLoginModal}>
+        <div className="login-modal">
+          <div className="login-modal__head">
+            <img className="login-modal__art" src="/art/profile-setup.webp" alt="" width={80} height={80} />
+            <p className="login-modal__sub">
+              Tell us who’s travelling. Your number {formatPhone(state.user.phoneNumber ?? '')} is verified.
+            </p>
+          </div>
+          <form
+            className="login-modal__form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void saveProfile();
+            }}
+          >
+            <TextField
+              label="Full name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Priya Raman"
+              autoComplete="name"
+              error={nameErr}
+            />
+            <TextField
+              label={
+                <>
+                  Email <small>(optional)</small>
+                </>
+              }
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              hint="Booking confirmations and receipts are sent here."
+              error={emailErr}
+            />
+            {error ? <Notice tone="error">{error}</Notice> : null}
+            <Button type="submit" size="lg" block loading={savingProfile} disabled={!name.trim()}>
+              {savingProfile ? 'Saving…' : 'Save and continue booking'}
+            </Button>
+            {agreement}
+          </form>
+        </div>
+      </Dialog>
+    );
+  }
+
+  // If account is on hold
+  if (state.status === 'on-hold') {
+    return (
+      <Dialog title="Account on hold" onClose={closeLoginModal}>
+        <div className="login-modal">
+          <Notice tone="warning">
+            Your account is currently on hold. Please call customer support for assistance.
+          </Notice>
+          <div className="login-modal__actions" style={{ marginTop: '16px' }}>
+            <a className="btn btn--primary btn--lg btn--block" href={`tel:${SUPPORT_PHONE}`}>
+              <Icon name="phone" /> Call {SUPPORT_PHONE_DISPLAY}
+            </a>
+          </div>
+        </div>
+      </Dialog>
+    );
+  }
+
+  const dialogTitle = loginModalOptions?.title || (step === 'phone' ? 'Sign in to book' : 'Enter the code');
+
+  return (
+    <Dialog title={dialogTitle} onClose={closeLoginModal}>
+      <div className="login-modal">
+        {step === 'phone' ? (
+          <>
+            <div className="login-modal__head">
+              <img className="login-modal__art" src="/art/welcome.webp" alt="" width={80} height={80} />
+              <p className="login-modal__sub">
+                {loginModalOptions?.subtitle || 'Enter your mobile number to sign in or create your People Taxi account.'}
+              </p>
+            </div>
+            <form
+              className="login-modal__form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void sendOtp();
+              }}
+            >
+              <div className="phone-entry">
+                <CountryCodeSelect id="modal-country-code" value={countryCode} onChange={(code) => { setCountryCode(code); setError(''); }} />
+                <TextField label="Mobile number" value={mobile} onChange={(e) => { setMobile(e.target.value.replace(/\D/g, '').slice(0, 14)); setError(''); }} inputMode="numeric" autoComplete="tel-national" placeholder="Mobile number" />
+              </div>
+              <p className="phone-entry__hint">We’ll text you a one-time verification code.</p>
+              {error ? <Notice tone="error">{error}</Notice> : null}
+              <Button type="submit" size="lg" block loading={sending} disabled={mobile.length < 6}>
+                {sending ? 'Sending code…' : 'Continue'}
+              </Button>
+              {agreement}
+            </form>
+          </>
+        ) : (
+          <>
+            <div className="login-modal__head">
+              <img className="login-modal__art" src="/art/phone-verification.webp" alt="" width={80} height={80} />
+              <p className="login-modal__sub">
+                We sent a 6-digit code to {countryCode} {mobile}.
+              </p>
+            </div>
+            <form
+              className="login-modal__form"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void verify(otp);
+              }}
+            >
+              <OtpInput
+                id="modal-otp"
+                value={otp}
+                onChange={(v) => {
+                  setOtp(v);
+                  setError('');
+                }}
+                onComplete={(v) => void verify(v)}
+                disabled={verifying}
+                invalid={!!error}
+              />
+              {error ? <Notice tone="error">{error}</Notice> : null}
+              <Button type="submit" size="lg" block loading={verifying} disabled={otp.length !== OTP_LENGTH}>
+                {verifying ? 'Verifying…' : 'Verify and continue'}
+              </Button>
+              <div className="login-modal__links">
+                <button
+                  type="button"
+                  className="link-btn"
+                  onClick={() => {
+                    setStep('phone');
+                    setOtp('');
+                    setError('');
+                  }}
+                >
+                  Change number
+                </button>
+                <button
+                  type="button"
+                  className="link-btn"
+                  disabled={cooldown > 0 || sending}
+                  onClick={() => void sendOtp()}
+                >
+                  {cooldown > 0 ? `Resend code in ${cooldown}s` : sending ? 'Sending…' : 'Resend code'}
+                </button>
+              </div>
+            </form>
+          </>
+        )}
+      </div>
+    </Dialog>
+  );
+}
