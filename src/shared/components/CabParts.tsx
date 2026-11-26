@@ -123,37 +123,23 @@ export function FuelBar({ value, onChange }: { value: FuelChoice; onChange: (v: 
   );
 }
 
-/** Up and down arrows side by side: the swap pickup / drop button. The up arrow ends in a dot (pickup), the down arrow in a pin
- *  head (drop); `.swap-up` / `.swap-down` let the stylesheet colour them like the green pickup dot and the red drop pin. */
+/** Up and down arrows side by side: the swap pickup / drop button. Same line weight as `LocateIcon`, in the button's colour. */
 export function SwapIcon({ size = 20 }: { size?: number }) {
   return (
-    <svg className="swap-icon" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-      <path className="swap-up" d="M8 19V5M4 9l4-4 4 4" />
-      <path className="swap-down" d="M16 5v14M12 15l4 4 4-4" />
+    <svg className="swap-icon" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
+      <path className="swap-up" d="M8 19.5v-15M4.5 8 8 4.5 11.5 8" />
+      <path className="swap-down" d="M16 4.5v15M12.5 16l3.5 3.5 3.5-3.5" />
     </svg>
   );
 }
 
-/** "Use my current location": a flat, full-colour map icon. A paper map laid out in perspective (light-blue edge, green land,
- *  blue water in the corners, yellow roads) with a big two-tone red location pin standing on it. */
+/** "Use my current location": a GPS target (ring, centre dot, four ticks) in the button's colour. */
 export function LocateIcon({ size = 22 }: { size?: number }) {
   return (
-    <svg className="locate-icon" viewBox="0 0 24 24" width={size} height={size} aria-hidden="true" focusable="false">
-      {/* The map sheet: a light-blue border, lighter on the left half, deeper on the right. */}
-      <path d="M4.6 13H12v10H1z" fill="#e1f0fc" />
-      <path d="M12 13h7.4L23 23H12z" fill="#bcd8f5" />
-      {/* Land, water and roads. */}
-      <path d="M5.6 14.2h12.8l3 7.8H2.6z" fill="#14a85a" />
-      <path d="M9.2 16.1 12 14.2l2.6 3.4-2.4 2z" fill="#5fcf86" />
-      <path d="M2.6 22l1.3-3.5L8.6 22z" fill="#1c8fe0" />
-      <path d="M21.4 22l-1.1-2.9L15.4 22z" fill="#1c8fe0" />
-      <path d="M3.5 20.1 9.2 16.1l4.4 5.9M12.2 19.6l8.4-2.2" fill="none" stroke="#fcd34d" strokeWidth="1.3" strokeLinejoin="round" />
-      {/* The pin: two tones of red, split down the middle, with a white hole. */}
-      <g className="locate-icon__pin">
-        <path d="M12 .8a6 6 0 0 0-6 6c0 4.1 6 10.8 6 10.8z" fill="#f03c1f" />
-        <path d="M12 .8a6 6 0 0 1 6 6c0 4.1-6 10.8-6 10.8z" fill="#cc0012" />
-        <circle cx="12" cy="6.8" r="2.2" fill="#fff" />
-      </g>
+    <svg className="locate-icon" viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true" focusable="false">
+      <circle cx="12" cy="12" r="7" />
+      <circle cx="12" cy="12" r="2.75" fill="currentColor" stroke="none" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
     </svg>
   );
 }

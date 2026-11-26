@@ -3,7 +3,7 @@
    motion); sizes stay with the earlier rules (phone-fit, theme), so the form keeps fitting. Loaded last so it settles the many
    earlier .pf__btn--locate / .bf-swap rules. */
 
-/* ── Use my location: a white circle, blue border, blue GPS crosshair whose centre dot gently pulses ── */
+/* ── Use my location: a white circle, blue border, blue GPS target ── */
 html body .pf__btn.pf__btn--locate {
   border: 1.5px solid var(--brand, #1665e8);
   border-radius: 50%;
@@ -12,30 +12,16 @@ html body .pf__btn.pf__btn--locate {
   box-shadow: 0 4px 10px -6px rgb(22 101 232 / 0.55);
   transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
 }
-/* The icon is a full-colour map, so hover keeps the white button and lifts it instead of filling it blue. */
 html body .pf__btn.pf__btn--locate:hover:not(:disabled) {
-  background: #fff;
-  color: var(--brand, #1665e8);
-  transform: translateY(-1px);
+  background: var(--brand, #1665e8);
+  color: #fff;
   box-shadow: 0 6px 14px -6px rgb(22 101 232 / 0.7);
 }
 html body .pf__btn.pf__btn--locate:active:not(:disabled) { transform: scale(0.9); }
-/* The pin gives a small hop now and then, like it is dropping onto the map. */
-html body .pf__btn.pf__btn--locate .locate-icon__pin {
-  transform-box: fill-box;
-  transform-origin: 50% 100%;
-  animation: locate-pin 3.2s ease-in-out infinite;
-}
-@keyframes locate-pin {
-  0%, 70%, 100% { transform: translateY(0) scale(1, 1); }
-  78% { transform: translateY(-1.5px) scale(1, 1.03); }
-  86% { transform: translateY(0) scale(1.05, 0.95); }
-  92% { transform: translateY(0) scale(1, 1); }
-}
 html body .pf__btn.pf__btn--locate .spinner { border-color: rgb(22 101 232 / 0.25); border-top-color: var(--brand, #1665e8); }
 
 /* ── Swap: the same white circle with a blue border and blue arrows; the arrows push apart on hover, the icon turns over on tap ── */
-html body .bf .bf-swap {
+html body .bf .bf-form .bf-route .bf-swap {
   border: 1.5px solid var(--brand, #1665e8);
   border-radius: 50%;
   background: #fff;
@@ -43,19 +29,20 @@ html body .bf .bf-swap {
   box-shadow: 0 0 0 3px #fff, 0 4px 10px -6px rgb(22 101 232 / 0.55);
   transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
-html body .bf .bf-swap:hover:not(:disabled) {
+html body .bf .bf-form .bf-route .bf-swap:hover:not(:disabled) {
   background: var(--brand, #1665e8);
   color: #fff;
   box-shadow: 0 0 0 3px #fff, 0 6px 14px -6px rgb(22 101 232 / 0.7);
 }
-html body .bf .bf-swap .swap-up,
-html body .bf .bf-swap .swap-down { color: inherit; transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
-html body .bf .bf-swap:hover:not(:disabled) .swap-up { transform: translateY(-1.5px); }
-html body .bf .bf-swap:hover:not(:disabled) .swap-down { transform: translateY(1.5px); }
+html body .bf .bf-form .bf-route .bf-swap .swap-up,
+html body .bf .bf-form .bf-route .bf-swap .swap-down { color: inherit; transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4); }
+html body .bf .bf-form .bf-route .bf-swap:hover:not(:disabled) .swap-up { transform: translateY(-1.5px); }
+html body .bf .bf-form .bf-route .bf-swap:hover:not(:disabled) .swap-down { transform: translateY(1.5px); }
 /* (The button itself is positioned with a transform !important elsewhere, so the turn happens on the icon.) */
-html body .bf .bf-swap .swap-icon { transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
-html body .bf .bf-swap:active:not(:disabled) .swap-icon { transform: rotate(180deg) scale(0.9); }
-html body .bf .bf-swap:disabled { opacity: 0.5; }
+html body .bf .bf-form .bf-route .bf-swap .swap-icon { transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2); }
+html body .bf .bf-form .bf-route .bf-swap:active:not(:disabled) .swap-icon { transform: rotate(180deg) scale(0.9); }
+/* With both places empty there is nothing to swap; it still looks like the location buttons beside it. */
+html body .bf .bf-form .bf-route .bf-swap:disabled { opacity: 1; cursor: default; }
 
 /* The service-note ticker keeps its pill shape on the phone home, where phone-fit sizes the old card version of the note. */
 html body .home .home-hero > .bf .svc-note.svc-note--ticker {
@@ -66,10 +53,9 @@ html body .home .home-hero > .bf .svc-note.svc-note--ticker {
 
 @media (prefers-reduced-motion: reduce) {
   html body .home .home-hero > .bf .svc-note.svc-note--ticker { border-radius: 18px; }
-  html body .pf__btn.pf__btn--locate .locate-icon__pin { animation: none; }
   html body .pf__btn.pf__btn--locate,
-  html body .bf .bf-swap,
-  html body .bf .bf-swap .swap-icon,
-  html body .bf .bf-swap .swap-up,
-  html body .bf .bf-swap .swap-down { transition: none; }
+  html body .bf .bf-form .bf-route .bf-swap,
+  html body .bf .bf-form .bf-route .bf-swap .swap-icon,
+  html body .bf .bf-form .bf-route .bf-swap .swap-up,
+  html body .bf .bf-form .bf-route .bf-swap .swap-down { transition: none; }
 }

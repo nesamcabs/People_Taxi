@@ -66,13 +66,13 @@
   align-items: center;
   gap: 8px;
   padding: 0 18px 0 10px;
-  color: #d92d20;
+  color: #111111;
   font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1;
   white-space: nowrap;
 }
-.svc-tick__item.is-lead { color: #d92d20; font-weight: 800; letter-spacing: 0.01em; }
+.svc-tick__item.is-lead { font-weight: 800; letter-spacing: 0.01em; }
 .svc-tick__dot {
   flex: none;
   width: 6px;
