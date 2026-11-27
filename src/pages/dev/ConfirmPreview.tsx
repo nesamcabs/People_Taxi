@@ -23,7 +23,7 @@ export default function ConfirmPreview() {
       {open ? (
         <BookingConfirmedOverlay
           key={run}
-          logo={{ src: '/brand/peopletaxi-logo.webp', alt: 'People Taxi' }}
+          logo={{ src: '/brand/peopletaxi-transparent.webp', alt: 'People Taxi' }}
           code="PT-2611-4827"
           message="We will share the driver details before pickup."
           trip={{ from: 'Koduvilarpatty', to: 'Chennai', when: 'Fri, 27 Nov · 10:25 AM', car: 'Dzire / Etios Or Similar' }}

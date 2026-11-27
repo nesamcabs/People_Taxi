@@ -321,6 +321,9 @@
   z-index: 300;
   display: flex;
 }
+/* Popups opened from the drawer (e.g. "Log out of People Taxi?") render into <body> with the dialog z-index (200),
+   which sits under the open drawer. While the drawer is open, lift them above it so they can be seen and tapped. */
+body:has(.drawer) > .overlay { z-index: 310; }
 .drawer__backdrop {
   position: absolute;
   inset: 0;

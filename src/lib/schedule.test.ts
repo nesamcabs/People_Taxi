@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scheduleProblem } from '@core/utils/bookingRules';
-import { combineDateTime, earliestPickup, earliestSlot, latestPickup, pickupDayFor, pickupTimeOptions, quickDaySwitch, timeForDay, toDateInput, toTimeInput } from './schedule';
+import { combineDateTime, earliestPickup, earliestSlot, latestPickup, pickupDayFor, pickupTimeOptions, quickDaySwitch, leadMinutesFrom, ridenowBookingTime, ridenowPickup, ridenowStale, timeForDay, toDateInput, toTimeInput } from './schedule';
 
 describe('pickup scheduling', () => {
   it('round-trips the date and time inputs', () => {
@@ -95,5 +95,59 @@ describe('quick day button above the pickup date', () => {
     expect(timeForDay('2026-11-26', '18:00', noon)).toBe('18:00');
     // 9:00 AM today has gone at 2 PM: the earliest slot today (2:30 PM).
     expect(timeForDay('2026-11-26', '09:00', noon)).toBe('14:30');
+  });
+});
+
+describe('ride now (Local / Rental)', () => {
+  const now = new Date(2026, 10, 27, 18, 2, 0).getTime();
+
+  it('books the earliest slot, a minute clear of the 30-minute minimum, on a 5-minute step', () => {
+    const at = ridenowPickup(now);
+    const leadMin = (at.getTime() - now) / 60000;
+    expect(leadMin).toBeGreaterThanOrEqual(31);
+    expect(leadMin).toBeLessThan(36);
+    expect(at.getMinutes() % 5).toBe(0);
+    expect(scheduleProblem(at, now)).toBe('');
+  });
+
+  it('is fresh when just set, and stale once it drifts under the margin or is missing', () => {
+    const at = ridenowPickup(now);
+    expect(ridenowStale(at, now)).toBe(false);
+    expect(ridenowStale(null, now)).toBe(true);
+    // Five minutes later the same pickup is under 31 minutes away: it must move to the next slot.
+    expect(ridenowStale(at, now + 5 * 60000)).toBe(true);
+    expect(ridenowStale(ridenowPickup(now + 5 * 60000), now + 5 * 60000)).toBe(false);
+  });
+});
+
+describe('ride now follows the server minimum notice', () => {
+  const now = new Date(2026, 10, 27, 19, 21, 30).getTime();
+
+  it('reads settings/operations the way the server does', () => {
+    expect(leadMinutesFrom({ bookingMinLeadMinutes: 0 })).toBe(0);
+    expect(leadMinutesFrom({ bookingMinLeadMinutes: 15 })).toBe(15);
+    expect(leadMinutesFrom({ bookingMinLeadMinutes: -5 })).toBe(30);
+    expect(leadMinutesFrom({ bookingMinLeadMinutes: '0' })).toBe(30);
+    expect(leadMinutesFrom(null)).toBe(30);
+  });
+
+  it('with no minimum notice, prices a steady slot a few minutes ahead and books the current time', () => {
+    const priced = ridenowPickup(now, 0);
+    const ahead = priced.getTime() - now;
+    expect(ahead).toBeGreaterThanOrEqual(60000);
+    expect(ahead).toBeLessThanOrEqual(6 * 60000);
+    expect(priced.getMinutes() % 5).toBe(0);
+    expect(ridenowStale(priced, now, 0)).toBe(false);
+    // Booked at 7:21:30 PM → pickup 7:23 PM: the next minute after a one-minute margin, so it is still in the future at the server.
+    const booked = ridenowBookingTime(priced, now, 0);
+    expect(booked.getHours()).toBe(19);
+    expect(booked.getMinutes()).toBe(23);
+    expect(booked.getSeconds()).toBe(0);
+  });
+
+  it('with a minimum notice, books the priced earliest pickup', () => {
+    const priced = ridenowPickup(now, 30);
+    expect(ridenowBookingTime(priced, now, 30)).toBe(priced);
+    expect((priced.getTime() - now) / 60000).toBeGreaterThanOrEqual(31);
   });
 });

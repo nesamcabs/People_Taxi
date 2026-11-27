@@ -1,0 +1,75 @@
+/* Cancel ride: a short, orderly, corporate sheet. The title with the booking and route under it, one line on what cancelling
+   costs, the reasons as one list (equal rows, a radio on the right), then Keep ride / Cancel ride. */
+/* min-width: 0 lets the sheet shrink to the screen: as a grid item it otherwise grows to fit its longest line, and pushes
+   everything (✕, the buttons, the policy links) off-centre and past the right edge. */
+html body .dialog.cx-sheet { width: min(100%, 460px); min-width: 0; max-width: 100%; }
+/* Everything sits on the sheet's centre line: the title and booking line centred, with ✕ kept at the right. */
+html body .dialog.cx-sheet .dialog__head { position: relative; justify-content: center; padding-right: 52px; padding-bottom: 2px; padding-left: 52px; text-align: center; }
+html body .dialog.cx-sheet .dialog__head > div { flex: 1; min-width: 0; text-align: center; }
+html body .dialog.cx-sheet .dialog__head > .icon-btn { position: absolute; top: 50%; right: 10px; translate: 0 -40%; }
+html body .dialog.cx-sheet .dialog__head h2 { color: #0f1f3d; font-size: 1.15rem; font-weight: 900; letter-spacing: -0.01em; }
+/* The booking and route wrap onto a second centred line on narrow screens rather than widening the sheet. */
+html body .dialog.cx-sheet .dialog__sub {
+  margin: 3px 0 0;
+  color: #66728a;
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+html body .dialog.cx-sheet .dialog__body { overflow-x: hidden; }
+
+.cx { min-width: 0; display: grid; gap: 14px; }
+
+/* What cancelling costs now: one flat line, green when free, amber when a fee applies. */
+.cx-fee { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 12px; border: 1px solid transparent; border-radius: 12px; text-align: center; }
+.cx-fee > .icon, .cx-fee > svg { flex: none; }
+.cx-fee.is-free { border-color: #c6ecd6; background: #f0fbf4; color: #067647; }
+.cx-fee.is-fee { border-color: #f6dca6; background: #fffaf0; color: #9a5b00; }
+.cx-fee__text { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 2px 8px; }
+.cx-fee__text strong { font-size: 0.88rem; font-weight: 800; }
+.cx-fee__text small { color: inherit; font-size: 0.76rem; font-weight: 600; opacity: 0.85; }
+
+/* Reasons: one list card with dividers; the chosen row turns light blue with a filled radio. */
+.cx-reasons { min-width: 0; margin: 0; padding: 0; border: 0; }
+.cx-reasons legend { width: 100%; margin: 0 0 8px; padding: 0; color: #66728a; font-size: 0.68rem; font-weight: 900; letter-spacing: 0.12em; text-align: center; text-transform: uppercase; }
+.cx-list { overflow: hidden; border: 1px solid #e3e8f1; border-radius: 14px; background: #fff; }
+.cx-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 14px;
+  color: #0f1f3d;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  transition: background 140ms ease, color 140ms ease;
+}
+.cx-row + .cx-row { border-top: 1px solid #eef1f6; }
+.cx-row:hover { background: #f7f9fd; }
+.cx-row__label { flex: 1; min-width: 0; }
+.cx-row__radio { position: relative; flex: none; width: 18px; height: 18px; border: 2px solid #c3cddd; border-radius: 50%; background: #fff; transition: border-color 140ms ease; }
+.cx-row.is-on { background: #f2f7ff; color: var(--brand-ink, var(--brand, #1665e8)); font-weight: 800; }
+.cx-row.is-on .cx-row__radio { border-color: var(--brand, #1665e8); }
+.cx-row.is-on .cx-row__radio::after { content: ''; position: absolute; inset: 3px; border-radius: 50%; background: var(--brand, #1665e8); }
+.cx-row:has(input:focus-visible) { outline: 2px solid var(--brand, #1665e8); outline-offset: -2px; }
+
+.cx-policies .policy-links { margin: 0; text-align: center; }
+.cx-locked { margin: 0; color: #3d4a63; font-size: 0.9rem; font-weight: 600; line-height: 1.5; }
+
+/* Keep ride and Cancel ride: same size, side by side. Cancel is red once a reason is chosen, a quiet grey before. */
+html body .dialog.cx-sheet .dialog__foot { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding-top: 6px; }
+html body .dialog.cx-sheet .dialog__foot > .btn:only-child { grid-column: 1 / -1; }
+html body .dialog.cx-sheet .dialog__foot .btn { min-height: 46px; border-radius: 12px; font-weight: 800; }
+html body .dialog.cx-sheet .cx-confirm { --btn-bg: #d92d20; --btn-fg: #fff; --btn-line: #d92d20; }
+html body .dialog.cx-sheet .cx-confirm:hover:not(:disabled) { --btn-bg: #b42318; --btn-line: #b42318; }
+html body .dialog.cx-sheet .cx-confirm:disabled { --btn-bg: #f1f3f7; --btn-fg: #98a2b3; --btn-line: #e3e8f1; opacity: 1; }
+
+@media (max-width: 639.98px) {
+  .cx-row { min-height: 44px; font-size: 0.86rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cx-row, .cx-row__radio { transition: none; }
+}

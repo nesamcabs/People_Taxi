@@ -82,12 +82,60 @@ html body .ride--corp .route-map__recenter:focus-visible { outline: 2px solid va
 .rd-more > div { display: grid; gap: 10px; padding: 0 14px 14px; }
 .rd-note { margin: 0; color: #55627a; font-size: .8rem; font-weight: 700; }
 
-/* Assistance: four small buttons, two a row */
-html body .ride--corp .rcard--actions .options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-html body .ride--corp .rcard--actions .option { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; margin: 0; padding: 8px 6px; border: 1px solid #e3e8f1; border-radius: 12px; font-size: .74rem; line-height: 1.3; text-align: center; }
-html body .ride--corp .rcard--actions .option:last-child:nth-child(odd) { grid-column: 1 / -1; }
-html body .ride--corp .rcard--actions .options { padding: 0; overflow: visible; border: 0; border-radius: 0; background: none; box-shadow: none; }
+/* Assistance: one list card (icon · label · arrow, thin dividers), Call support with its number; Cancel apart, in red. */
 html body .ride--corp .rcard--actions { padding-bottom: 12px; }
+html body .ride--corp .assist { margin: 0; padding: 0; overflow: hidden; border: 1px solid #e3e8f1; border-radius: 14px; background: #fff; list-style: none; }
+html body .ride--corp .assist > li + li { border-top: 1px solid #eef1f6; }
+html body .ride--corp .assist__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 50px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: #0f1f3d;
+  font: inherit;
+  font-size: .88rem;
+  font-weight: 700;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 140ms ease;
+}
+html body .ride--corp .assist__row:hover { background: #f7f9fd; }
+html body .ride--corp .assist__row:focus-visible { outline: 2px solid var(--brand, #1665e8); outline-offset: -2px; }
+html body .ride--corp .assist__icon { flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: #edf4ff; color: var(--brand, #1665e8); }
+html body .ride--corp .assist__label { flex: 1; min-width: 0; }
+html body .ride--corp .assist__value { flex: none; color: #66728a; font-size: .78rem; font-weight: 700; }
+html body .ride--corp .assist__row > .icon:last-child { flex: none; color: #a3adbf; }
+html body .ride--corp .assist__row.is-danger { color: #b42318; }
+html body .ride--corp .assist__row.is-danger .assist__icon { background: #fff1f0; color: #d92d20; }
+html body .ride--corp .assist__cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  border: 1px solid #f3c9c5;
+  border-radius: 12px;
+  background: #fff;
+  color: #b42318;
+  font: inherit;
+  font-size: .86rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+html body .ride--corp .assist__cancel:hover { border-color: #e9a29b; background: #fff5f4; }
+html body .ride--corp .assist__cancel:focus-visible { outline: 2px solid #b42318; outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) {
+  html body .ride--corp .assist__row, html body .ride--corp .assist__cancel { transition: none; }
+}
 
 /* Boarding OTP: one compact strip, the label on the left and the code on the right (it was a tall yellow box) */
 html body .ride--corp .otp-card {

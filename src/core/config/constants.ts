@@ -57,10 +57,13 @@ export const INSTANT_CANCELLATION_FEE = 50;
 /** Scheduled rides are free to cancel until this long before pickup. */
 export const SCHEDULED_FREE_CANCEL_BEFORE_MS = 60 * 60 * 1000;
 export const SCHEDULED_CANCELLATION_FEE = 100;
+/** Local Pickup & Drop and Hourly Rental: free until the driver reaches the pickup; this fee once the driver is there. */
+export const LOCAL_ARRIVED_CANCELLATION_FEE = 50;
 
 export const CANCEL_REASONS = [
   'Driver is taking too long',
   'Driver asked me to cancel',
+  'Driver asked for extra money',
   'Changed my plans',
   'Booked by mistake',
   'Wrong pickup location',

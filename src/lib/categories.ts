@@ -66,3 +66,9 @@ export function categoryModels(c: Pick<RideCategory, 'name' | 'seats'>): string 
   if (group === 'Sedan') return 'Dzire / Etios or similar';
   return '';
 }
+
+/** Auto and Bike: local rides and hourly rental only. The same names the booking server recognises. */
+export function isLocalOnlyCategory(c: { name: string }): boolean {
+  const n = c.name.trim().toLowerCase();
+  return /(^|[^a-z])(bike|scooter|scooty|motor ?cycle|two[- ]?wheeler)s?([^a-z]|$)/.test(n) || /^(e[- ]?|electric |cng )?auto(?![a-z])|rickshaw/.test(n);
+}

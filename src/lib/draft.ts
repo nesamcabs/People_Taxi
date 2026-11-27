@@ -44,6 +44,11 @@ export interface BookingDraft {
   rentalHours: number | null;
   /** A Multicity tour: a Round Trip through several cities (the stops), priced from the Multicity rates. */
   multicity: boolean;
+  /**
+   * Local / Rental on the phone map sheet: 'now' = ride now (the pickup is kept at the earliest time the server accepts),
+   * 'later' = a scheduled date and time. '' everywhere else (the other forms always ask for a date and time).
+   */
+  pickupWhen: '' | 'now' | 'later';
 }
 
 /** Local Rental packages the booking server offers (each car shows which it can book). */
@@ -77,6 +82,7 @@ export const EMPTY_DRAFT: BookingDraft = {
   flight: '',
   rentalHours: null,
   multicity: false,
+  pickupWhen: '',
 };
 
 const STORAGE_KEY = 'peopletaxi.booking.v1';
@@ -136,6 +142,7 @@ export function loadDraft(): BookingDraft {
       flight: typeof d.flight === 'string' ? d.flight.slice(0, 12) : '',
       rentalHours: typeof d.rentalHours === 'number' && RENTAL_PACKAGE_HOURS.includes(d.rentalHours) ? d.rentalHours : null,
       multicity: d.multicity === true && d.tripType === 'Round Trip',
+      pickupWhen: d.pickupWhen === 'now' || d.pickupWhen === 'later' ? d.pickupWhen : '',
     };
   } catch {
     return EMPTY_DRAFT;

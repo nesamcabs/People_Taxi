@@ -86,7 +86,8 @@
 
 /* The brand, large and clean, straight on the backdrop. */
 .bcx__logo { line-height: 0; }
-.bcx__logo img { height: 46px; width: auto; filter: drop-shadow(0 6px 14px rgb(30 58 138 / .18)); }
+/* The wordmark picture (the P mark is the "P" of People) has empty space above and below, trimmed with the negative margins. */
+.bcx__logo img { display: block; height: 74px; width: auto; max-width: 100%; margin: -13px auto; object-fit: contain; filter: drop-shadow(0 6px 14px rgb(30 58 138 / .18)); }
 
 /* ── The loop ── */
 .bcx__loop {
@@ -325,7 +326,7 @@
 @media (max-height: 700px) {
   .bcx { gap: 12px; }
   .bcx__stage { gap: 10px; }
-  .bcx__logo img { height: 36px; }
+  .bcx__logo img { height: 58px; margin: -10px auto; }
   .bcx__loop { width: 132px; height: 132px; }
   .bcx__disc, .bcx__pulse { inset: 28px; }
   .bcx__cab { top: 2.5px; }

@@ -1,9 +1,10 @@
 // Where to send the rider once sign-in finishes. Kept in sessionStorage (like the booking draft)
 // because sign-in remounts the app tree (account loading, profile setup, terms), and consumed
-// exactly once. Only the vehicle-selection step can be resumed: a booking is never created for them.
+// exactly once. Only the vehicle-selection screens can be resumed (the cab list, and the Local / Rental sheet that lists its
+// cabs itself): a booking is never created for them.
 const KEY = 'peopletaxi.signin.return.v1';
 const MAX_AGE_MS = 15 * 60 * 1000;
-const RESUMABLE = ['/book/ride'] as const;
+const RESUMABLE = ['/book/ride', '/local-rentals?mode=pickup', '/local-rentals?mode=hourly'] as const;
 
 /** Returns `path` only when it is a known in-app booking destination (never an external or protocol-relative URL). */
 export function safeReturnPath(path: unknown): string | null {

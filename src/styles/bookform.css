@@ -1108,16 +1108,6 @@
   color: var(--danger, #c62828);
 }
 
-/* Local Rentals: Hourly Rental and Pickup & Drop sit on one line each. */
-.bf .bf-journey.bf-journey--local.tabs {
-  max-width: 100%;
-}
-.bf .bf-journey.bf-journey--local.tabs .tab {
-  padding-inline: 18px;
-  font-size: var(--fs-sm);
-  white-space: nowrap;
-}
-
 /* Round trip: the number of days and the day the trip ends, on one compact line. */
 .bf-days { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 10px; }
 .bf-days__select { display: inline-flex; align-items: center; gap: 8px; }

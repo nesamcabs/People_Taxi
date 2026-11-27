@@ -98,6 +98,11 @@ function Home({ defaultService }: { defaultService?: ServiceId }) {
   const isDesktop = useMinWidth(900);
   const [pinTarget, setPinTarget] = useState<'pickup' | 'drop'>('pickup');
 
+  // "Ride now" belongs to the phone Local / Rental sheet. A trip planned on this form uses its own date and time.
+  useEffect(() => {
+    if (draft.pickupWhen) update({ pickupWhen: '' });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // On phones and narrow screens, Local Rentals opens the full-screen map sheet; on desktop it stays anchored in the hero.
   useEffect(() => {
     if (isDesktop) return;
@@ -253,7 +258,6 @@ function Home({ defaultService }: { defaultService?: ServiceId }) {
           )}
           <BookingForm
             service={service}
-            onService={onService}
             outstationTrip={outstationTrip}
             onOutstationTrip={onOutstationTrip}
           />

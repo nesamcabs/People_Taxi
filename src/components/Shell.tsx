@@ -555,8 +555,7 @@ export function Shell() {
   useEffect(() => setMenuOpen(false), [location.pathname]);
   const isFlow = FLOW.some((re) => re.test(location.pathname));
   const isImmersive = IMMERSIVE.some((re) => re.test(location.pathname));
-  // Local Rentals now only ever shows the "Coming soon" notice (no real immersive map to hide the header for),
-  // so it keeps the normal always-visible header; Local Taxi's live map screen still goes full-bleed.
+  // Local Rentals' full-screen map starts below the always-visible header (see .lr in localRentals.css).
   const isLanding = location.pathname === '/' || location.pathname === '/book';
   // The cab-selection and review steps are focused screens with their own Back / Continue bar: no site header (and no space
   // kept for it).

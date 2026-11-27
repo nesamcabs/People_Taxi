@@ -34,6 +34,7 @@ import type {
 } from '../types';
 import { formatDate, formatTime, num, str, toDate } from '../utils/format';
 import { isValidLatLng } from '../utils/geo';
+import { isLocalBooking, localCancellation } from '../utils/localTrip';
 import { withTimeout, errorCode } from '../utils/retry';
 
 export const BOOKINGS = 'bookings';
@@ -393,6 +394,8 @@ export function cancellationQuote(t: TripRecord, now = Date.now()): Cancellation
   if (!['Pending', 'Approved', 'Confirmed', 'Assigned'].includes(t.status)) {
     return { allowed: false, fee: 0, explanation: 'This ride can no longer be cancelled.' };
   }
+  // Local Pickup & Drop / Hourly Rental (Ride now or scheduled): free until the driver reaches the pickup, ₹50 once there.
+  if (isLocalBooking(t)) return localCancellation(t);
   if (t.isScheduled && t.scheduledAt) {
     const until = t.scheduledAt.getTime() - now;
     if (until > SCHEDULED_FREE_CANCEL_BEFORE_MS || t.status === 'Pending') {

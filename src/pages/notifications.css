@@ -1,0 +1,79 @@
+/* ── Notification centre ──
+   A blue header card, filter pills, then one card per update under its day. A booking update reads like a ticket:
+   reference, route, then pickup and fare. Unread cards carry a blue edge and a dot. */
+html body .nc { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-content: start; width: 100%; max-width: 720px; margin-inline: auto; }
+html body .nc ul { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
+
+html body .nc-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 14px 16px; border-radius: 18px; background: linear-gradient(135deg, #0f1f3d, #1d4ed8);
+  box-shadow: 0 14px 28px -18px rgb(29 78 216 / .8); color: #fff;
+}
+html body .nc-head h2 { margin: 0; color: #fff; font-size: 1.02rem; font-weight: 900; line-height: 1.3; }
+html body .nc-head p { margin: 2px 0 0; color: #fcd34d; font-size: .76rem; font-weight: 800; }
+html body .nc-head__btn {
+  display: inline-flex; align-items: center; gap: 5px; min-height: 36px; padding: 0 12px; border: 1px solid rgb(255 255 255 / .35);
+  border-radius: 999px; background: rgb(255 255 255 / .12); color: #fff; font: inherit; font-size: .74rem; font-weight: 800; cursor: pointer;
+}
+html body .nc-head__btn:disabled { opacity: .6; cursor: default; }
+
+html body .nc-filters { display: flex; gap: 6px; min-width: 0; padding: 2px; overflow-x: auto; scrollbar-width: none; }
+html body .nc-filters::-webkit-scrollbar { display: none; }
+html body .nc-filter {
+  display: inline-flex; flex: none; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid #dbe3f2;
+  border-radius: 10px; background: #fff; color: #0f1f3d; font: inherit; font-size: .76rem; font-weight: 800; cursor: pointer;
+}
+html body .nc-filter b { color: #66728a; font-size: .7rem; font-weight: 900; }
+html body .nc-filter[aria-pressed='true'] { border-color: #0f1f3d; background: #0f1f3d; color: #fff; }
+html body .nc-filter[aria-pressed='true'] b { color: #fcd34d; }
+
+html body .nc-day { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; min-width: 0; }
+html body .nc-day h3 {
+  display: flex; align-items: center; gap: 10px; margin: 4px 2px 0; color: #66728a; font-size: .66rem; font-weight: 900;
+  letter-spacing: .14em; text-transform: uppercase;
+}
+html body .nc-day h3::after { content: ''; flex: 1; height: 1px; background: #dbe3f2; }
+
+html body .nc-card {
+  --tone: #1d4ed8; --tone-soft: #eaf1ff;
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 9px; width: 100%; min-width: 0; padding: 12px 14px;
+  border: 1px solid #e2e8f4; border-radius: 14px; background: #fff; color: #0f1f3d; font: inherit; text-align: left; cursor: pointer;
+}
+html body .nc-card.tone-green { --tone: #15803d; --tone-soft: #e8f8ee; }
+html body .nc-card.tone-amber, html body .nc-card.tone-orange { --tone: #b45309; --tone-soft: #fff6e0; }
+html body .nc-card.tone-red { --tone: #b42318; --tone-soft: #fff0ee; }
+html body .nc-card.is-unread { border-color: #bfd2fb; box-shadow: inset 3px 0 0 #1d4ed8, 0 10px 22px -18px rgb(29 78 216 / .7); }
+html body .nc-card:hover { border-color: #93b4f8; }
+html body .nc-card:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 2px; }
+
+html body .nc-card__top { display: flex; align-items: center; gap: 10px; min-width: 0; }
+html body .nc-card__icon { display: grid; flex: none; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--tone-soft); color: var(--tone); }
+html body .nc-card__title { display: grid; flex: 1; min-width: 0; }
+html body .nc-card__title strong { font-size: .86rem; font-weight: 900; line-height: 1.3; }
+html body .nc-card__title small { color: #66728a; font-size: .68rem; font-weight: 800; letter-spacing: .04em; overflow-wrap: anywhere; }
+html body .nc-card__top time { flex: none; align-self: flex-start; color: #66728a; font-size: .68rem; font-weight: 700; }
+html body .nc-card__dot { flex: none; align-self: flex-start; width: 8px; height: 8px; margin: 4px -2px 0 -4px; border-radius: 50%; background: #1d4ed8; }
+
+html body .nc-route { display: grid; grid-template-columns: fit-content(45%) minmax(32px, 1fr) fit-content(45%); align-items: center; gap: 8px; min-width: 0; font-size: .82rem; font-weight: 800; line-height: 1.35; }
+html body .nc-route > span:not(.sr-only) { min-width: 0; overflow-wrap: break-word; }
+html body .nc-route > span:last-child { text-align: right; }
+html body .nc-route i { position: relative; height: 2px; background: linear-gradient(90deg, #3b82f6, #f59e0b); }
+html body .nc-route i::before, html body .nc-route i::after { content: ''; position: absolute; top: -2px; width: 6px; height: 6px; border-radius: 50%; }
+html body .nc-route i::before { left: 0; background: #3b82f6; }
+html body .nc-route i::after { right: 0; background: #f59e0b; }
+
+html body .nc-card__msg {
+  display: -webkit-box; overflow: hidden; color: #4b5872; font-size: .76rem; font-weight: 600; line-height: 1.45;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+}
+html body .nc-card__foot { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 6px 14px; padding-top: 9px; border-top: 1px dashed #dbe3f2; }
+html body .nc-fact { display: grid; }
+html body .nc-fact small { color: #8a94a8; font-size: .6rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+html body .nc-fact b { font-size: .74rem; font-weight: 800; }
+html body .nc-card__cta { margin-left: auto; color: #1d4ed8; font-size: .74rem; font-weight: 900; }
+
+/* Wide screens already show the "Notifications" page title above, so the card keeps only the unread line. */
+@media (min-width: 1000px) {
+  html body .nc-head h2 { display: none; }
+  html body .nc-head p { margin: 0; font-size: .95rem; }
+}

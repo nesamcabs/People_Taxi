@@ -22,6 +22,8 @@ import { useServerQuotes, type ServerQuoteState } from '@core/hooks/useServerQuo
 import type { HillStationInfo, ServerCategoryQuote, ServerTimePackage } from '@core/services/quoteService';
 import { requestedTripDays } from '@core/utils/timePackages';
 import { scheduleProblem } from '@core/utils/bookingRules';
+import { ridenowPickup, ridenowStale } from '@/lib/schedule';
+import { useServerLeadMinutes } from '@/lib/bookingWindow';
 import { useCustomerData } from '@core/context/CustomerData';
 import { useAuth } from '@/state/Auth';
 
@@ -45,6 +47,8 @@ interface BookingValue {
   coupons: Coupon[];
   /** The booking server's own quotes for this trip (the only fare that can be booked). */
   serverQuote: ServerQuoteState;
+  /** The server's minimum notice before pickup, in minutes (admin setting). "Ride now" is the current time when it is 0. */
+  rideNowLead: number;
 }
 
 const Ctx = createContext<BookingValue | null>(null);
@@ -68,6 +72,28 @@ export function BookingProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => saveDraft(draft), [draft]);
 
+  // The booking server only quotes for a signed-in, active rider. Until the account is ready no
+  // request is made (and no earlier answer is kept); becoming ready starts a fresh quote for the
+  // current draft even when the trip itself has not changed.
+  const { state: auth } = useAuth();
+  // The server's minimum notice before pickup (admin setting): "Ride now" is the current time when it is 0.
+  const rideNowLead = useServerLeadMinutes(auth.status === 'ready');
+
+  // "Ride now" (Local / Rental): the pickup is the soonest the server accepts (the current time when the minimum notice is 0).
+  // Keep moving it forward while the rider picks a cab, so it never falls under that notice (which would drop the fare and block booking).
+  useEffect(() => {
+    if (draft.pickupWhen !== 'now') return undefined;
+    const keep = () => setDraft((d) => (d.pickupWhen === 'now' && ridenowStale(d.scheduledAt, Date.now(), rideNowLead) ? { ...d, scheduledAt: ridenowPickup(Date.now(), rideNowLead) } : d));
+    keep();
+    const id = window.setInterval(keep, 15000);
+    const onVisible = () => document.visibilityState === 'visible' && keep();
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [draft.pickupWhen, rideNowLead]);
+
   useEffect(
     () =>
       subscribeToRideCategories((cats, status) => {
@@ -85,9 +111,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     (patch) => setDraft((d) => ({ ...d, ...(typeof patch === 'function' ? patch(d) : patch) })),
     [],
   );
-  const reset = useCallback(() => setDraft((d) => ({ ...d, drop: null, stops: [], scheduledAt: null, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', tripType: 'One Way', multicity: false, roofCarrier: false, pets: false, promoCode: '', notes: '' })), []);
+  const reset = useCallback(() => setDraft((d) => ({ ...d, drop: null, stops: [], scheduledAt: null, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', tripType: 'One Way', multicity: false, roofCarrier: false, pets: false, promoCode: '', notes: '', pickupWhen: '' })), []);
   // A repeat booking always needs a fresh future pickup: the old schedule is never carried over.
-  const startFrom = useCallback<BookingValue['startFrom']>((pickup, drop) => setDraft((d) => ({ ...d, pickup, drop, stops: [], scheduledAt: null, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', multicity: false, roofCarrier: false, pets: false, promoCode: '' })), []);
+  const startFrom = useCallback<BookingValue['startFrom']>((pickup, drop) => setDraft((d) => ({ ...d, pickup, drop, stops: [], scheduledAt: null, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', multicity: false, roofCarrier: false, pets: false, promoCode: '', pickupWhen: '' })), []);
 
   const routeStops = draft.tripType === 'Round Trip' ? draft.stops : [];
   // Only a real Round Trip comes back to the pickup. A Multicity tour (stored as a Round Trip with a flag) ends at its own final drop.
@@ -144,7 +170,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   // round trip); the same answer is shared by the Choose and Review steps.
   const quoteRequest = useMemo(() => {
     const { pickup, drop, scheduledAt, tripEndAt, tripType, promoCode } = draft;
-    if (!pickup || !drop || !scheduledAt || scheduleProblem(scheduledAt)) return null;
+    // Ride now follows the server's own minimum notice (it may be under the 30 minutes every other booking keeps).
+    const timeOk = draft.pickupWhen === 'now' ? !!scheduledAt && scheduledAt.getTime() - Date.now() >= rideNowLead * 60000 : !!scheduledAt && !scheduleProblem(scheduledAt);
+    if (!pickup || !drop || !scheduledAt || !timeOk) return null;
     if (tripType === 'Round Trip' && (!tripEndAt || tripEndAt.getTime() < scheduledAt.getTime())) return null;
     return {
       pickup: { id: pickup.id, name: pickup.name, address: pickup.address, lat: pickup.lat, lng: pickup.lng, type: pickup.type },
@@ -160,11 +188,7 @@ export function BookingProvider({ children }: { children: ReactNode }) {
       tripDays: tripType === 'Round Trip' && !draft.multicity ? requestedTripDays(draft) : null,
       brand: 'people_taxi',
     };
-  }, [draft]);
-  // The booking server only quotes for a signed-in, active rider. Until the account is ready no
-  // request is made (and no earlier answer is kept); becoming ready starts a fresh quote for the
-  // current draft even when the trip itself has not changed.
-  const { state: auth } = useAuth();
+  }, [draft, rideNowLead]);
   // Anything the admin changes that prices a trip (vehicle fares, the price adjustment, coupons) arrives
   // live; its fingerprint makes the quote ask the server again, so new prices show within seconds.
   const pricingStamp = useMemo(
@@ -174,8 +198,8 @@ export function BookingProvider({ children }: { children: ReactNode }) {
   const serverQuote = useServerQuotes(quoteRequest, auth.status === 'ready', pricingStamp);
 
   const value = useMemo<BookingValue>(
-    () => ({ draft, update, reset, startFrom, route, routeStatus, retryRoute, categories, categoryStatus, adjustment, coupons, serverQuote }),
-    [draft, update, reset, startFrom, route, routeStatus, retryRoute, categories, categoryStatus, adjustment, coupons, serverQuote],
+    () => ({ draft, update, reset, startFrom, route, routeStatus, retryRoute, categories, categoryStatus, adjustment, coupons, serverQuote, rideNowLead }),
+    [draft, update, reset, startFrom, route, routeStatus, retryRoute, categories, categoryStatus, adjustment, coupons, serverQuote, rideNowLead],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

@@ -71,6 +71,38 @@ export function earliestSlot(now = Date.now()): Date {
   return new Date(Math.ceil((now + SCHEDULE_MIN_LEAD_MIN * 60000) / 300000) * 300000);
 }
 
+// ── Ride now (Local / Rental) ──
+// The booking server's own minimum notice (admin → Settings → Operations & Security → "Minimum notice before pickup", saved as
+// settings/operations.bookingMinLeadMinutes) decides how soon "Ride now" can be. At 0 it is the current time.
+
+/** "Ride now" keeps this much clear of the minimum notice, so the pickup is still valid when the booking reaches the server. */
+const NOW_MARGIN_MS = 60000;
+const MAX_LEAD_MIN = 7 * 24 * 60;
+
+/** The server's minimum notice from settings/operations, read exactly as the server reads it (missing or out of range → 30). */
+export function leadMinutesFrom(settings: unknown): number {
+  const v = settings && typeof settings === 'object' ? (settings as Record<string, unknown>).bookingMinLeadMinutes : undefined;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= MAX_LEAD_MIN ? Math.round(v) : SCHEDULE_MIN_LEAD_MIN;
+}
+/**
+ * The pickup "Ride now" is priced for: the minimum notice plus a minute, rounded up to 5 minutes so the fares on screen stay
+ * steady (with no notice it is the current time, a few minutes at most ahead).
+ */
+export function ridenowPickup(now = Date.now(), leadMin = SCHEDULE_MIN_LEAD_MIN): Date {
+  return new Date(Math.ceil((now + Math.max(0, leadMin) * 60000 + NOW_MARGIN_MS) / 300000) * 300000);
+}
+/** Whether a "Ride now" pickup has drifted too close to now (or is missing) and must move to the next slot. */
+export function ridenowStale(at: Date | null, now = Date.now(), leadMin = SCHEDULE_MIN_LEAD_MIN): boolean {
+  return !at || at.getTime() - now < Math.max(0, leadMin) * 60000 + NOW_MARGIN_MS;
+}
+/**
+ * The pickup a "Ride now" booking is sent with. With no minimum notice it is the current time (the next minute, so it is still
+ * in the future when the server checks it); otherwise the priced pickup, which is already the earliest the server accepts.
+ */
+export function ridenowBookingTime(priced: Date, now = Date.now(), leadMin = SCHEDULE_MIN_LEAD_MIN): Date {
+  return leadMin <= 0 ? new Date(Math.ceil((now + NOW_MARGIN_MS) / 60000) * 60000) : priced;
+}
+
 /** The default pickup: today, 30 minutes from now (rounded up to the next 5 minutes). Past midnight it is the next day's date. */
 export function defaultPickup(now = Date.now()): { date: string; time: string } {
   const at = earliestSlot(now);

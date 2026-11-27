@@ -10,7 +10,7 @@ import { Icon } from '@/components/Icon';
 import { StrikeOffer } from '@/components/StrikeOffer';
 import { useBooking, useBookingQuote } from '@/state/Booking';
 import { useOnline } from '@/lib/hooks';
-import { categoryGroup, categoryName, categoryPhoto, type CategoryGroup } from '@/lib/categories';
+import { categoryGroup, categoryName, categoryPhoto, isLocalOnlyCategory, type CategoryGroup } from '@/lib/categories';
 import { tripTypeLabel } from '@/lib/services';
 import type { FuelChoice } from '@/shared/components/CabParts';
 import { draftFuelOf, fuelOfDraft, lowestTaxable, quoteForFuel, quoteMatchesFuel, type Fuel } from '@/lib/fuelQuote';
@@ -93,7 +93,8 @@ export function ChooseStep() {
   const roundVia = draft.multicity ? draft.stops : returnsToPickup ? [...draft.stops, ...(sameAsPickup || !drop ? [] : [drop])] : [];
 
   // A cab type the office turned off for this location is left out completely: no card, no tab.
-  const visible = useMemo(() => categories.filter((c) => !q.hidden.has(c.id)), [categories, q.hidden]);
+  // Auto / Bike appear only once the server has priced them for this trip (local ride or hourly rental).
+  const visible = useMemo(() => categories.filter((c) => !q.hidden.has(c.id) && (!isLocalOnlyCategory(c) || q.entries.get(c.id)?.ok === true)), [categories, q.hidden, q.entries]);
   // With CNG chosen for the booking, only cabs with a CNG fare are listed: a cab type with CNG turned off (or with no CNG
   // rates) is left out. Until the server has answered, every cab stays listed. (A Round Trip chooses fuel per cab.)
   const cngView = draft.fuelType === 'cng' && !(tripType === 'Round Trip' && !draft.multicity);
@@ -526,7 +527,7 @@ export function ChooseStep() {
         nextDisabled={!canContinue}
         total={quote?.total}
         hideFare
-        onBack={() => navigate(tripType === 'Local Rental' ? '/local-rentals?mode=hourly' : draft.multicity ? '/book?service=multicity' : '/book')}
+        onBack={() => navigate(tripType === 'Local Rental' ? '/local-rentals?mode=hourly' : draft.pickupWhen ? '/local-rentals?mode=pickup' : draft.multicity ? '/book?service=multicity' : '/book')}
         backLabel="Back"
         backText
       />

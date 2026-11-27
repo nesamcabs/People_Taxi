@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { markAllNotificationsRead } from '@core/services/userService';
 import { markNotificationRead } from '@core/services/partnerNotifications';
@@ -10,6 +10,8 @@ import { Icon } from '@/components/Icon';
 import { pathForPage, useInbox } from '@/state/Inbox';
 import { useAuth } from '@/state/Auth';
 import { useSeo } from '@/lib/seo';
+import { dayLabel, parseBookingNotice } from '@/lib/notificationView';
+import './notifications.css';
 
 type Filter = 'all' | 'unread' | NotificationCategory;
 
@@ -55,10 +57,17 @@ export function NotificationsPage() {
 
   const unread = notifications.filter((n) => !n.read);
   const present = CATEGORIES.filter((c) => notifications.some((n) => n.category === c));
-  const shown = useMemo(
-    () => (filter === 'all' ? notifications : filter === 'unread' ? unread : notifications.filter((n) => n.category === filter)),
-    [notifications, unread, filter],
-  );
+  const shown = filter === 'all' ? notifications : filter === 'unread' ? unread : notifications.filter((n) => n.category === filter);
+
+  // The list is already newest first, so each day's entries sit together.
+  const now = new Date();
+  const days: { label: string; items: PartnerNotification[] }[] = [];
+  for (const n of shown) {
+    const label = dayLabel(n.createdAtMs, now);
+    const last = days[days.length - 1];
+    if (last?.label === label) last.items.push(n);
+    else days.push({ label, items: [n] });
+  }
 
   const filters: { id: Filter; label: string; count: number }[] = [
     { id: 'all', label: 'All', count: notifications.length },
@@ -85,26 +94,74 @@ export function NotificationsPage() {
     else if (n.ctaPage && n.ctaPage !== 'notifications') navigate(pathForPage(n.ctaPage));
   };
 
+  const card = (n: PartnerNotification) => {
+    const booking = parseBookingNotice(n.message);
+    const time = n.createdAtMs ? new Date(n.createdAtMs).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : n.time;
+    const toBooking = Boolean(n.bookingId) && ['trips', 'booking-detail'].includes(n.ctaPage);
+    const action = toBooking ? 'View booking' : n.ctaLabel && n.ctaPage !== 'notifications' ? n.ctaLabel : '';
+    const code = booking?.code ?? n.bookingCode;
+    return (
+      <li key={n.id}>
+        <button type="button" className={`nc-card tone-${toneOf(n)} ${n.read ? '' : 'is-unread'}`} onClick={() => open(n)}>
+          <span className="nc-card__top">
+            <span className="nc-card__icon">
+              <Icon name={ICON[n.category]} size={18} />
+            </span>
+            <span className="nc-card__title">
+              <strong>{n.title}</strong>
+              {code ? <small>{code}</small> : null}
+            </span>
+            <time>{time}</time>
+            {!n.read ? <span className="nc-card__dot" role="img" aria-label="Unread" /> : null}
+          </span>
+
+          {booking ? (
+            <>
+              <span className="nc-route">
+                <span>{booking.from}</span>
+                <i aria-hidden="true" />
+                <span className="sr-only">to</span>
+                <span>{booking.to}</span>
+              </span>
+              {booking.note ? <span className="nc-card__msg">{booking.note}</span> : null}
+            </>
+          ) : n.message ? (
+            <span className="nc-card__msg">{n.message}</span>
+          ) : null}
+
+          {booking || action ? (
+            <span className="nc-card__foot">
+              {booking ? (
+                <span className="nc-fact">
+                  <small>Pickup</small>
+                  <b>{booking.pickup}</b>
+                </span>
+              ) : null}
+              {booking?.fare ? (
+                <span className="nc-fact">
+                  <small>Fare</small>
+                  <b>{booking.fare}</b>
+                </span>
+              ) : null}
+              {action ? <span className="nc-card__cta">{action} →</span> : null}
+            </span>
+          ) : null}
+        </button>
+      </li>
+    );
+  };
+
   return (
     <>
-      <PageHead
-        title="Notifications"
-        actions={
-          unread.length > 0 ? (
-            <Button size="sm" variant="ghost" icon="check" loading={busy} onClick={() => void markAll()}>
-              Mark all as read
-            </Button>
-          ) : undefined
-        }
-      />
+      <PageHead title="Notifications" />
 
-      <div className="page">
+      <div className="page nc">
         {error ? <Notice tone="error">{error}</Notice> : null}
 
         {!loaded ? (
           <div className="stack">
             {[0, 1, 2].map((i) => (
-              <div key={i} className="skeleton" style={{ height: 92 }} />
+              <div key={i} className="skeleton" style={{ height: 112 }} />
             ))}
           </div>
         ) : notifications.length === 0 ? (
@@ -121,54 +178,50 @@ export function NotificationsPage() {
             </EmptyState>
           </div>
         ) : (
-          <div className="inbox">
-            <nav className="inbox__filters" aria-label="Filter notifications">
+          <>
+            <section className="nc-head">
+              <div>
+                <h2>Notification centre</h2>
+                <p>{unread.length > 0 ? `${unread.length} unread ${unread.length === 1 ? 'update' : 'updates'}` : 'All updates have been read'}</p>
+              </div>
+              {unread.length > 0 ? (
+                <button type="button" className="nc-head__btn" disabled={busy} onClick={() => void markAll()}>
+                  <Icon name="check" size={16} />
+                  {busy ? 'Updating…' : 'Mark all as read'}
+                </button>
+              ) : null}
+            </section>
+
+            <nav className="nc-filters" aria-label="Filter notifications">
               {filters.map((f) => (
-                <button key={f.id} type="button" className="inbox__filter" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
+                <button key={f.id} type="button" className="nc-filter" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
                   <span>{f.label}</span>
-                  <span className="chip__count">{f.count}</span>
+                  <b>{f.count}</b>
                 </button>
               ))}
             </nav>
-            <div className="inbox__list">
-              {shown.length === 0 ? (
-                <div className="card card--center">
-                  <EmptyState
-                    title={filter === 'unread' ? 'No unread notifications' : 'Nothing here'}
-                    action={
-                      <Button variant="secondary" onClick={() => setFilter('all')}>
-                        Show all notifications
-                      </Button>
-                    }
-                  >
-                  </EmptyState>
-                </div>
-              ) : (
-                <ul className="card card--list notif-list">
-                  {shown.map((n) => (
-                    <li key={n.id}>
-                      <button type="button" className={`notif ${n.read ? '' : 'is-unread'}`} onClick={() => open(n)}>
-                        <span className={`notif__icon tone-${toneOf(n)}`}>
-                          <Icon name={ICON[n.category]} size={22} />
-                        </span>
-                        <span className="notif__body">
-                          <span className="notif__head">
-                            <strong>{n.title}</strong>
-                            <time>{n.time}</time>
-                          </span>
-                          {n.message ? <span className="notif__msg">{n.message}</span> : null}
-                          <span className="notif__meta">
-                            {n.ctaLabel && n.ctaPage !== 'notifications' ? <span className="notif__cta">{n.ctaLabel} →</span> : null}
-                          </span>
-                        </span>
-                        {!n.read ? <span className="notif__dot" aria-label="Unread" /> : null}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+
+            {shown.length === 0 ? (
+              <div className="card card--center">
+                <EmptyState
+                  title={filter === 'unread' ? 'No unread notifications' : 'Nothing here'}
+                  action={
+                    <Button variant="secondary" onClick={() => setFilter('all')}>
+                      Show all notifications
+                    </Button>
+                  }
+                >
+                </EmptyState>
+              </div>
+            ) : (
+              days.map((d) => (
+                <section key={d.label} className="nc-day" aria-label={d.label}>
+                  <h3>{d.label}</h3>
+                  <ul>{d.items.map(card)}</ul>
+                </section>
+              ))
+            )}
+          </>
         )}
       </div>
     </>

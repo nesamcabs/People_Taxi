@@ -10,6 +10,7 @@ import { Icon } from '@/components/Icon';
 import { buildTripShareText, shareText } from '@/lib/share';
 import { useToasts } from '@/state/Toasts';
 import { PolicyLinks } from '@/pages/PolicySections';
+import './cancel.css';
 
 /** Cancel with a reason and the live fee quote (the fee depends on elapsed time, so it ticks). */
 export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () => void }) {
@@ -46,9 +47,17 @@ export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () 
     }
   };
 
+  // The line under the fee says only what the heading does not ("Free cancellation — no charge applies." → "No charge applies.").
+  const stripped = quote.fee ? quote.explanation : quote.explanation.replace(/^free cancellation\s*[—–-]\s*/i, '');
+  const feeNote = stripped ? stripped.charAt(0).toUpperCase() + stripped.slice(1) : '';
+  // The route under the title (an hourly rental has no drop to name).
+  const route = trip.tripType === 'Local Rental' || trip.drop.id === 'place-local-disposal' ? `${trip.pickup.name} · Hourly rental` : `${trip.pickup.name} → ${trip.drop.name}`;
+
   return (
     <Dialog
-      title={`Cancel ride ${trip.bookingId}?`}
+      title="Cancel this ride?"
+      subtitle={<><span className="num">{trip.bookingId}</span> · {route}</>}
+      className="cx-sheet"
       onClose={onClose}
       dismissible={!busy}
       footer={
@@ -57,7 +66,7 @@ export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () 
             <Button variant="secondary" onClick={onClose} disabled={busy}>
               Keep ride
             </Button>
-            <Button variant="primary" loading={busy} disabled={!finalReason} onClick={() => void confirm()}>
+            <Button variant="danger" className="cx-confirm" loading={busy} disabled={!finalReason} onClick={() => void confirm()}>
               Cancel ride
             </Button>
           </>
@@ -69,26 +78,36 @@ export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () 
       }
     >
       {!quote.allowed ? (
-        <p>{quote.explanation}</p>
+        <p className="cx-locked">{quote.explanation}</p>
       ) : (
-        <div className="stack">
-          <Notice tone={quote.fee ? 'warning' : 'success'}>
-            {quote.fee ? <strong>Cancellation fee: ₹{quote.fee}. </strong> : null}
-            {quote.explanation}
-          </Notice>
-          <PolicyLinks ids={['cancellation', 'refund']} newTab />
-          <fieldset className="reasons">
+        <div className="cx">
+          {/* What cancelling costs right now, in one line (it can change as time passes, so it ticks). */}
+          <div className={`cx-fee ${quote.fee ? 'is-fee' : 'is-free'}`} role="status">
+            <Icon name={quote.fee ? 'alert' : 'check-circle'} size={18} />
+            <span className="cx-fee__text">
+              <strong>{quote.fee ? `₹${quote.fee} cancellation fee` : 'Free cancellation'}</strong>
+              {feeNote ? <small>{feeNote}</small> : null}
+            </span>
+          </div>
+
+          {/* Reasons: one list, equal rows, a radio on the right. */}
+          <fieldset className="cx-reasons">
             <legend>Why are you cancelling?</legend>
-            {CANCEL_REASONS.map((r) => (
-              <label key={r} className={`reason ${reason === r ? 'is-selected' : ''}`}>
-                <input type="radio" name="reason" className="sr-only" checked={reason === r} onChange={() => setReason(r)} />
-                <span className="reason__dot" aria-hidden="true" />
-                {r}
-              </label>
-            ))}
+            <div className="cx-list">
+              {CANCEL_REASONS.map((r) => (
+                <label key={r} className={`cx-row ${reason === r ? 'is-on' : ''}`}>
+                  <input type="radio" name="cancel-reason" className="sr-only" checked={reason === r} onChange={() => { setReason(r); setError(''); }} />
+                  <span className="cx-row__label">{r}</span>
+                  <span className="cx-row__radio" aria-hidden="true" />
+                </label>
+              ))}
+            </div>
           </fieldset>
           {reason === 'Other' ? <TextArea label="Tell us more" value={other} onChange={(e) => setOther(e.target.value.slice(0, 200))} /> : null}
           {error ? <Notice tone="error">{error}</Notice> : null}
+          <div className="cx-policies">
+            <PolicyLinks ids={['cancellation', 'refund']} newTab />
+          </div>
         </div>
       )}
     </Dialog>

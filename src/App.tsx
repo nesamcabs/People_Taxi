@@ -123,7 +123,7 @@ export function AppRoutes() {
   return (
     <Routes>
       <Route element={<Shell />}>
-        {/* The site opens on the booking home with Outstation selected (Local Pickup & Drop and Hourly Rental are not open for booking yet). */}
+        {/* The site opens on the booking home with Outstation selected. Local Pickup & Drop and Hourly Rental open from the service bar. */}
         <Route index element={<BookPage step="plan" defaultService="outstation" />} />
         <Route path="/book" element={<BookPage step="plan" />} />
         <Route path="/book/ride" element={<BookPage step="choose" />} />

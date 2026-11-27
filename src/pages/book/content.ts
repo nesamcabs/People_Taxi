@@ -178,6 +178,53 @@ export const QUICK_CITIES: GeoPlace[] = [
   place('city-tirupati', 'Tirupati', 'Tirupati, Andhra Pradesh', 13.6288, 79.4192),
 ];
 
+/** All 38 Tamil Nadu districts, each at its headquarters town (Kanniyakumari at Kanyakumari town and The Nilgiris at Ooty,
+ *  so the chip's name matches where the map goes). Districts already in QUICK_CITIES keep the same id. */
+export const TN_DISTRICTS: GeoPlace[] = [
+  place('dist-ariyalur', 'Ariyalur', 'Ariyalur, Tamil Nadu', 11.1401, 79.0786),
+  place('dist-chengalpattu', 'Chengalpattu', 'Chengalpattu, Tamil Nadu', 12.6921, 79.9707),
+  place('dist-chennai', 'Chennai', 'Chennai, Tamil Nadu', 13.0827, 80.2707),
+  place('city-coimbatore', 'Coimbatore', 'Coimbatore, Tamil Nadu', 11.0168, 76.9558),
+  place('dist-cuddalore', 'Cuddalore', 'Cuddalore, Tamil Nadu', 11.748, 79.7714),
+  place('dist-dharmapuri', 'Dharmapuri', 'Dharmapuri, Tamil Nadu', 12.1211, 78.1582),
+  place('dist-dindigul', 'Dindigul', 'Dindigul, Tamil Nadu', 10.3673, 77.9803),
+  place('dist-erode', 'Erode', 'Erode, Tamil Nadu', 11.341, 77.7172),
+  place('dist-kallakurichi', 'Kallakurichi', 'Kallakurichi, Tamil Nadu', 11.738, 78.959),
+  place('dist-kancheepuram', 'Kancheepuram', 'Kancheepuram, Tamil Nadu', 12.8342, 79.7036),
+  place('dist-kanyakumari', 'Kanyakumari', 'Kanniyakumari, Tamil Nadu', 8.0883, 77.5385),
+  place('dist-karur', 'Karur', 'Karur, Tamil Nadu', 10.9601, 78.0766),
+  place('dist-krishnagiri', 'Krishnagiri', 'Krishnagiri, Tamil Nadu', 12.5186, 78.2137),
+  place('city-madurai', 'Madurai', 'Madurai, Tamil Nadu', 9.9252, 78.1198),
+  place('dist-mayiladuthurai', 'Mayiladuthurai', 'Mayiladuthurai, Tamil Nadu', 11.1018, 79.6527),
+  place('dist-nagapattinam', 'Nagapattinam', 'Nagapattinam, Tamil Nadu', 10.7672, 79.8449),
+  place('dist-namakkal', 'Namakkal', 'Namakkal, Tamil Nadu', 11.2189, 78.1674),
+  place('city-ooty', 'Ooty', 'Udhagamandalam, Tamil Nadu', 11.4102, 76.695),
+  place('dist-perambalur', 'Perambalur', 'Perambalur, Tamil Nadu', 11.2342, 78.8807),
+  place('dist-pudukkottai', 'Pudukkottai', 'Pudukkottai, Tamil Nadu', 10.3833, 78.8001),
+  place('dist-ramanathapuram', 'Ramanathapuram', 'Ramanathapuram, Tamil Nadu', 9.3639, 78.8395),
+  place('dist-ranipet', 'Ranipet', 'Ranipet, Tamil Nadu', 12.9224, 79.3326),
+  place('city-salem', 'Salem', 'Salem, Tamil Nadu', 11.6643, 78.146),
+  place('dist-sivaganga', 'Sivaganga', 'Sivaganga, Tamil Nadu', 9.8433, 78.4809),
+  place('dist-tenkasi', 'Tenkasi', 'Tenkasi, Tamil Nadu', 8.9594, 77.3161),
+  place('dist-thanjavur', 'Thanjavur', 'Thanjavur, Tamil Nadu', 10.787, 79.1378),
+  place('dist-theni', 'Theni', 'Theni, Tamil Nadu', 10.0104, 77.4768),
+  place('dist-thoothukudi', 'Thoothukudi', 'Thoothukudi, Tamil Nadu', 8.7642, 78.1348),
+  place('city-trichy', 'Trichy', 'Tiruchirappalli, Tamil Nadu', 10.7905, 78.7047),
+  place('dist-tirunelveli', 'Tirunelveli', 'Tirunelveli, Tamil Nadu', 8.7139, 77.7567),
+  place('dist-tirupattur', 'Tirupattur', 'Tirupattur, Tamil Nadu', 12.4955, 78.573),
+  place('dist-tiruppur', 'Tiruppur', 'Tiruppur, Tamil Nadu', 11.1085, 77.3411),
+  place('dist-tiruvallur', 'Tiruvallur', 'Tiruvallur, Tamil Nadu', 13.1439, 79.9086),
+  place('dist-tiruvannamalai', 'Tiruvannamalai', 'Tiruvannamalai, Tamil Nadu', 12.2253, 79.0747),
+  place('dist-tiruvarur', 'Tiruvarur', 'Tiruvarur, Tamil Nadu', 10.7661, 79.6344),
+  place('dist-vellore', 'Vellore', 'Vellore, Tamil Nadu', 12.9165, 79.1325),
+  place('dist-villupuram', 'Villupuram', 'Viluppuram, Tamil Nadu', 11.9401, 79.4861),
+  place('dist-virudhunagar', 'Virudhunagar', 'Virudhunagar, Tamil Nadu', 9.568, 77.9624),
+];
+
+/** The city chips on the Local Rentals map: every Tamil Nadu district plus the other quick cities (Pondicherry,
+ *  Bangalore, Tirupati), each once. */
+export const LOCAL_CITIES: GeoPlace[] = [...new Map([...TN_DISTRICTS, ...QUICK_CITIES].map((p) => [p.id, p] as const)).values()];
+
 
 /** Civil airports in the six states People Taxi serves, grouped by state (the state name is in each address, so searching a state lists its airports). */
 const airport = (id: string, name: string, address: string, lat: number, lng: number): GeoPlace => ({ ...place(id, name, address, lat, lng), type: 'airport' });

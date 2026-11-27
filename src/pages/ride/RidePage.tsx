@@ -8,6 +8,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { LatLng, RouteInfo, TripRecord } from '@core/types';
 import { useCustomerData } from '@core/context/CustomerData';
 import { cancellationQuote, subscribeToBoardingOtp, subscribeToBooking } from '@core/services/rideService';
+import { isLocalBooking } from '@core/utils/localTrip';
 import { getRoute } from '@core/services/geoService';
 import { PRESENCE_STALE_MS, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@core/config/constants';
 import { formatDate, formatDateTime, formatDistance, formatDuration, formatINR, formatPhone, formatTime, localMobile, timeAgo } from '@core/utils/format';
@@ -34,6 +35,9 @@ import { markRideDismissed, unmarkRideDismissed } from '@/state/rideFocus';
 import { driverNote, statusTag } from '@/lib/driverNote';
 import { tripCategoryName } from '@/lib/categories';
 import '@/pages/book/done.css';
+import { RideKindIcon } from '@/components/RideKindIcon';
+import { forKind, rideKind } from '@/lib/rideKind';
+import './findCab.css';
 
 const PHASE_TITLE: Record<TripRecord['phase'], string> = {
   awaiting_review: 'Booking under review',
@@ -62,6 +66,22 @@ function stagesDone(t: TripRecord): number {
   if (t.phase === 'completed') return 4;
   return 3;
 }
+/**
+ * Local Pickup & Drop or Hourly Rental (Ride now or scheduled). These get their own short, clean screen (Ola / Uber style)
+ * instead of the full booking pass. Pickup & Drop is a One Way inside one city: the server's "Local" service, or (if it names
+ * it differently) a short city trip.
+ */
+const isLocalTrip = (t: TripRecord): boolean => isLocalBooking(t);
+/** Ride now: booked for the earliest pickup (within about 45 minutes of booking). While no driver has it, the radar "finding your cab" shows. */
+function isRideNow(t: TripRecord): boolean {
+  return isLocalTrip(t) && !!t.scheduledAt && !!t.createdAt && t.scheduledAt.getTime() - t.createdAt.getTime() <= 45 * 60 * 1000;
+}
+const FIND_COPY: Partial<Record<TripRecord['phase'], { title: string; note: (pickup: string) => string }>> = {
+  awaiting_review: { title: 'Finding your cab…', note: (p) => `We’ve got your ride request from ${p}. Hang on while we find a cab near you.` },
+  arranging: { title: 'Finding a driver near you…', note: (p) => `Your ride is confirmed. We’re finding the nearest driver to ${p}.` },
+  partner_confirmed: { title: 'Almost there…', note: () => 'A cab has been found. Your driver will be assigned in a moment.' },
+};
+
 /** One line about what happens now; never repeats what is already on the page. */
 function stageNote(t: TripRecord, now: number): string {
   if (t.status === 'Pending' || t.phase === 'awaiting_review') return `Our team is reviewing your booking. ${driverNote(t, now)}`;
@@ -287,6 +307,44 @@ export function RidePage() {
   const closed = phase === 'cancelled' || trip.status === 'Rejected';
   const paymentState = closed ? paymentLabel(trip).text : isPaid(trip) ? 'Paid' : trip.paymentStatus;
   const hasMap = phase !== 'cancelled' && isValidLatLng(trip.pickup) && isValidLatLng(trip.drop);
+  const localTrip = isLocalTrip(trip);
+  const rideNow = isRideNow(trip);
+  // Local / Rental with no driver yet: Ride now shows the radar ("finding your cab"); a scheduled ride shows when it is booked for.
+  const waiting = localTrip && arranging && !closed;
+  const findCopy = FIND_COPY[trip.status === 'Pending' ? 'awaiting_review' : phase];
+  const scheduledFor = trip.scheduledAt ? `${formatDate(trip.scheduledAt)}, ${formatTime(trip.scheduledAt)}` : '';
+
+  const kind = rideKind(trip.categoryName, tripCategoryName(categories, trip));
+  const findCard = waiting ? (
+    <section className={`find-cab ${rideNow ? '' : 'find-cab--scheduled'}`} aria-live="polite" aria-label={rideNow ? forKind('Finding your cab', kind) : 'Ride scheduled'}>
+      {rideNow ? (
+        <div className="find-cab__radar" aria-hidden="true">
+          <span className="find-cab__ring" />
+          <span className="find-cab__ring find-cab__ring--2" />
+          <span className="find-cab__ring find-cab__ring--3" />
+          <span className="find-cab__car">{kind === 'cab' ? <Icon name="car" size={26} /> : <RideKindIcon kind={kind} size={28} />}</span>
+        </div>
+      ) : (
+        <span className="find-cab__cal" aria-hidden="true"><Icon name="calendar" size={24} /></span>
+      )}
+      <h2>{pending ? 'Sending your ride request…' : rideNow ? forKind(findCopy?.title ?? 'Finding your cab…', kind) : 'Ride scheduled'}</h2>
+      <p>
+        {rideNow
+          ? forKind(findCopy ? findCopy.note(trip.pickup.name) : 'Hang on while we find a cab near you.', kind)
+          : `Pickup ${scheduledFor} from ${trip.pickup.name}. Your driver’s details will appear here once a driver accepts.`}
+      </p>
+      <ol className="find-cab__steps">
+        <li className="is-done">{rideNow ? 'Ride requested' : 'Ride booked'}</li>
+        <li className={trip.status === 'Pending' ? 'is-now' : 'is-done'}>{rideNow ? forKind('Finding a cab', kind) : 'Confirming'}</li>
+        <li className={trip.status === 'Pending' ? '' : 'is-now'}>Driver accepts</li>
+      </ol>
+      {canCancel ? (
+        <Button variant="secondary" size="sm" onClick={() => setShowCancel(true)}>
+          Cancel ride
+        </Button>
+      ) : null}
+    </section>
+  ) : null;
 
   const mapCard = hasMap ? (
     <section className="rcard rcard--map" aria-label="Route map">
@@ -412,31 +470,200 @@ export function RidePage() {
           {phase === 'completed' ? 'Rebook this journey' : 'Book another journey'}
         </Button>
       ) : null}
-      <div className="options">
+      {/* One list: icon, label, arrow; Call support shows the number. Cancel sits apart, under the list, in red. */}
+      <ul className="assist">
         {!finished ? (
-          <button type="button" className="option" onClick={() => void doShare()}>
-            <Icon name="share" /> Share itinerary
-          </button>
+          <li>
+            <button type="button" className="assist__row" onClick={() => void doShare()}>
+              <span className="assist__icon" aria-hidden="true"><Icon name="share" size={17} /></span>
+              <span className="assist__label">Share itinerary</span>
+              <Icon name="chevron-right" size={16} />
+            </button>
+          </li>
         ) : null}
-        <Link className="option" to={`/support?booking=${encodeURIComponent(trip.bookingId)}`}>
-          <Icon name="support" /> Get support
-        </Link>
-        <a className="option" href={`tel:${SUPPORT_PHONE}`}>
-          <Icon name="phone" /> Call support
-        </a>
+        <li>
+          <Link className="assist__row" to={`/support?booking=${encodeURIComponent(trip.bookingId)}`}>
+            <span className="assist__icon" aria-hidden="true"><Icon name="support" size={17} /></span>
+            <span className="assist__label">Get support</span>
+            <Icon name="chevron-right" size={16} />
+          </Link>
+        </li>
+        <li>
+          <a className="assist__row" href={`tel:${SUPPORT_PHONE}`}>
+            <span className="assist__icon" aria-hidden="true"><Icon name="phone" size={17} /></span>
+            <span className="assist__label">Call support</span>
+            <span className="assist__value num">{SUPPORT_PHONE_DISPLAY}</span>
+            <Icon name="chevron-right" size={16} />
+          </a>
+        </li>
         {tracking ? (
-          <button type="button" className="option option--danger" onClick={() => setShowSafety(true)}>
-            <Icon name="emergency" /> Safety centre · SOS
-          </button>
+          <li>
+            <button type="button" className="assist__row is-danger" onClick={() => setShowSafety(true)}>
+              <span className="assist__icon" aria-hidden="true"><Icon name="emergency" size={17} /></span>
+              <span className="assist__label">Safety centre · SOS</span>
+              <Icon name="chevron-right" size={16} />
+            </button>
+          </li>
         ) : null}
-        {canCancel ? (
-          <button type="button" className="option option--danger" onClick={() => setShowCancel(true)}>
-            <Icon name="cancellation" /> Cancel booking
-          </button>
-        ) : null}
-      </div>
+      </ul>
+      {canCancel ? (
+        <button type="button" className="assist__cancel" onClick={() => setShowCancel(true)}>
+          <Icon name="cancellation" size={16} /> Cancel booking
+        </button>
+      ) : null}
     </section>
   );
+
+  // ── Local / Rental: one short, clean screen (Ola / Uber style) ──
+  // Status first (finding your cab, or your driver with the OTP once a driver has accepted), then the trip, the map and help.
+  if (localTrip) {
+    const rental = trip.tripType === 'Local Rental';
+    const withDriver = !!trip.driver && (phase === 'driver_assigned' || phase === 'driver_en_route' || phase === 'driver_arrived' || phase === 'in_trip');
+    // The boarding OTP only once a driver has accepted the ride, and until the ride starts.
+    const showOtp = !!trip.driver && (phase === 'driver_assigned' || phase === 'driver_en_route' || phase === 'driver_arrived');
+    const firstName = trip.driver?.name.split(' ')[0] || 'Your driver';
+    const driverLine =
+      phase === 'driver_assigned' ? `${firstName} accepted your ride`
+      : phase === 'driver_en_route' ? (minutesAway != null ? `${firstName} is ${minutesAway} min away` : `${firstName} is on the way`)
+      : phase === 'driver_arrived' ? `${firstName} has arrived at your pickup`
+      : minutesAway != null ? `${formatDuration(minutesAway)} to ${trip.drop.name}` : 'On your way';
+
+    return (
+      <div className="page ride ride--corp ride--local">
+        <header className={`ride-head${headStuck ? ' is-stuck' : ''}`} ref={headRef}>
+          <div className="ride-head__bar">
+            <IconButton icon="arrow-left" label="Back" outline onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/trips'))} />
+            <h1>Your ride</h1>
+            <span className="ride-head__spacer" aria-hidden="true" />
+          </div>
+        </header>
+
+        <div className="lride">
+          {findCard}
+
+          {withDriver && trip.driver ? (
+            <section className="lride-card lride-driver" aria-label="Your driver">
+              <p className={`lride-driver__status ${phase === 'driver_arrived' ? 'is-arrived' : ''}`} role="status">
+                <Icon name={phase === 'in_trip' ? 'navigation' : 'check-circle'} size={18} /> {driverLine}
+              </p>
+              <div className="lride-driver__row">
+                <Avatar name={trip.driver.name} photoUrl={trip.driver.photoUrl} size={52} />
+                <div className="lride-driver__who">
+                  <strong>{trip.driver.name}</strong>
+                  <small>
+                    {trip.driver.rating != null ? `★ ${trip.driver.rating.toFixed(1)} · ` : ''}
+                    {trip.driver.vehicleModel || tripCategoryName(categories, trip)}
+                  </small>
+                </div>
+                {trip.driver.vehicleNumber ? <span className="plate">{trip.driver.vehicleNumber}</span> : null}
+              </div>
+              {showOtp ? (
+                <div className={`lride-otp ${phase === 'driver_arrived' ? 'is-arrived' : ''}`}>
+                  <span>
+                    <strong>Ride OTP</strong>
+                    <small>{phase === 'driver_arrived' ? 'Share it with your driver to start the ride.' : 'Share it with your driver after you board.'}</small>
+                  </span>
+                  <span className="lride-otp__code num" aria-label={`Ride OTP ${otp ? otp.split('').join(' ') : 'not available yet'}`}>{otp ?? '····'}</span>
+                </div>
+              ) : null}
+              {driverPhone && phase !== 'in_trip' ? (
+                <div className="lride-driver__actions">
+                  <a className="btn btn--primary btn--sm" href={`tel:+91${driverPhone}`}>
+                    <Icon name="phone" /> Call
+                  </a>
+                  <a className="btn btn--secondary btn--sm" href={`https://wa.me/91${driverPhone}`} target="_blank" rel="noopener noreferrer">
+                    <Icon name="chat" /> WhatsApp
+                  </a>
+                </div>
+              ) : null}
+              {streamingNote ? <p className="muted small">{streamingNote}</p> : null}
+            </section>
+          ) : null}
+
+          {phase === 'cancelled' ? (
+            <Notice tone={trip.cancellationFee > 0 ? 'warning' : 'info'}>
+              <strong>{trip.status === 'Rejected' ? 'This ride was not accepted' : trip.cancelledBy === 'customer' ? 'You cancelled this ride' : 'This ride was cancelled'}.</strong>{' '}
+              {trip.cancellationFee > 0 ? `A cancellation fee of ${formatINR(trip.cancellationFee)} applies.` : 'No cancellation fee was charged.'}
+              {trip.refund && trip.refund.amount > 0 ? ` Refund ${trip.refund.status.toLowerCase()}: ${formatINR(trip.refund.amount)}.` : ''}
+            </Notice>
+          ) : null}
+
+          {phase === 'completed' ? (
+            <>
+              <section className="lride-card lride-done">
+                <Icon name="check-circle" size={28} />
+                <div>
+                  <h2>You’ve arrived{rental ? '' : ` at ${trip.drop.name}`}</h2>
+                  <p className="muted small">{formatDateTime(trip.completedAt)}</p>
+                </div>
+              </section>
+              {profile ? <RatingCard trip={trip} profile={profile} /> : null}
+            </>
+          ) : null}
+
+          {/* The trip: where, when, which cab, what to pay. */}
+          <section className="lride-card lride-trip" aria-label="Trip details">
+            <div className="lride-trip__head">
+              <span className="lride-trip__tag">{chipLabel}</span>
+              <span className="lride-trip__ref num">{trip.bookingId}</span>
+            </div>
+            <ol className="lride-trip__route">
+              <li>
+                <i className="lride-dot lride-dot--from" aria-hidden="true" />
+                <span><small>Pickup{scheduledFor ? ` · ${scheduledFor}` : ''}</small><strong>{trip.pickup.name}</strong></span>
+              </li>
+              <li>
+                <i className="lride-dot lride-dot--to" aria-hidden="true" />
+                <span><small>{rental ? 'Hourly rental' : 'Drop'}</small><strong>{rental ? 'Within the city' : trip.drop.name}</strong></span>
+              </li>
+            </ol>
+            <dl className="lride-trip__facts">
+              <div><dt>Cab</dt><dd>{tripCategoryName(categories, trip)}</dd></div>
+              <div><dt>Fare</dt><dd className="num">{formatINR(total)}</dd></div>
+              <div><dt>Payment</dt><dd>{closed || isPaid(trip) ? paymentState : trip.paymentMethod === 'UPI' ? 'UPI to driver' : 'Cash to driver'}</dd></div>
+            </dl>
+          </section>
+
+          {mapCard}
+
+          {phase === 'completed' ? fareCard : null}
+
+          {/* Help, in one quiet row. Cancel sits on the "finding" card while it shows, otherwise as a link under the row. */}
+          <nav className="lride-help" aria-label="Help">
+            {!finished ? (
+              <button type="button" onClick={() => void doShare()}>
+                <Icon name="share" size={18} /> <span>Share</span>
+              </button>
+            ) : null}
+            <Link to={`/support?booking=${encodeURIComponent(trip.bookingId)}`}>
+              <Icon name="support" size={18} /> <span>Support</span>
+            </Link>
+            <a href={`tel:${SUPPORT_PHONE}`}>
+              <Icon name="phone" size={18} /> <span>Call us</span>
+            </a>
+            {tracking ? (
+              <button type="button" className="is-danger" onClick={() => setShowSafety(true)}>
+                <Icon name="emergency" size={18} /> <span>SOS</span>
+              </button>
+            ) : null}
+          </nav>
+          {canCancel && !waiting ? (
+            <button type="button" className="lride-cancel" onClick={() => setShowCancel(true)}>
+              Cancel ride
+            </button>
+          ) : null}
+          {finished ? (
+            <Button size="lg" block onClick={() => navigate(`/local-rentals?mode=${rental ? 'hourly' : 'pickup'}`)}>
+              {phase === 'completed' ? 'Book another ride' : 'Book a new ride'}
+            </Button>
+          ) : null}
+        </div>
+
+        {showCancel ? <CancelDialog trip={trip} onClose={() => setShowCancel(false)} /> : null}
+        {showSafety && profile ? <SafetyDialog trip={trip} profile={profile} location={sharePoint} onClose={() => setShowSafety(false)} /> : null}
+      </div>
+    );
+  }
 
   return (
     <div className="page ride ride--corp">

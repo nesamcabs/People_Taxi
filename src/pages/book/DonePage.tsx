@@ -14,7 +14,7 @@ import { driverNote } from '@/lib/driverNote';
 import { tripCategoryName } from '@/lib/categories';
 import './done.css';
 
-const BRAND_LOGO = { src: '/brand/peopletaxi-logo.webp', alt: 'People Taxi' };
+const BRAND_LOGO = { src: '/brand/peopletaxi-transparent.webp', alt: 'People Taxi' };
 
 const tripTypeLabel = (t: TripType): string => {
   if (t === 'One Way') return 'One Way Drop';

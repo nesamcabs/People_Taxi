@@ -77,12 +77,10 @@ const addDaysISO = (iso: string, n: number): string => {
 
 export function BookingForm({
   service,
-  onService,
   outstationTrip,
   onOutstationTrip,
 }: {
   service: ServiceId;
-  onService: (s: ServiceId) => void;
   outstationTrip: 'One Way' | 'Round Trip';
   onOutstationTrip: (t: 'One Way' | 'Round Trip') => void;
 }) {
@@ -385,28 +383,13 @@ export function BookingForm({
         })}
       </nav>
 
-      {/* The running service note sits above the trip switch (One Way / Round Trip, Hourly / Pickup & Drop). */}
+      {/* The running service note sits above the trip switch (One Way / Round Trip). Local and Rental are picked in the selector above. */}
       {service === 'outstation' ? (
         <ServiceNote kind={outstationTrip === 'Round Trip' ? 'roundtrip' : 'oneway'} />
       ) : service === 'multicity' ? (
         <ServiceNote kind="multicity" />
       ) : isLocalRentals(service) ? (
         <ServiceNote kind={service === 'rental' ? 'rental' : 'local'} />
-      ) : null}
-
-      {isLocalRentals(service) ? (
-        <Tabs
-          className="bf-journey bf-journey--local"
-          active={service}
-          onChange={(v) => {
-            onService(v as ServiceId);
-            setErrors({});
-          }}
-          items={[
-            { id: 'rental', label: 'Hourly Rental', disabled: avail.off('Local Rental'), note: UNAVAILABLE_TEXT },
-            { id: 'pickup', label: 'Pickup & Drop', disabled: avail.off('Pickup & Drop'), note: UNAVAILABLE_TEXT },
-          ]}
-        />
       ) : null}
 
       {service === 'outstation' ? (

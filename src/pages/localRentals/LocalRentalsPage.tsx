@@ -1,30 +1,45 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-// Local Rentals: a full-screen map and a sheet that rises from the bottom, one question at a time.
-//   Hourly Rental   → pickup on the map, how many hours, pickup date and time.
-//   Pickup & Drop   → pickup on the map, drop on the map, pickup date and time.
-// It only collects the trip. The vehicles and fares come from the same booking steps as every other service, and the server
-// prices them, so nothing here can change what a rider is charged.
+// Local Rentals: a full-screen map and a sheet that rises from the bottom, one question at a time (Ola / Uber style).
+//   Hourly Rental   → pickup on the map, then the hours, Ride now or Schedule, and the cabs with their fares.
+//   Pickup & Drop   → pickup on the map, drop on the map, then Ride now or Schedule, and the cabs with their fares.
+// The cab is picked and booked right in the sheet (no separate vehicle and review steps). Every fare is the booking server's
+// own quote, and the server prices the booking again, so nothing here can change what a rider is charged.
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import type { GeoPlace } from '@core/types';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import type { FareBreakdown, GeoPlace, TripRecord } from '@core/types';
 import { reverseGeocode } from '@core/services/geoService';
+import { cancellationQuote, createRideRequest, subscribeToBoardingOtp, subscribeToBooking } from '@core/services/rideService';
 import { scheduleProblem } from '@core/utils/bookingRules';
-import { haversineKm } from '@core/utils/geo';
+import { formatINR, localMobile } from '@core/utils/format';
+import { haversineKm, isValidLatLng } from '@core/utils/geo';
+import { describeError } from '@core/utils/retry';
+import { breakupFromFare } from '@core/utils/fareBreakup';
 import { Icon } from '@/components/Icon';
-import { Button, EmptyState } from '@/components/ui';
+import { Avatar } from '@/components/ui';
 import { LocationPicker } from '@/components/LocationPicker';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
-import { useBooking } from '@/state/Booking';
+import { useBooking, useBookingQuote } from '@/state/Booking';
 import { useAuth } from '@/state/Auth';
+import { useCustomerData } from '@/state/customer';
+import { categoryName, categoryPhoto, tripCategoryName } from '@/lib/categories';
+import { quoteForFuel, quoteMatchesFuel } from '@/lib/fuelQuote';
+import { primeChime } from '@/lib/confirmChime';
 import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
 import { setPendingReturn } from '@/lib/pendingReturn';
-import { useDeviceLocation, useLivePickupDefault, useOnline } from '@/lib/hooks';
-import { LOCATION_HELP, combineDateTime, earliestSlot, latestPickup, pickupTimeOptions, toDateInput, toTimeInput } from '@/lib/schedule';
+import { useDeviceLocation, useLivePickupDefault, useMinWidth, useOnline } from '@/lib/hooks';
+import { LOCATION_HELP, combineDateTime, earliestSlot, latestPickup, pickupTimeOptions, ridenowBookingTime, ridenowPickup, toDateInput, toTimeInput } from '@/lib/schedule';
 import { useSeo } from '@/lib/seo';
-import { QUICK_CITIES } from '@/pages/book/content';
+import { LOCAL_CITIES, QUICK_CITIES } from '@/pages/book/content';
+import { dragToScroll } from '@/lib/dragScroll';
 import { SERVICES, serviceHref } from '@/lib/services';
 import { loadGoogleMaps, hasGoogleMapsWebKey, onGoogleMapsFailure } from '@/lib/googleMaps';
+import { CancelDialog } from '@/pages/ride/dialogs';
+import { useToasts } from '@/state/Toasts';
+import { FareDialog } from '@/pages/book/parts';
+import { OutstationDialog } from './OutstationDialog';
+import { RideKindIcon } from '@/components/RideKindIcon';
+import { forKind, rideKind } from '@/lib/rideKind';
 import './localRentals.css';
 
 type Mode = 'hourly' | 'pickup';
@@ -79,7 +94,15 @@ interface Target extends LatLng { zoom?: number; n: number }
 // ── Google Maps (the map the sites use everywhere else) ─────────────────────────────────────────────────────────────────────
 // The map ends at the top of the sheet, so Google's own logo and terms stay visible and the pin is simply the middle of the map.
 
-function LeafletPinMap({ picking, target, pins, sheetH, onPick, me }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null }) {
+/** The road between pickup and drop as [lat, lng] points (null until the route is known): drawn instead of a straight line. */
+type Road = [number, number][] | null;
+const roadKeyOf = (road: Road) => (road && road.length > 1 ? `${road.length}:${road[0]!.join(',')}:${road[road.length - 1]!.join(',')}` : '');
+/** People Taxi blue line on a white casing, so the route reads clearly over any map (Ola / Uber style). */
+const ROAD_COLOR = '#1665e8';
+/** Finding a cab: a small radar sweeping round the pickup (two rings spreading out and a turning beam). Pure CSS (.lr-radar). */
+const RADAR_HTML = '<span class="lr-radar" aria-hidden="true"><i></i><i></i><b></b></span>';
+
+function LeafletPinMap({ picking, target, pins, sheetH, onPick, me, road, pulse }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null; road: Road; pulse: LatLng | null }) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
@@ -113,6 +136,14 @@ function LeafletPinMap({ picking, target, pins, sheetH, onPick, me }: { picking:
     return () => { ro?.disconnect(); m.remove(); map.current = null; meMarker.current = null; };
   }, []);
 
+  // Finding a cab: the radar on the pickup.
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !pulse) return undefined;
+    const marker = L.marker([pulse.lat, pulse.lng], { icon: L.divIcon({ className: 'lr-radarwrap', html: RADAR_HTML, iconSize: [0, 0], iconAnchor: [0, 0] }), keyboard: false, interactive: false, zIndexOffset: -100 }).addTo(m);
+    return () => { marker.remove(); };
+  }, [pulse?.lat, pulse?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // The rider's own position: a blue dot that stays on the map whatever the pin does.
   useEffect(() => {
     const m = map.current;
@@ -139,7 +170,12 @@ function LeafletPinMap({ picking, target, pins, sheetH, onPick, me }: { picking:
     if (!g || !m) return;
     g.clearLayers();
     const pts: [number, number][] = pins.map((p) => [p.place.lat, p.place.lng]);
-    if (pins.length === 2) L.polyline(pts, { color: '#0f172a', weight: 4, opacity: 0.8, dashArray: '2 9', lineCap: 'round', interactive: false }).addTo(g);
+    // The trip follows the road. Until the road is known nothing is drawn (never a straight line across the map).
+    const way = pins.length === 2 && road && road.length > 1 ? road : null;
+    if (way) {
+      L.polyline(way, { color: '#ffffff', weight: 8, opacity: 0.95, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(g);
+      L.polyline(way, { color: ROAD_COLOR, weight: 5, opacity: 0.95, lineCap: 'round', lineJoin: 'round', interactive: false }).addTo(g);
+    }
     for (const p of pins) {
       L.circleMarker([p.place.lat, p.place.lng], { radius: 7, color: '#fff', weight: 3, fillColor: p.kind === 'from' ? '#16a34a' : '#dc2626', fillOpacity: 1, interactive: false }).addTo(g);
       L.marker([p.place.lat, p.place.lng], { icon: L.divIcon({ className: 'lr-tagwrap', html: tag(p.kind, p.place.name), iconSize: [0, 0], iconAnchor: [0, p.kind === 'from' ? 18 : -10] }), keyboard: false, interactive: false, zIndexOffset: 500 }).addTo(g);
@@ -150,17 +186,17 @@ function LeafletPinMap({ picking, target, pins, sheetH, onPick, me }: { picking:
       m.setView(pts[0]!, 15, { animate: false });
       m.panBy([0, live.current.sheetH / 2], { animate: false });
     } else {
-      m.fitBounds(L.latLngBounds(pts), { paddingTopLeft: [48, 120], paddingBottomRight: [48, live.current.sheetH + 36], maxZoom: 15, animate: false });
+      m.fitBounds(L.latLngBounds(way ? [...pts, ...way] : pts), { paddingTopLeft: [48, 120], paddingBottomRight: [48, live.current.sheetH + 36], maxZoom: 15, animate: false });
     }
     programmatic.current = false;
-  }, [pins.map((p) => `${p.kind}:${p.place.lat},${p.place.lng},${p.place.name}`).join('|'), picking, sheetH]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pins.map((p) => `${p.kind}:${p.place.lat},${p.place.lng},${p.place.name}`).join('|'), picking, sheetH, roadKeyOf(road)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={host} className="lr__map lr__map--google" role="application" aria-label="Map. Drag it to place the pin on your location." />;
 }
 
 // ── Google Maps (the map the sites use everywhere else) ─────────────────────────────────────────────────────────────────────
 // The map ends at the top of the sheet, so Google's own logo and terms stay visible and the pin is simply the middle of the map.
-function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; onFail: () => void; me: LatLng | null }) {
+function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me, road, pulse }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; onFail: () => void; me: LatLng | null; road: Road; pulse: LatLng | null }) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const overlays = useRef<any[]>([]);
@@ -232,6 +268,26 @@ function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me }: { p
     else meMarker.current = new maps.Marker({ map: m, position: pos, clickable: false, zIndex: 4, title: 'Your location', icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#1a73e8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 } });
   }, [me?.lat, me?.lng, ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Finding a cab: the radar on the pickup (a small HTML overlay, under the pickup marker).
+  useEffect(() => {
+    const m = map.current;
+    const maps = window.google?.maps;
+    if (!m || !maps || !ready || !pulse) return undefined;
+    const holder = document.createElement('div');
+    holder.className = 'lr-radarwrap';
+    holder.style.position = 'absolute';
+    holder.innerHTML = RADAR_HTML;
+    const ov = new maps.OverlayView();
+    ov.onAdd = () => ov.getPanes().overlayLayer.appendChild(holder);
+    ov.draw = () => {
+      const pt = ov.getProjection()?.fromLatLngToDivPixel(new maps.LatLng(pulse.lat, pulse.lng));
+      if (pt) { holder.style.left = `${pt.x}px`; holder.style.top = `${pt.y}px`; }
+    };
+    ov.onRemove = () => holder.remove();
+    ov.setMap(m);
+    return () => { ov.setMap(null); };
+  }, [pulse?.lat, pulse?.lng, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Draw the chosen places, and fit the trip into the map.
   useEffect(() => {
     const m = map.current;
@@ -258,8 +314,12 @@ function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me }: { p
       ov.setMap(m);
       add(ov);
     }
-    if (pins.length === 2) {
-      add(new maps.Polyline({ map: m, path: pins.map((p) => ({ lat: p.place.lat, lng: p.place.lng })), strokeOpacity: 0, icons: [{ icon: { path: 'M 0,-1 0,1', strokeOpacity: 0.85, strokeColor: '#0f172a', scale: 3 }, offset: '0', repeat: '12px' }] }));
+    // The trip follows the road. Until the road is known nothing is drawn (never a straight line across the map).
+    if (pins.length === 2 && road && road.length > 1) {
+      const path = road.map(([lat, lng]) => ({ lat, lng }));
+      add(new maps.Polyline({ map: m, path, clickable: false, zIndex: 2, strokeColor: '#ffffff', strokeOpacity: 0.95, strokeWeight: 8 }));
+      add(new maps.Polyline({ map: m, path, clickable: false, zIndex: 3, strokeColor: ROAD_COLOR, strokeOpacity: 0.95, strokeWeight: 5 }));
+      for (const pt of path) bounds.extend(pt);
     }
     if (picking || !pins.length) return;
     quietUntil.current = Date.now() + 1200;
@@ -272,81 +332,38 @@ function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me }: { p
       m.fitBounds(bounds, { top: 100, right: 48, bottom: window.innerWidth >= 900 ? live.current.sheetH + 30 : 40, left: window.innerWidth >= 900 ? 420 : 48 });
       maps.event.addListenerOnce(m, 'idle', () => { if (m.getZoom() > 15) m.setZoom(15); });
     }
-  }, [pins.map((p) => `${p.kind}:${p.place.lat},${p.place.lng},${p.place.name}`).join('|'), picking, ready, window.innerWidth >= 900 ? sheetH : 0]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pins.map((p) => `${p.kind}:${p.place.lat},${p.place.lng},${p.place.name}`).join('|'), picking, ready, window.innerWidth >= 900 ? sheetH : 0, roadKeyOf(road)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={host} className="lr__map lr__map--google" role="application" aria-label="Map. Drag it to place the pin on your location." />;
 }
 
 /** Google Maps with the sites' key. If Google cannot load, or rejects the key, the same page keeps working on the open map. */
-function PinMap(props: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null }) {
+function PinMap(props: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null; road: Road; pulse: LatLng | null }) {
   const [provider, setProvider] = useState<'google' | 'leaflet'>(hasGoogleMapsWebKey ? 'google' : 'leaflet');
   return provider === 'google'
-    ? <GooglePinMap picking={props.picking} target={props.target} pins={props.pins} sheetH={props.sheetH} onPick={props.onPick} me={props.me} onFail={() => setProvider('leaflet')} />
+    ? <GooglePinMap picking={props.picking} target={props.target} pins={props.pins} sheetH={props.sheetH} onPick={props.onPick} me={props.me} road={props.road} pulse={props.pulse} onFail={() => setProvider('leaflet')} />
     : <LeafletPinMap {...props} />;
 }
 
 // ── The page ─────────────────────────────────────────────────────────────────────────────────────────────────────────────
 /**
- * Local Rentals (Hourly Rental and Pickup & Drop) is temporarily off: this shows a blurred preview of the
- * real screen behind a "Coming soon" notice, with a way back to Outstation. The real screen (LocalRentalsSheet
- * below, and the desktop redirect to the booking form) stays in the file, unused, so this is easy to undo later.
+ * Phones book Local Rentals on this full-screen map sheet. Desktop books them on the home page, where the
+ * booking form sits beside the map, so a desktop visit here (old link, bookmark, a back button) goes there.
  */
 export function LocalRentalsPage() {
-  const navigate = useNavigate();
-  return (
-    <div className="lr-soon">
-      {/* Purely decorative: a static preview that reads as the real screen (search, cities, a mapped
-          route, the trip sheet), inert and blurred behind the notice. No map, location or network calls. */}
-      <div className="lr-soon__backdrop" aria-hidden="true" inert>
-        <div className="lr-soon__search">
-          <Icon name="search" size={18} />
-          <span>Search a place or city</span>
-        </div>
-        <div className="lr-soon__chips">
-          <span>Chennai</span>
-          <span>Bangalore</span>
-          <span>Coimbatore</span>
-          <span>Madurai</span>
-        </div>
-        <div className="lr-soon__map">
-          <span className="lr-soon__road lr-soon__road--1" />
-          <span className="lr-soon__road lr-soon__road--2" />
-          <span className="lr-soon__road lr-soon__road--3" />
-          <span className="lr-soon__route" />
-          <span className="lr-soon__pin lr-soon__pin--from" />
-          <span className="lr-soon__pin lr-soon__pin--to" />
-        </div>
-        <div className="lr-soon__sheet">
-          <span className="lr-soon__grip" />
-          <div className="lr-soon__tabs">
-            <span className="is-on">Pickup &amp; Drop</span>
-            <span>Hourly Rental</span>
-          </div>
-          <div className="lr-soon__row">
-            <i className="lr-soon__dot" />
-            <span>Your current location</span>
-          </div>
-          <div className="lr-soon__row">
-            <i className="lr-soon__dot lr-soon__dot--to" />
-            <span>Choose drop location</span>
-          </div>
-          <div className="lr-soon__cta">See vehicles &amp; fares</div>
-        </div>
-      </div>
-      <div className="lr-soon__overlay">
-        <EmptyState title="Coming soon" action={<Button onClick={() => navigate('/book?service=outstation')}>Go to Outstation</Button>}>
-          Hourly Rental and Pickup &amp; Drop aren’t open for booking yet. Book an Outstation trip instead.
-        </EmptyState>
-      </div>
-    </div>
-  );
+  const isDesktop = useMinWidth(900);
+  const [params] = useSearchParams();
+  if (isDesktop) return <Navigate to={`/book?service=${params.get('mode') === 'hourly' ? 'rental' : 'pickup'}`} replace />;
+  return <LocalRentalsSheet />;
 }
 
 function LocalRentalsSheet() {
   useSeo({ title: 'Local Rentals', noindex: true });
   const navigate = useNavigate();
-  const [params] = useSearchParams();
-  const { draft, update } = useBooking();
+  const [params, setParams] = useSearchParams();
+  const { draft, update, reset, route, categories, categoryStatus, rideNowLead } = useBooking();
+  const q = useBookingQuote();
+  const { profile } = useCustomerData();
   const { state: auth, openLoginModal } = useAuth();
   const { position, locate, locating, error: locationError, permission } = useDeviceLocation(true, true);
   useEffect(() => { void locate(); }, [locate]);
@@ -354,12 +371,13 @@ function LocalRentalsSheet() {
 
   const real = (p: GeoPlace | null) => (p && p.id !== DISPOSAL_ID ? p : null);
   const [mode, setMode] = useState<Mode>(params.get('mode') === 'hourly' ? 'hourly' : 'pickup');
-  // A saved hourly rental that is still in the future can be edited; anything else starts fresh. A drop is never taken from another
-  // service's search (an outstation drop is not a city drop), and the pickup is always asked first.
-  const savedRental = draft.tripType === 'Local Rental' && !!draft.rentalHours && !!real(draft.pickup) && !!draft.scheduledAt && draft.scheduledAt.getTime() > Date.now();
+  // A trip this sheet already set up (the rider signed in half-way, or came back to it) opens again on its cabs. Anything else
+  // starts fresh: a drop is never taken from another service's search (an outstation drop is not a city drop), and the pickup
+  // is asked first.
+  const resume = !!draft.pickupWhen && !!real(draft.pickup) && (mode === 'hourly' ? draft.tripType === 'Local Rental' : draft.tripType === 'One Way' && !!real(draft.drop));
   const future = draft.scheduledAt && draft.scheduledAt.getTime() > Date.now() ? draft.scheduledAt : null;
-  const [pickup, setPickup] = useState<GeoPlace | null>(null);
-  const [drop, setDrop] = useState<GeoPlace | null>(null);
+  const [pickup, setPickup] = useState<GeoPlace | null>(resume ? real(draft.pickup) : null);
+  const [drop, setDrop] = useState<GeoPlace | null>(resume && mode === 'pickup' ? real(draft.drop) : null);
   const [hours, setHours] = useState<number | null>(draft.tripType === 'Local Rental' ? draft.rentalHours ?? null : null);
   // The pickup starts at the earliest time a rider may book: 30 minutes after the device clock, rounded up to 5 minutes.
   const [date, setDate] = useState(() => toDateInput(future ?? earliestSlot()));
@@ -371,7 +389,14 @@ function LocalRentalsSheet() {
     setTime(next.time);
   });
   const [nowMs, setNowMs] = useState(() => Date.now());
-  const [stage, setStage] = useState<Stage>('pickup');
+  // Ola / Uber style: Ride now (the earliest pickup the server accepts) or Schedule (a date and time).
+  // Ride now unless the rider scheduled this trip last time.
+  const [when, setWhen] = useState<'now' | 'later'>(draft.pickupWhen === 'later' && future ? 'later' : 'now');
+  const [stage, setStage] = useState<Stage>(resume ? 'when' : 'pickup');
+  // A drop outside the city: ask whether to book it as Outstation instead (the place is kept until the rider answers).
+  const [outstationAsk, setOutstationAsk] = useState<GeoPlace | null>(null);
+  const [booking, setBooking] = useState(false);
+  const bookingRef = useRef(false);
   const [cand, setCand] = useState<GeoPlace | null>(null);
   const [resolving, setResolving] = useState(false);
   const [target, setTarget] = useState<Target | null>(null);
@@ -379,6 +404,23 @@ function LocalRentalsSheet() {
   const [timeOpen, setTimeOpen] = useState(false);
   // The plan sheet can be pulled down to its button so the whole map shows.
   const [peek, setPeek] = useState(false);
+  // Rental duration: a strip of hour tiles that scrolls sideways; the chosen tile is kept centred in view.
+  const hourStripRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const strip = hourStripRef.current;
+    const on = strip?.querySelector<HTMLElement>('[aria-checked="true"]');
+    if (!strip || !on || !strip.clientWidth) return;
+    strip.scrollTo({ left: on.offsetLeft - (strip.clientWidth - on.offsetWidth) / 2, behavior: 'smooth' });
+  }, [hours, mode, stage, peek]);
+  // City chips: every Tamil Nadu district and the other quick cities, nearest to the rider first once the device knows
+  // where it is (rounded to about 10 km so the order does not shuffle while the rider moves), A to Z until then.
+  const nearLat = position ? Math.round(position.lat * 10) / 10 : null;
+  const nearLng = position ? Math.round(position.lng * 10) / 10 : null;
+  const cityChips = useMemo(() => {
+    if (nearLat == null || nearLng == null) return [...LOCAL_CITIES].sort((a, b) => a.name.localeCompare(b.name));
+    const at = { lat: nearLat, lng: nearLng };
+    return [...LOCAL_CITIES].sort((a, b) => haversineKm(at, a) - haversineKm(at, b));
+  }, [nearLat, nearLng]);
   const [error, setError] = useState('');
   /** Shown when the device could only give a rough position (Wi-Fi / network), so a wrong-looking pin is explained. */
   const [approx, setApprox] = useState('');
@@ -387,9 +429,29 @@ function LocalRentalsSheet() {
   const resolveToken = useRef(0);
   const dock = useRef<HTMLDivElement>(null);
   const userMoved = useRef(false);
+  const { push } = useToasts();
 
-  const picking = stage !== 'when';
-  const steps = mode === 'hourly' ? 2 : 3;
+  // ── Ride now, after booking: the ride lives on this same page (?ride=<id>, so a refresh keeps it) ──
+  // The sheet follows the booking live: finding your cab (a radar on the pickup), then the driver and cab once one accepts.
+  const rideId = params.get('ride');
+  const [ride, setRide] = useState<TripRecord | null>(null);
+  const [rideGone, setRideGone] = useState(false);
+  const [rideOtp, setRideOtp] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  // The cab whose fare breakdown is open (tapping a cab's photo).
+  const [fareFor, setFareFor] = useState<string | null>(null);
+  useEffect(() => {
+    setRide(null);
+    setRideGone(false);
+    if (!rideId) return undefined;
+    return subscribeToBooking(rideId, (s) => {
+      if (s.trip) { setRide(s.trip); setRideGone(false); }
+      else if (!s.fromCache) setRideGone(true);
+    });
+  }, [rideId]);
+  useEffect(() => (rideId ? subscribeToBoardingOtp(rideId, setRideOtp) : undefined), [rideId]);
+
+  const picking = !rideId && stage !== 'when';
 
   const flyTo = useCallback((ll: LatLng, zoom = 16) => setTarget({ lat: ll.lat, lng: ll.lng, zoom, n: ++seq.current }), []);
 
@@ -461,20 +523,24 @@ function LocalRentalsSheet() {
   }, [stage, mode, enter, leave]);
   useEffect(() => {
     document.body.style.overflow = 'hidden';
-    const key = (e: KeyboardEvent) => { if (e.key === 'Escape' && !picker && !timeOpen) back(); };
+    const key = (e: KeyboardEvent) => { if (e.key === 'Escape' && !picker && !timeOpen && !outstationAsk && !rideId && !cancelOpen && !fareFor) back(); };
     document.addEventListener('keydown', key);
     return () => { document.body.style.overflow = ''; document.removeEventListener('keydown', key); };
-  }, [back, picker, timeOpen]);
+  }, [back, picker, timeOpen, outstationAsk, rideId, cancelOpen, fareFor]);
 
   const farApart = stage === 'drop' && !!pickup && !!cand && haversineKm(pickup, cand) > CITY_LIMIT_KM;
   const switchMode = (m: Mode) => {
     if (m === mode) return;
     setMode(m);
     setError('');
-    // Either tab starts by asking the pickup (the one chosen before is prefilled, one tap to confirm). Pickup & Drop then asks the drop again.
+    // Either mode starts by asking the pickup (the one chosen before is prefilled, one tap to confirm). Pickup & Drop then asks the drop again.
     if (m === 'pickup') setDrop(null);
     enter('pickup');
   };
+  // Local / Rental are chosen in the bottom bar, which only changes ?mode= in the URL. This page stays mounted when that
+  // happens, so follow the URL here (the in-sheet Pickup & Drop / Hourly Rental switch is gone).
+  const urlMode: Mode = params.get('mode') === 'hourly' ? 'hourly' : 'pickup';
+  useEffect(() => { switchMode(urlMode); }, [urlMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const confirmStage = () => {
     setApprox('');
@@ -488,13 +554,23 @@ function LocalRentalsSheet() {
         else { setDrop(null); setStage('drop'); setError(''); setCand(null); flyTo(cand, 14); }
       } else enter('when');
     } else if (stage === 'drop') {
-      if (farApart) return;
+      // Outside the city (e.g. Theni → Madurai): offer Outstation, or stay here to pick another drop.
+      if (farApart) { setOutstationAsk(cand); return; }
       resolveToken.current += 1;
       setResolving(false);
       setDrop(cand);
       setStage('when');
       setError('');
     }
+  };
+
+  // Yes to Outstation: carry the pickup and this drop over to the Outstation form (one way), which asks its own date and time.
+  const goOutstation = () => {
+    const to = outstationAsk;
+    setOutstationAsk(null);
+    if (!pickup || !to) return;
+    update({ pickup, drop: to, tripType: 'One Way', rentalHours: null, stops: [], multicity: false, tripEndAt: null, pickupWhen: '' });
+    navigate('/book?service=outstation&trip=one-way');
   };
 
   const chooseCity = (c: GeoPlace) => { userMoved.current = true; setCand(c); setResolving(false); flyTo(c, 13); };
@@ -548,44 +624,165 @@ function LocalRentalsSheet() {
     if (date === firstDay && (!time || !timeOk(time))) setTime(firstTime);
   }, [nowMs]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const submit = () => {
-    if (!online) return setError('You’re offline. Reconnect to see fares.');
+  // ── The cabs, right in the sheet ──
+  // On the last step the trip is written into the booking draft, so the booking server prices every cab here. Ride now keeps
+  // its pickup at the earliest time the server accepts (the booking state moves it forward); Schedule uses the chosen date and time.
+  const picked = when === 'later' ? combineDateTime(date, time) : null;
+  const pickedOk = !!picked && !scheduleProblem(picked, nowMs);
+  const scheduleKey = when === 'now' ? 'now' : pickedOk ? picked.toISOString() : '';
+  useEffect(() => {
+    // Not while a booked ride is on screen: the draft was cleared when it was booked, and is set again when the rider books another.
+    if (rideId || stage !== 'when' || !pickup || (mode === 'pickup' && !drop)) return;
+    update({
+      pickup,
+      drop: mode === 'hourly' ? disposalFor(pickup) : drop,
+      tripType: mode === 'hourly' ? 'Local Rental' : 'One Way',
+      rentalHours: mode === 'hourly' ? hours : null,
+      scheduledAt: when === 'now' ? ridenowPickup(Date.now(), rideNowLead) : pickedOk ? picked : null,
+      tripEndAt: null,
+      stops: [],
+      multicity: false,
+      fuelType: '',
+      pickupWhen: when,
+    });
+  }, [rideId, stage, mode, pickup?.lat, pickup?.lng, pickup?.name, drop?.lat, drop?.lng, drop?.name, hours, scheduleKey, rideNowLead]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Cab types the office turned off here are not shown. Each cab shows the server's fare (Diesel rate card), or why it has none.
+  const cabs = useMemo(() => categories.filter((c) => !q.hidden.has(c.id)), [categories, q.hidden]);
+  const fareOf = (id: string) => quoteForFuel(q.entries.get(id), 'diesel');
+  // Keep a cab selected: the first one with a fare, until the rider taps another.
+  useEffect(() => {
+    if (stage !== 'when' || !q.entries.size) return;
+    if (fareOf(draft.categoryId)) return;
+    const first = cabs.find((c) => !!fareOf(c.id));
+    if (first) update({ categoryId: first.id });
+  }, [stage, q.entries, cabs, draft.categoryId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const needsHours = mode === 'hourly' && !hours;
+  const needsTime = when === 'later' && !pickedOk;
+  const cab = q.category;
+  const fare = q.quote;
+  const canBook = !needsHours && !needsTime && !!cab && !!fare && q.authoritative && !q.unavailable.has(cab.id) && quoteMatchesFuel(fare, q.entries.get(cab.id), 'diesel');
+  // Ride now is sent at the current time, which can price a little differently from the quote on screen (e.g. at the
+  // night-charge hour). The server then answers with the fare for that time: keep it for this cab, and the next tap books on it.
+  const tripKey = JSON.stringify([draft.categoryId, pickup?.lat, pickup?.lng, drop?.lat, drop?.lng, mode, hours, when]);
+  const [fareOverride, setFareOverride] = useState<{ key: string; fare: FareBreakdown } | null>(null);
+  const bookFare = fareOverride?.key === tripKey ? fareOverride.fare : fare;
+
+  // Book in one tap: no separate vehicle and review steps. Pay the driver at the end of the trip; WhatsApp updates go to the mobile number.
+  const book = async () => {
+    setError('');
+    if (!online) return setError('You’re offline. Reconnect to book.');
     if (!pickup) return setError('Choose your pickup location.');
     if (mode === 'pickup' && !drop) return setError('Choose your drop location.');
-    if (mode === 'hourly' && !hours) return setError('Select how many hours you need the car.');
-    if (!date) return setError('Choose a pickup date.');
-    if (!time) return setError('Choose a pickup time.');
-    const at = combineDateTime(date, time);
-    const problem = scheduleProblem(at);
-    if (problem) {
-      if (date === firstDay) { setTime(firstTime); return setError(`That time has passed. Pickup moved to the earliest time, ${formatTime12(firstTime)}. Tap again to continue.`); }
-      return setError(problem);
+    if (needsHours) return setError('Select how many hours you need the car.');
+    if (when === 'later') {
+      if (!date) return setError('Choose a pickup date.');
+      if (!time) return setError('Choose a pickup time.');
+      const problem = scheduleProblem(picked);
+      if (problem) {
+        if (date === firstDay) { setTime(firstTime); return setError(`That time has passed. Pickup moved to the earliest time, ${formatTime12(firstTime)}. Tap again to continue.`); }
+        return setError(problem);
+      }
     }
-    if (mode === 'pickup' && pickup && drop && haversineKm(pickup, drop) > CITY_LIMIT_KM) return setError('Pickup & Drop is for trips inside one city. For a longer trip choose Outstation.');
-    const patch =
-      mode === 'hourly'
-        ? { pickup, drop: disposalFor(pickup), tripType: 'Local Rental' as const, rentalHours: hours, scheduledAt: at, tripEndAt: null, stops: [], multicity: false }
-        : { pickup, drop, tripType: 'One Way' as const, rentalHours: null, scheduledAt: at, tripEndAt: null, stops: [], multicity: false };
-    update(patch);
-    if (auth.status !== 'ready') {
-      // Phone sign-in can remount the page: save the trip first, then come back to the vehicles.
-      saveDraft({ ...draft, ...patch });
-      setPendingReturn('/book/ride');
-      openLoginModal({ title: 'Sign in to compare fares', subtitle: 'Verify your mobile number to continue with your saved trip.' });
+    if (auth.status !== 'ready' || !profile) {
+      // Phone sign-in can remount the page: keep the trip, and come back to this sheet (it reopens on the cabs).
+      saveDraft(draft);
+      setPendingReturn(`/local-rentals?mode=${mode === 'hourly' ? 'hourly' : 'pickup'}`);
+      openLoginModal({ title: 'Sign in to book your cab', subtitle: 'Verify your mobile number to book this ride.' });
       return;
     }
-    navigate('/book/ride');
+    if (!canBook || !cab || !bookFare || !draft.pickup || !draft.drop || !draft.scheduledAt) return setError(q.quoteLoading ? 'Getting the latest fares… Tap again in a moment.' : 'Choose a cab to book.');
+    if (bookingRef.current) return;
+    bookingRef.current = true;
+    setBooking(true);
+    // Unlock audio inside this tap, so the confirmation chime can play on the next screen (iPhones need this).
+    primeChime();
+    try {
+      const res = await createRideRequest({
+        awaitPayment: false,
+        paymentOption: 'later',
+        profile,
+        pickup: draft.pickup,
+        drop: draft.drop,
+        stops: [],
+        category: cab,
+        route: route ?? { distanceKm: q.trip?.distanceKm ?? 0, durationMin: q.trip?.durationMin ?? 0, path: [], estimated: false },
+        fare: bookFare,
+        tripType: draft.tripType,
+        multicity: false,
+        paymentMethod: 'Cash',
+        couponCode: q.coupon?.code ?? '',
+        notes: '',
+        // Ride now: the current time (when the server's minimum notice is 0), else the earliest pickup it accepts.
+        scheduledAt: when === 'now' ? ridenowBookingTime(draft.scheduledAt, Date.now(), rideNowLead) : draft.scheduledAt,
+        rentalHours: draft.tripType === 'Local Rental' ? draft.rentalHours : null,
+        // As in Ola / Uber, the rider accepted the published terms when signing in (LegalGate); tapping Book confirms the ride on them.
+        termsAccepted: true,
+        addOns: { roofCarrier: false, pets: false },
+        whatsapp: { sameAsMobile: true },
+        email: profile.email || '',
+        source: 'people_taxi',
+        bookingSource: 'peopletaxi',
+        brand: 'peopletaxi',
+      });
+      reset();
+      if (when === 'now') {
+        // Ride now: stay right here. The map's pickup starts its radar while a cab is found, and the driver and cab show in this sheet.
+        setPeek(false);
+        setParams({ mode: mode === 'hourly' ? 'hourly' : 'pickup', ride: res.id }, { replace: true });
+      } else {
+        // Scheduled: confirmed, and on to My bookings.
+        push({ title: 'Ride scheduled', message: draft.scheduledAt ? `Pickup ${draft.scheduledAt.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}. We’ll share your driver’s details before pickup.` : 'Your booking is confirmed.', tone: 'success' });
+        navigate('/trips', { replace: true });
+      }
+    } catch (e: unknown) {
+      const err = e as { code?: string; fare?: FareBreakdown };
+      if (err.code === 'fare-changed') {
+        if (err.fare) {
+          setFareOverride({ key: tripKey, fare: err.fare });
+          setError(`The fare for this ride is now ${formatINR(err.fare.total)}. Tap Book again to confirm.`);
+        } else {
+          q.retryQuote();
+          setError('The fare for this trip has just updated. Check the new amount and tap Book again.');
+        }
+        return;
+      }
+      setError(describeError(e, 'We couldn’t book your cab. Please check your connection and try again.'));
+    } finally {
+      bookingRef.current = false;
+      setBooking(false);
+    }
   };
+
+  // The booked ride, as the server has it (until it loads, what the rider just chose).
+  const rideFrom = ride && isValidLatLng(ride.pickup) ? ride.pickup : pickup;
+  const rideTo = ride ? (ride.tripType === 'Local Rental' || !isValidLatLng(ride.drop) ? null : ride.drop) : mode === 'pickup' ? drop : null;
+  const ridePhase = ride?.phase ?? 'awaiting_review';
+  const rideClosed = rideGone || ridePhase === 'cancelled' || ride?.status === 'Rejected';
+  const rideFinding = !!rideId && !rideClosed && (ridePhase === 'awaiting_review' || ridePhase === 'arranging' || ridePhase === 'partner_confirmed');
+  const pulse = rideFinding && rideFrom ? { lat: rideFrom.lat, lng: rideFrom.lng } : null;
 
   const pins: Pin[] = useMemo(() => {
     const out: Pin[] = [];
+    if (rideId) {
+      // Finding: the pickup alone, centred, with its radar. With a driver: the pickup and the drop.
+      if (rideFrom) out.push({ place: rideFrom, kind: 'from' });
+      if (!rideFinding && rideTo) out.push({ place: rideTo, kind: 'to' });
+      return out;
+    }
     if (stage === 'drop' && pickup) out.push({ place: pickup, kind: 'from' });
     if (stage === 'when') {
       if (pickup) out.push({ place: pickup, kind: 'from' });
       if (mode === 'pickup' && drop) out.push({ place: drop, kind: 'to' });
     }
     return out;
-  }, [stage, mode, pickup, drop]);
+  }, [rideId, rideFinding, rideFrom?.lat, rideFrom?.lng, rideTo?.lat, rideTo?.lng, stage, mode, pickup, drop]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The road between pickup and drop: the same route the fares are priced on (worked out by the booking state once the trip is
+  // set), used only when it belongs to the places on screen. While it loads, or if routing is down, no line is drawn.
+  const samePlace = (a: GeoPlace | null, b: GeoPlace | null) => !!a && !!b && Math.abs(a.lat - b.lat) < 1e-7 && Math.abs(a.lng - b.lng) < 1e-7;
+  const road: Road = !rideId && stage === 'when' && mode === 'pickup' && !!route && route.path.length > 1 && samePlace(draft.pickup, pickup) && samePlace(draft.drop, drop) ? route.path : null;
 
   const style = { '--lr-sheet': `${sheetH}px` } as React.CSSProperties;
   const place = cand;
@@ -626,19 +823,215 @@ function LocalRentalsSheet() {
       </label>
     </>
   );
+  // Ride now shows the pickup it will book (the earliest the server accepts); Schedule opens the date and time below it.
+  const pickWhen = (w: 'now' | 'later') => { setWhen(w); setError(''); };
+  const whenBlock = (
+    <>
+      <div className="lr-when" role="radiogroup" aria-label="When do you need the cab?">
+        <button type="button" role="radio" aria-checked={when === 'now'} className={`lr-when__opt ${when === 'now' ? 'is-on' : ''}`} onClick={() => pickWhen('now')}>
+          <span className="lr-when__icon" aria-hidden="true"><Icon name="clock" size={18} /></span>
+          <span className="lr-when__text"><strong>Ride now</strong></span>
+        </button>
+        <button type="button" role="radio" aria-checked={when === 'later'} className={`lr-when__opt ${when === 'later' ? 'is-on' : ''}`} onClick={() => pickWhen('later')}>
+          <span className="lr-when__icon" aria-hidden="true"><Icon name="calendar" size={18} /></span>
+          <span className="lr-when__text"><strong>Schedule</strong></span>
+        </button>
+      </div>
+      {when === 'later' ? <div className="lr-pair lr-pair--two">{scheduleFields}</div> : null}
+    </>
+  );
 
-  // Pickup & Drop / Hourly Rental: lives in the bottom card (the top of the map can sit under the site header).
-  const modeSeg = (
-    <div className="lr-seg" role="tablist" aria-label="Local Rentals" data-mode={mode}>
-      <span className="lr-seg__thumb" aria-hidden="true" />
-      <button type="button" role="tab" aria-selected={mode === 'pickup'} onClick={() => switchMode('pickup')}>Pickup &amp; Drop</button>
-      <button type="button" role="tab" aria-selected={mode === 'hourly'} onClick={() => switchMode('hourly')}>Hourly Rental</button>
-    </div>
+  // ── The booked ride, in this sheet ──
+  const rideCanCancel = !!ride && !rideClosed && cancellationQuote(ride).allowed;
+  const rideCancelFee = rideCanCancel && ride ? cancellationQuote(ride).fee : 0;
+  // While finding: a partner has taken the ride and a cab is on the way to accept it.
+  const rideFound = ridePhase === 'partner_confirmed';
+  const rideDriver = ride?.driver ?? null;
+  const rideWithDriver = !!rideDriver && (ridePhase === 'driver_assigned' || ridePhase === 'driver_en_route' || ridePhase === 'driver_arrived' || ridePhase === 'in_trip');
+  // The boarding OTP only once a driver has accepted, and until the ride starts.
+  const rideShowOtp = !!rideDriver && (ridePhase === 'driver_assigned' || ridePhase === 'driver_en_route' || ridePhase === 'driver_arrived');
+  const rideDriverPhone = rideDriver ? localMobile(rideDriver.phone) : '';
+  const rideFirst = rideDriver?.name.split(' ')[0] || 'Your driver';
+  const rideCab = ride ? tripCategoryName(categories, ride) : cab ? categoryName(cab) : '';
+  // Bike, auto or cab: the finding screen speaks of what was actually chosen.
+  const kind = rideKind(ride ? ride.categoryName : cab?.name, rideCab);
+  const findingLine = forKind(
+    ride?.status === 'Pending' || !ride ? 'Matching you with a cab nearby'
+    : ridePhase === 'partner_confirmed' ? 'A cab is on the way to accept your ride'
+    : 'Finding the nearest driver',
+    kind,
+  );
+  const driverLine =
+    ridePhase === 'driver_assigned' ? `${rideFirst} accepted your ride`
+    : ridePhase === 'driver_en_route' ? `${rideFirst} is on the way`
+    : ridePhase === 'driver_arrived' ? `${rideFirst} has arrived at your pickup`
+    : 'Your ride is on';
+  // Done with this ride on the sheet: back to booking (the ride itself stays in My bookings).
+  const endRide = () => {
+    setCancelOpen(false);
+    setParams({ mode: mode === 'hourly' ? 'hourly' : 'pickup' }, { replace: true });
+    if (!pickup || (mode === 'pickup' && !drop)) enter('pickup');
+    else setStage('when');
+  };
+
+  const rideSheet = rideId ? (
+    <section key="ride" className="lr-sheet lr-sheet--ride" aria-label="Your ride" aria-live="polite">
+      <span className="lr-grip" aria-hidden="true" />
+      {rideFinding ? (
+        <div className="lr-ride lr-finding">
+          <div className="lr-finding__head">
+            {/* The chosen vehicle on a navy disc, with a radar pulse around it. */}
+            <span className="lr-finding__beacon" aria-hidden="true">
+              <RideKindIcon kind={kind} />
+            </span>
+            <span className="lr-finding__title">
+              <strong>{forKind('Finding your cab', kind)}<span className="lr-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></strong>
+              <small>{findingLine}</small>
+            </span>
+          </div>
+          <ol className="lr-finding__steps" aria-label="Ride request progress">
+            <li className="is-done">Requested</li>
+            <li className={rideFound ? 'is-done' : 'is-now'} aria-current={rideFound ? undefined : 'step'}>{forKind(rideFound ? 'Cab found' : 'Finding cab', kind)}</li>
+            <li className={rideFound ? 'is-now' : undefined} aria-current={rideFound ? 'step' : undefined}>Driver assigned</li>
+          </ol>
+          <div className="lr-finding__route">
+            <p className="lr-finding__stops">
+              <span className="lr-finding__stop">
+                <span className="lr-dot lr-dot--from" aria-hidden="true" />
+                <span className="truncate">{rideFrom?.name ?? 'Pickup'}</span>
+              </span>
+              <span className="lr-finding__stop">
+                {rideTo ? <span className="lr-dot lr-dot--to" aria-hidden="true" /> : <span className="lr-finding__hours" aria-hidden="true"><Icon name="clock" size={13} /></span>}
+                <span className="truncate"><span className="sr-only">{rideTo ? 'to ' : ''}</span>{rideTo ? rideTo.name : 'Hourly rental'}</span>
+              </span>
+            </p>
+            {rideCab ? <span className="lr-finding__cab"><small>{kind === 'cab' ? 'Cab' : 'Vehicle'}</small><b>{rideCab}</b></span> : null}
+          </div>
+          {rideCanCancel ? (
+            <div className="lr-finding__foot">
+              <span className={`lr-finding__fee${rideCancelFee > 0 ? ' is-fee' : ''}`}>
+                <Icon name={rideCancelFee > 0 ? 'info' : 'shield-check'} size={14} />
+                {rideCancelFee > 0 ? `${formatINR(rideCancelFee)} cancellation fee` : 'Free cancellation'}
+              </span>
+              <button type="button" className="lr-finding__cancel" onClick={() => setCancelOpen(true)}>
+                <Icon name="close" size={14} /> Cancel ride
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : rideWithDriver && rideDriver ? (
+        <div className="lr-ride">
+          <p className={`lr-ride__ok ${ridePhase === 'driver_arrived' ? 'is-arrived' : ''}`}>
+            <Icon name="check-circle" size={16} /> {driverLine}
+          </p>
+          <div className="lr-ride__driver">
+            <Avatar name={rideDriver.name} photoUrl={rideDriver.photoUrl} size={46} />
+            <span className="lr-ride__who">
+              <strong>{rideDriver.name}</strong>
+              <small>{rideDriver.rating != null ? `★ ${rideDriver.rating.toFixed(1)} · ` : ''}{rideDriver.vehicleModel || rideCab}</small>
+            </span>
+            {rideDriver.vehicleNumber ? <span className="plate">{rideDriver.vehicleNumber}</span> : null}
+          </div>
+          {rideShowOtp ? (
+            <div className="lr-ride__otp">
+              <span><strong>Ride OTP</strong><small>{ridePhase === 'driver_arrived' ? 'Share it now to start your ride' : 'Share with your driver after you board'}</small></span>
+              <span className="lr-ride__code num" aria-label={`Ride OTP ${rideOtp ? rideOtp.split('').join(' ') : 'not available yet'}`}>{rideOtp ?? '····'}</span>
+            </div>
+          ) : null}
+          <div className="lr-ride__actions">
+            {rideDriverPhone && ridePhase !== 'in_trip' ? (
+              <a className="btn btn--primary btn--sm" href={`tel:+91${rideDriverPhone}`}><Icon name="phone" /> Call {rideFirst}</a>
+            ) : null}
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => navigate(`/ride/${rideId}`)}>Ride details</button>
+          </div>
+          {rideCanCancel ? <button type="button" className="lr-ride__cancel" onClick={() => setCancelOpen(true)}>Cancel ride</button> : null}
+        </div>
+      ) : rideClosed ? (
+        <div className="lr-ride lr-ride--end">
+          <strong>{rideGone ? 'This ride is no longer available' : ride?.status === 'Rejected' ? 'Ride not accepted' : 'Ride cancelled'}</strong>
+          <small>{ride && ride.cancellationFee > 0 ? `A cancellation fee of ${formatINR(ride.cancellationFee)} applies.` : 'No charge for this ride.'}</small>
+          <button type="button" className="lr-cta" onClick={endRide}>Book a ride</button>
+        </div>
+      ) : ridePhase === 'completed' ? (
+        <div className="lr-ride lr-ride--end">
+          <strong>You’ve arrived</strong>
+          <small>Thanks for riding with People Taxi.</small>
+          <button type="button" className="lr-cta" onClick={() => navigate(`/ride/${rideId}`)}>Rate your ride</button>
+          <button type="button" className="lr-ride__cancel lr-ride__cancel--plain" onClick={endRide}>Book another ride</button>
+        </div>
+      ) : null}
+    </section>
+  ) : null;
+
+  // Ola / Uber style cab list: tap a cab, then Book. Fares are the server's; a cab it cannot price says why.
+  const cabList = (
+    <section className="lr-cabs" aria-label="Choose your ride">
+      {needsHours ? (
+        <p className="lr-cabs__note">Select the rental duration to see cabs and fares.</p>
+      ) : needsTime ? (
+        <p className="lr-cabs__note">Pick a pickup date and time to see cabs and fares.</p>
+      ) : q.quoteError ? (
+        <div className="lr-cabs__note lr-cabs__note--warn" role="alert">
+          <span>{q.quoteError}</span>
+          <button type="button" className="lr-link" onClick={q.retryQuote}>Try again</button>
+        </div>
+      ) : categoryStatus === 'loading' && !cabs.length ? (
+        <div className="lr-cabs__list" aria-busy="true">
+          <span className="skeleton lr-cab-skel" />
+          <span className="skeleton lr-cab-skel" />
+          <span className="skeleton lr-cab-skel" />
+        </div>
+      ) : !cabs.length ? (
+        <p className="lr-cabs__note">No cabs are available here right now. Please try again shortly.</p>
+      ) : (
+        <div className="lr-cabs__list" role="radiogroup" aria-label="Cabs">
+          {cabs.map((c) => {
+            const fq = fareOf(c.id);
+            const na = q.unavailable.get(c.id);
+            const on = c.id === draft.categoryId && !!fq;
+            const km = fq?.includedKm ? `${+fq.includedKm.toFixed(1)} km incl.` : '';
+            const hrs = mode === 'hourly' && q.entries.get(c.id)?.rentalHours ? `${q.entries.get(c.id)!.rentalHours} hr` : '';
+            const pick = () => { update({ categoryId: c.id }); setError(''); };
+            return (
+              <div key={c.id} className={`lr-cab ${on ? 'is-on' : ''} ${fq ? '' : 'is-off'}`}>
+                {/* The cab photo opens its fare breakdown (and picks the cab); the rest of the row just picks it. */}
+                <button
+                  type="button"
+                  className="lr-cab__photo"
+                  disabled={!fq}
+                  onClick={() => { pick(); setFareFor(c.id); }}
+                  aria-label={`Fare breakdown for ${categoryName(c)}`}
+                  title="Fare breakdown"
+                >
+                  <img src={categoryPhoto(c)} alt="" loading="lazy" decoding="async" />
+                  {fq ? <span className="lr-cab__info" aria-hidden="true"><Icon name="info" size={11} /></span> : null}
+                </button>
+                <button type="button" role="radio" aria-checked={on} disabled={!fq} className="lr-cab__pick" onClick={pick}>
+                  <span className="lr-cab__text">
+                    <strong>{categoryName(c)}</strong>
+                    <small>{[`${c.seats} seats`, 'AC', hrs, km].filter(Boolean).join(' · ')}</small>
+                  </span>
+                  <span className="lr-cab__price">
+                    {fq ? (
+                      <b>{formatINR(fq.fare.total)}</b>
+                    ) : na ? (
+                      <small className="lr-cab__na">{na}</small>
+                    ) : (
+                      <span className="skeleton lr-cab__skel" aria-label="Loading fare" />
+                    )}
+                  </span>
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 
   return (
     <div className="lr" style={style} role="dialog" aria-label="Local Rentals">
-      <PinMap picking={picking} target={target} pins={pins} sheetH={sheetH} onPick={onPick} me={position ? { lat: position.lat, lng: position.lng } : null} />
+      <PinMap picking={picking} target={target} pins={pins} sheetH={sheetH} onPick={onPick} me={position ? { lat: position.lat, lng: position.lng } : null} road={road} pulse={pulse} />
 
       <header className="lr-top">
         <div className="lr-top__row">
@@ -665,8 +1058,8 @@ function LocalRentalsSheet() {
               <span className={place ? '' : 'is-empty'}>{place ? place.name : stage === 'drop' ? 'Search a drop location' : 'Search a place or city'}</span>
             </button>
             {stage === 'pickup' ? (
-              <div className="lr-cities" role="group" aria-label="Cities">
-                {QUICK_CITIES.map((c) => (
+              <div className="lr-cities" role="group" aria-label="Districts and cities" ref={dragToScroll}>
+                {cityChips.map((c) => (
                   <button key={c.id} type="button" className={`lr-chip ${place?.id === c.id ? 'is-on' : ''}`} onClick={() => chooseCity(c)}>{c.name}</button>
                 ))}
               </div>
@@ -685,9 +1078,8 @@ function LocalRentalsSheet() {
       </button>
 
       <div className="lr-dock" ref={dock}>
-        {stage !== 'when' ? (
+        {rideSheet ?? (stage !== 'when' ? (
           <section key={stage} className="lr-sheet" aria-label={stage === 'drop' ? 'Set drop location' : 'Set pickup location'}>
-            {modeSeg}
             {approx && !locating ? <p className="lr-hint" role="status">{approx}</p> : null}
             {locating ? <p className="lr-hint" role="status">Finding your current location…</p> : askLocation ? (
               <div className={`lr-perm ${locationError || permission === 'denied' || permission === 'blocked' ? 'is-warn' : ''}`} role={locationError ? 'alert' : 'status'}>
@@ -711,31 +1103,28 @@ function LocalRentalsSheet() {
                 )}
               </div>
             </div>
-            <button type="button" className="lr-cta" disabled={!place || resolving || farApart} onClick={confirmStage}>
+            <button type="button" className="lr-cta" disabled={!place || resolving} onClick={confirmStage}>
               {resolving ? 'Finding address…' : stage === 'drop' ? 'Confirm drop' : 'Confirm pickup'}
             </button>
             </div>
-            {farApart ? <p className="lr-warn" role="alert">Pickup &amp; Drop is for trips inside one city. For a longer trip choose Outstation.</p> : null}
+            {farApart ? <p className="lr-hint" role="status">This drop is outside the city ({Math.round(haversineKm(pickup!, cand!))} km away).</p> : null}
             {stage === 'drop' ? <button type="button" className="lr-link" onClick={() => enter('pickup')}>Change pickup</button> : null}
           </section>
         ) : (
           <section key="when" className={`lr-sheet lr-sheet--tall ${peek ? 'is-peek' : ''}`} aria-label="Plan your trip">
             <button type="button" className="lr-gripbtn" aria-label={peek ? 'Show the trip details' : 'Show more of the map'} aria-expanded={!peek} onClick={() => setPeek((p) => !p)} />
-            <p className="lr-step">Step {steps} of {steps}</p>
-            <h2>{mode === 'hourly' ? 'Plan your rental' : 'Plan your trip'}</h2>
-            {modeSeg}
 
             <div className="lr-body">
             <div className="lr-trip">
               <button type="button" onClick={() => enter('pickup')}>
                 <span className="lr-dot lr-dot--from" aria-hidden="true" />
-                <span><small>Pickup</small><strong>{pickup?.name ?? 'Choose pickup'}</strong></span>
+                <span><small className="sr-only">Pickup</small><strong>{pickup?.name ?? 'Choose pickup'}</strong></span>
                 <em>Edit</em>
               </button>
               {mode === 'pickup' ? (
                 <button type="button" onClick={() => enter('drop')}>
                   <span className="lr-dot lr-dot--to" aria-hidden="true" />
-                  <span><small>Drop</small><strong>{drop?.name ?? 'Choose drop'}</strong></span>
+                  <span><small className="sr-only">Drop</small><strong>{drop?.name ?? 'Choose drop'}</strong></span>
                   <em>Edit</em>
                 </button>
               ) : null}
@@ -743,33 +1132,95 @@ function LocalRentalsSheet() {
 
             {mode === 'hourly' ? (
               <div className="lr-hourly-plan">
-                <label className="lr-field lr-field--duration">
-                  <span>Rental Duration</span>
-                  <div className="lr-select">
-                    <select value={hours ?? ''} onChange={(e) => { setHours(e.target.value ? Number(e.target.value) : null); setError(''); }}>
-                      <option value="">Select duration</option>
-                      {RENTAL_PACKAGE_HOURS.map((h) => <option key={h} value={h}>{h} hours</option>)}
-                    </select>
+                <div className="lr-dur">
+                  <div className="lr-dur__head">
+                    <span className="lr-dur__label" id="lr-dur-label">Rental duration</span>
+                    <span className={`lr-dur__pick${hours ? '' : ' is-empty'}`}>
+                      {hours ? `${hours} ${hours === 1 ? 'hour' : 'hours'}` : 'Choose hours'}
+                    </span>
                   </div>
-                </label>
-                <div className="lr-pair lr-pair--two">
-                  {scheduleFields}
+                  <div
+                    className="lr-dur__strip"
+                    ref={hourStripRef}
+                    role="radiogroup"
+                    aria-labelledby="lr-dur-label"
+                    onKeyDown={(e) => {
+                      // Arrow keys, Home and End move between the hours (one tab stop for the whole strip).
+                      const list = RENTAL_PACKAGE_HOURS;
+                      const at = hours == null ? -1 : list.indexOf(hours);
+                      const next =
+                        e.key === 'ArrowRight' || e.key === 'ArrowDown' ? list[Math.min(at + 1, list.length - 1)]
+                        : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? list[Math.max(at - 1, 0)]
+                        : e.key === 'Home' ? list[0]
+                        : e.key === 'End' ? list[list.length - 1]
+                        : undefined;
+                      if (next == null) return;
+                      e.preventDefault();
+                      setHours(next);
+                      setError('');
+                      hourStripRef.current?.querySelector<HTMLElement>(`[data-hours="${next}"]`)?.focus();
+                    }}
+                  >
+                    {RENTAL_PACKAGE_HOURS.map((h, i) => {
+                      const on = hours === h;
+                      return (
+                        <button
+                          key={h}
+                          type="button"
+                          role="radio"
+                          aria-checked={on}
+                          aria-label={`${h} ${h === 1 ? 'hour' : 'hours'}`}
+                          tabIndex={on || (hours == null && i === 0) ? 0 : -1}
+                          data-hours={h}
+                          className={`lr-dur__opt${on ? ' is-on' : ''}`}
+                          onClick={() => { setHours(h); setError(''); }}
+                        >
+                          <strong>{h}</strong>
+                          <small>{h === 1 ? 'hr' : 'hrs'}</small>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+                {whenBlock}
               </div>
             ) : (
-              <div className="lr-pair lr-pair--two">
-                {scheduleFields}
+              <div className="lr-plan">
+                {whenBlock}
               </div>
             )}
+
+            {cabList}
             </div>
             <div className="lr-foot">
               {error ? <p className="lr-warn" role="alert">{error}</p> : null}
-              {!online ? <p className="lr-warn" role="alert">You’re offline. Reconnect to see fares.</p> : null}
-              <button type="button" className="lr-cta" onClick={submit}>{mode === 'hourly' ? 'View cabs & fares →' : 'See vehicles & fares'}</button>
+              {!online ? <p className="lr-warn" role="alert">You’re offline. Reconnect to book.</p> : null}
+              <button type="button" className="lr-cta" onClick={() => void book()} disabled={booking} aria-busy={booking || undefined}>
+                {booking ? 'Booking…' : when === 'now' ? 'Book ride' : 'Schedule ride'}
+              </button>
             </div>
           </section>
-        )}
+        ))}
       </div>
+
+      {cancelOpen && ride ? <CancelDialog trip={ride} onClose={() => setCancelOpen(false)} /> : null}
+      {fareFor && fareOf(fareFor) ? (
+        <FareDialog
+          title={`${categoryName(cabs.find((c) => c.id === fareFor) ?? { name: 'Cab' })} · Fare breakdown`}
+          fare={fareOf(fareFor)!.breakup ?? breakupFromFare(fareOf(fareFor)!.fare)}
+          onClose={() => setFareFor(null)}
+        />
+      ) : null}
+
+      {outstationAsk && pickup ? (
+        <OutstationDialog
+          from={pickup.name}
+          to={outstationAsk.name}
+          km={Math.round(haversineKm(pickup, outstationAsk))}
+          onStay={() => setOutstationAsk(null)}
+          onSwitch={goOutstation}
+        />
+      ) : null}
 
       {pickerFor}
       {timeOpen ? (
