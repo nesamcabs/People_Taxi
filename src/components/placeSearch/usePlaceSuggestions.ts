@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { GeoPlace, LatLng, LocationItem } from '@core/types';
 import { searchPlaces } from '@core/services/geoService';
 import { isOnline } from '@core/utils/network';
+import { msg } from '@/i18n';
 import type { PickerConfig } from '../LocationPicker';
 import { directory, flattenTree, groupByRegion, norm, placeNode, searchDirectory, stateNear, withoutListed, type NodeKind, type PlaceNode, type TreeRow } from './model';
 
@@ -35,7 +36,7 @@ export function usePlaceSuggestions({ config, query, saved, recent, enabled }: {
           if (controller.signal.aborted) return;
           setResults({ q, list: config.resultFilter ? raw.filter(config.resultFilter) : raw, error: '' });
         })
-        .catch(() => !controller.signal.aborted && setResults({ q, list: [], error: isOnline() ? 'Search is temporarily unavailable. Please try again.' : 'You’re offline — search needs a connection.' }));
+        .catch(() => !controller.signal.aborted && setResults({ q, list: [], error: isOnline() ? msg('Search is temporarily unavailable. Please try again.') : msg('You’re offline — search needs a connection.') }));
     }, 300);
     return () => {
       window.clearTimeout(timer);
@@ -66,17 +67,17 @@ export function usePlaceSuggestions({ config, query, saved, recent, enabled }: {
       const tree = groupByRegion([...own, ...extra], 'air', 'airport');
       // Airports sit directly under their state: a district level above a single airport adds nothing.
       const states = tree.nodes.map((s) => ({ ...s, children: s.children?.flatMap((c) => (c.kind === 'district' ? c.children ?? [] : [c])) }));
-      add('airports', config.popularLabel ?? 'Airports', 'tree', states, tree.open);
+      add('airports', config.popularLabel ?? msg('Airports'), 'tree', states, tree.open);
     } else if (!q) {
-      add('saved', 'Saved places', 'list', saved.map((p) => placeNode(p, SAVED_KIND[p.type] ?? 'favorite', 'saved')));
-      add('recent', 'Recent', 'list', recent.map((p) => placeNode(p, 'recent', 'recent')));
-      add('popular', config.popularLabel ?? 'Popular cities', 'chips', config.popular.map((p) => placeNode(p, p.type === 'airport' ? 'airport' : 'main', 'pop')));
-      add('browse', 'Browse by district', 'tree', directory().find((s) => s.id === stateTab)?.children ?? []);
+      add('saved', msg('Saved places'), 'list', saved.map((p) => placeNode(p, SAVED_KIND[p.type] ?? 'favorite', 'saved')));
+      add('recent', msg('Recent'), 'list', recent.map((p) => placeNode(p, 'recent', 'recent')));
+      add('popular', config.popularLabel ?? msg('Popular cities'), 'chips', config.popular.map((p) => placeNode(p, p.type === 'airport' ? 'airport' : 'main', 'pop')));
+      add('browse', msg('Browse by district'), 'tree', directory().find((s) => s.id === stateTab)?.children ?? []);
     } else {
       const found = searchDirectory(q);
-      add('directory', 'Cities and areas', 'tree', found.nodes, found.open);
+      add('directory', msg('Cities and areas'), 'tree', found.nodes, found.open);
       const tree = groupByRegion(withoutListed(live, found.places));
-      add('live', found.nodes.length ? 'More places' : 'Search results', 'tree', tree.nodes, tree.open);
+      add('live', found.nodes.length ? msg('More places') : msg('Search results'), 'tree', tree.nodes, tree.open);
     }
     return out;
   }, [enabled, airportOnly, q, results, config.popular, config.popularLabel, saved, recent, stateTab]);
@@ -93,7 +94,7 @@ export function usePlaceSuggestions({ config, query, saved, recent, enabled }: {
   let status = '';
   if (q && !searching) {
     if (results.q === q && results.error) status = results.error;
-    else if (!hasPlace) status = q.length < 3 ? 'Keep typing to search every place.' : config.emptyText ?? 'No places found. Try a landmark, area or city name.';
+    else if (!hasPlace) status = q.length < 3 ? msg('Keep typing to search every place.') : config.emptyText ?? msg('No places found. Try a landmark, area or city name.');
   }
 
   return {

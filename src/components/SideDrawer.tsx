@@ -3,11 +3,13 @@
 import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { AccountPage } from '@/pages/AccountPage';
+import { useT } from '@/i18n';
 
 const FOCUSABLE = 'a[href],button:not([disabled]),summary,input:not([type="hidden"]):not([hidden])';
 
 export function SideDrawer({ open, onClose, brand }: { open: boolean; onClose: () => void; brand: ReactNode }) {
   const panel = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -46,10 +48,10 @@ export function SideDrawer({ open, onClose, brand }: { open: boolean; onClose: (
   return (
     <div className="drawer drawer--profile" onKeyDown={onKey}>
       <div className="drawer__backdrop" onClick={onClose} />
-      <div className="drawer__panel" role="dialog" aria-modal="true" aria-label="Profile" ref={panel}>
+      <div className="drawer__panel" role="dialog" aria-modal="true" aria-label={t('Profile')} ref={panel}>
         <div className="drawer__head">
           <span onClick={onClose}>{brand}</span>
-          <button type="button" className="drawer__close" onClick={onClose} aria-label="Close profile" data-autofocus>
+          <button type="button" className="drawer__close" onClick={onClose} aria-label={t('Close profile')} data-autofocus>
             <Icon name="close" size={18} />
           </button>
         </div>

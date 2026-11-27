@@ -29,6 +29,7 @@ import {
   TrustStrip,
 } from './HomeSections';
 import { type Corridor, type Destination, type Service } from './content';
+import { useT } from '@/i18n';
 
 export type BookStep = 'plan' | 'choose' | 'review';
 
@@ -49,7 +50,8 @@ const writeOutstation = (t: 'One Way' | 'Round Trip') => {
 };
 
 function HeroCopy({ service, trip }: { service: ServiceId; trip: 'One Way' | 'Round Trip' }) {
-  const [headline, subtitle] = serviceSlogan(service, trip);
+  const t = useT();
+  const [headline, subtitle] = serviceSlogan(service, trip).map((s) => t(s));
   // While the logo shows in the hero the header leaves its own logo out; once the page scrolls past it, the header takes over.
   const logo = useRef<HTMLDivElement>(null);
   useEffect(() => {

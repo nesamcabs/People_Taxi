@@ -1,4 +1,5 @@
 import type { RideCategory } from '@core/types';
+import { isOutstation } from '@core/services/pricingService';
 import { vehicleArtFor } from './vehicleArt';
 
 export type CategoryGroup = 'Sedan' | 'SUV' | 'Innova' | 'Van & bus';
@@ -71,4 +72,14 @@ export function categoryModels(c: Pick<RideCategory, 'name' | 'seats'>): string 
 export function isLocalOnlyCategory(c: { name: string }): boolean {
   const n = c.name.trim().toLowerCase();
   return /(^|[^a-z])(bike|scooter|scooty|motor ?cycle|two[- ]?wheeler)s?([^a-z]|$)/.test(n) || /^(e[- ]?|electric |cng )?auto(?![a-z])|rickshaw/.test(n);
+}
+
+/**
+ * Whether Auto / Bike may be offered for this trip: an hourly rental, or a One Way ride inside the local distance. Outstation,
+ * round trip, airport and multicity trips never list them, even when an older booking server prices them.
+ */
+export function localOnlyTrip(t: { tripType: string; multicity?: boolean; distanceKm?: number | null }): boolean {
+  if (t.multicity) return false;
+  if (t.tripType === 'Local Rental') return true;
+  return t.tripType === 'One Way' && typeof t.distanceKm === 'number' && !isOutstation(t.distanceKm);
 }

@@ -10,7 +10,7 @@ import { Icon } from '@/components/Icon';
 import { StrikeOffer } from '@/components/StrikeOffer';
 import { useBooking, useBookingQuote } from '@/state/Booking';
 import { useOnline } from '@/lib/hooks';
-import { categoryGroup, categoryName, categoryPhoto, isLocalOnlyCategory, type CategoryGroup } from '@/lib/categories';
+import { categoryGroup, categoryName, categoryPhoto, isLocalOnlyCategory, localOnlyTrip, type CategoryGroup } from '@/lib/categories';
 import { tripTypeLabel } from '@/lib/services';
 import type { FuelChoice } from '@/shared/components/CabParts';
 import { draftFuelOf, fuelOfDraft, lowestTaxable, quoteForFuel, quoteMatchesFuel, type Fuel } from '@/lib/fuelQuote';
@@ -21,6 +21,7 @@ import './tripSummary.css';
 import './choosePage.css';
 import './cabSelect.css';
 import { packageClock, packageDay } from '@core/utils/timePackages';
+import { msg, richText, useT } from '@/i18n';
 
 const TOO_FAR_KM = 1500;
 type Sort = 'recommended' | 'low' | 'high';
@@ -54,18 +55,19 @@ function LineIcon({ name, size = 16 }: { name: keyof typeof LINE_GLYPHS; size?: 
 
 /** The booking's one fuel: Diesel / CNG as a compact segmented control (radio buttons), above the cab list. */
 function SharedFuel({ value, onChange }: { value: Fuel; onChange: (v: Fuel) => void }) {
+  const t = useT();
   const opts: { id: Fuel; label: string; icon: keyof typeof LINE_GLYPHS }[] = [
-    { id: 'diesel', label: 'Diesel', icon: 'pump' },
+    { id: 'diesel', label: msg('Diesel'), icon: 'pump' },
     { id: 'cng', label: 'CNG', icon: 'leaf' },
   ];
   return (
     <div className="cs-sfuel">
-      <div className="cs-sfuel__seg" role="radiogroup" aria-label="Fuel">
+      <div className="cs-sfuel__seg" role="radiogroup" aria-label={t('Fuel')}>
         {opts.map((o) => (
           <label key={o.id} className={`cs-sfuel__opt cs-sfuel__opt--${o.id} ${value === o.id ? 'is-on' : ''}`}>
             <input type="radio" name="booking-fuel" value={o.id} checked={value === o.id} onChange={() => onChange(o.id)} />
             <LineIcon name={o.icon} size={18} />
-            <span>{o.label}</span>
+            <span>{t(o.label)}</span>
           </label>
         ))}
       </div>
@@ -75,6 +77,7 @@ function SharedFuel({ value, onChange }: { value: Fuel; onChange: (v: Fuel) => v
 
 export function ChooseStep() {
   const navigate = useNavigate();
+  const t = useT();
   const { draft, update, route, routeStatus, retryRoute, categories, categoryStatus, adjustment } = useBooking();
   const q = useBookingQuote();
   const { online } = useOnline();
@@ -94,7 +97,8 @@ export function ChooseStep() {
 
   // A cab type the office turned off for this location is left out completely: no card, no tab.
   // Auto / Bike appear only once the server has priced them for this trip (local ride or hourly rental).
-  const visible = useMemo(() => categories.filter((c) => !q.hidden.has(c.id) && (!isLocalOnlyCategory(c) || q.entries.get(c.id)?.ok === true)), [categories, q.hidden, q.entries]);
+  const localTrip = localOnlyTrip({ tripType, multicity: draft.multicity, distanceKm: route?.distanceKm });
+  const visible = useMemo(() => categories.filter((c) => !q.hidden.has(c.id) && (!isLocalOnlyCategory(c) || (localTrip && q.entries.get(c.id)?.ok === true))), [categories, q.hidden, q.entries, localTrip]);
   // With CNG chosen for the booking, only cabs with a CNG fare are listed: a cab type with CNG turned off (or with no CNG
   // rates) is left out. Until the server has answered, every cab stays listed. (A Round Trip chooses fuel per cab.)
   const cngView = draft.fuelType === 'cng' && !(tripType === 'Round Trip' && !draft.multicity);
@@ -125,10 +129,11 @@ export function ChooseStep() {
 
   // If the chosen cab type is one that is now hidden, move to the first one still offered.
   useEffect(() => {
-    if (!categoryId || !q.hidden.has(categoryId)) return;
+    // (An Auto / Bike chosen earlier is also moved off when this trip cannot list it.)
+    if (!categoryId || !(q.hidden.has(categoryId) || (!localTrip && categories.some((c) => c.id === categoryId && isLocalOnlyCategory(c))))) return;
     const next = visible.find((c) => !q.unavailable.has(c.id)) ?? visible[0];
     if (next) update({ categoryId: next.id });
-  }, [categoryId, q.hidden, q.unavailable, visible, update]);
+  }, [categoryId, q.hidden, q.unavailable, visible, update, localTrip, categories]);
 
   // A Round Trip shows its fuel choice only on a cab that has a CNG fare. A CNG choice carried over from another trip or
   // cab would otherwise stay on the booking with no way to switch it off (and the server refuses it), so it is cleared.
@@ -183,8 +188,8 @@ export function ChooseStep() {
       <div className="wrap flow-page__wrap">
         <div className="choose">
           <div className="choose__main">
-            <section className="trip-sum trip-sum--compact" aria-label="Trip summary">
-              <h1 className="sr-only">Choose your vehicle</h1>
+            <section className="trip-sum trip-sum--compact" aria-label={t('Trip summary')}>
+              <h1 className="sr-only">{t('Choose your vehicle')}</h1>
               <div className="trip-sum__body ts2">
                 {scheduledAt ? (
                   <div className="ts2__when">
@@ -194,28 +199,28 @@ export function ChooseStep() {
                 ) : null}
                 <div className="ts2__mid">
                   <div className="ts2__route">
-                    <p className="ts2__stop ts2__stop--from"><span className="ts2__dot" aria-hidden="true" /><span className="sr-only">From </span><strong>{pickup.name}</strong></p>
+                    <p className="ts2__stop ts2__stop--from"><span className="ts2__dot" aria-hidden="true" /><span className="sr-only">{t('From')} </span><strong>{pickup.name}</strong></p>
                     <span className="ts2__line" aria-hidden="true" />
-                    <p className="ts2__stop ts2__stop--to"><span className="ts2__pin" aria-hidden="true"><LineIcon name="pin" size={18} /></span><span className="sr-only">To </span><strong>{returnsToPickup ? pickup.name : drop.id === 'place-local-disposal' ? 'Local City Disposal' : drop.name}</strong></p>
-                    {roundVia.length ? <p className="trip-sum__via ts2__via"><LineIcon name="road" size={14} /> Via {roundVia.map((stop) => stop.name).join(' → ')}</p> : null}
+                    <p className="ts2__stop ts2__stop--to"><span className="ts2__pin" aria-hidden="true"><LineIcon name="pin" size={18} /></span><span className="sr-only">{t('To')} </span><strong>{returnsToPickup ? pickup.name : drop.id === 'place-local-disposal' ? t('Local City Disposal') : drop.name}</strong></p>
+                    {roundVia.length ? <p className="trip-sum__via ts2__via"><LineIcon name="road" size={14} /> {t('Via {places}', { places: roundVia.map((stop) => stop.name).join(' → ') })}</p> : null}
                     {roundPick && q.selectedPackage ? (
-                      <p className="trip-sum__via ts2__via"><LineIcon name="clock" size={14} /> {q.selectedPackage.days} calendar {q.selectedPackage.days === 1 ? 'day' : 'days'} · Return by {packageDay(new Date(q.selectedPackage.endAt))}, {packageClock(new Date(q.selectedPackage.endAt))}</p>
+                      <p className="trip-sum__via ts2__via"><LineIcon name="clock" size={14} /> {q.selectedPackage.days === 1 ? t('1 calendar day') : t('{n} calendar days', { n: q.selectedPackage.days })} · {t('Return by {when}', { when: `${packageDay(new Date(q.selectedPackage.endAt))}, ${packageClock(new Date(q.selectedPackage.endAt))}` })}</p>
                     ) : null}
                   </div>
                   {tripType !== 'Local Rental' ? (
-                    <button type="button" className="trip-sum__edit ts2__edit" onClick={() => setEditOpen(true)} aria-label="Modify pickup date, time and trip days">
-                      <LineIcon name="pencil" size={16} /> Modify
+                    <button type="button" className="trip-sum__edit ts2__edit" onClick={() => setEditOpen(true)} aria-label={t('Modify pickup date, time and trip days')}>
+                      <LineIcon name="pencil" size={16} /> {t('Modify')}
                     </button>
                   ) : null}
                 </div>
                 <div className="ts2__strip">
-                  <span className="ts2__type">{tripTypeLabel(draft.multicity ? 'Multicity' : tripType)}</span>
+                  <span className="ts2__type">{t(tripTypeLabel(draft.multicity ? 'Multicity' : tripType))}</span>
                   {route && tripType !== 'Local Rental' ? (
                     <>
                       <span className="ts2__sep" aria-hidden="true" />
                       <span className="ts2__fact ts2__fact--km"><LineIcon name="road" size={16} /> <b>{formatDistance(q.trip?.distanceKm ?? route.totalDistanceKm ?? route.distanceKm)}</b></span>
                       <span className="ts2__sep" aria-hidden="true" />
-                      <span className="ts2__fact ts2__fact--time"><LineIcon name="clock" size={16} /> <span>about {formatDuration(q.trip?.durationMin ?? route.totalDurationMin ?? route.durationMin)}</span></span>
+                      <span className="ts2__fact ts2__fact--time"><LineIcon name="clock" size={16} /> <span>{t('about {time}', { time: formatDuration(q.trip?.durationMin ?? route.totalDurationMin ?? route.durationMin) })}</span></span>
                     </>
                   ) : null}
                 </div>
@@ -227,9 +232,9 @@ export function ChooseStep() {
               <aside className="hillnote" role="status">
                 <span className="hillnote__icon" aria-hidden="true"><Icon name="mountain" size={20} /></span>
                 <div className="hillnote__text">
-                  <strong>Hill station · {q.hillStations.map((h) => h.name).join(', ')}</strong>
-                  <span>A hill station charge is added to your fare{q.breakup?.lines.some((l) => l.key === 'hillStation') ? '.' : ' and confirmed by our team.'}</span>
-                  {tripType === 'Round Trip' ? <span>5-hour and 8-hour packages do not apply.</span> : null}
+                  <strong>{t('Hill station')} · {q.hillStations.map((h) => h.name).join(', ')}</strong>
+                  <span>{q.breakup?.lines.some((l) => l.key === 'hillStation') ? t('A hill station charge is added to your fare.') : t('A hill station charge is added to your fare and confirmed by our team.')}</span>
+                  {tripType === 'Round Trip' ? <span>{t('5-hour and 8-hour packages do not apply.')}</span> : null}
                 </div>
               </aside>
             ) : null}
@@ -237,7 +242,7 @@ export function ChooseStep() {
             <div className="choose__notices">
               {!online ? (
                 <Notice variant="error" icon="warning">
-                  You are offline right now. Vehicle prices will update automatically once connection is restored.
+                  {t('You are offline right now. Vehicle prices will update automatically once connection is restored.')}
                 </Notice>
               ) : null}
 
@@ -247,28 +252,27 @@ export function ChooseStep() {
                   icon="warning"
                   action={
                     <Button variant="secondary" size="sm" onClick={retryRoute}>
-                      Retry Route
+                      {t('Retry Route')}
                     </Button>
                   }
                 >
-                  We couldn't get highway routing right now. Fares use direct distance until road routing reconnects.
+                  {t('We couldn’t get highway routing right now. Fares use direct distance until road routing reconnects.')}
                 </Notice>
               ) : null}
 
               {tooFar ? (
                 <Notice variant="warning" icon="warning">
-                  Journeys over {TOO_FAR_KM} km require a custom multi-day itinerary.{' '}
-                  <a href={`tel:${SUPPORT_PHONE}`}>Call {SUPPORT_PHONE_DISPLAY}</a> to plan with dispatch.
+                  {richText(t('Journeys over {km} km require a custom multi-day itinerary. {call} to plan with dispatch.'), { km: TOO_FAR_KM, call: <a key="call" href={`tel:${SUPPORT_PHONE}`}>{t('Call {phone}', { phone: SUPPORT_PHONE_DISPLAY })}</a> })}
                 </Notice>
               ) : null}
 
               {categoryStatus === 'error' ? (
                 <Notice variant="error" icon="warning">
-                  We couldn't load the available vehicles. Please check your connection and refresh the page.
+                  {t('We couldn’t load the available vehicles. Please check your connection and refresh the page.')}
                 </Notice>
               ) : categoryStatus === 'unavailable' ? (
                 <Notice variant="warning" icon="warning">
-                  No vehicles are configured for online booking right now. Please call <a href={`tel:${SUPPORT_PHONE}`}>{SUPPORT_PHONE_DISPLAY}</a>.
+                  {richText(t('No vehicles are configured for online booking right now. Please call {phone}.'), { phone: <a key="call" href={`tel:${SUPPORT_PHONE}`}>{SUPPORT_PHONE_DISPLAY}</a> })}
                 </Notice>
               ) : null}
 
@@ -276,9 +280,9 @@ export function ChooseStep() {
                 <Notice
                   variant="error"
                   icon="warning"
-                  action={<Button variant="secondary" size="sm" onClick={q.retryQuote}>Retry Fare</Button>}
+                  action={<Button variant="secondary" size="sm" onClick={q.retryQuote}>{t('Retry Fare')}</Button>}
                 >
-                  {q.quoteError}
+                  {t(q.quoteError)}
                 </Notice>
               ) : null}
             </div>
@@ -286,8 +290,7 @@ export function ChooseStep() {
 
             {q.customQuote ? (
               <Notice variant="warning" icon="info">
-                Round trips of {draft.tripDays} days are quoted individually, so the fare is not shown here. Please{' '}
-                <a href={`tel:${SUPPORT_PHONE}`}>call {SUPPORT_PHONE_DISPLAY}</a> for a custom quote, or choose fewer days.
+                {richText(t('Round trips of {n} days are quoted individually, so the fare is not shown here. Please {call} for a custom quote, or choose fewer days.'), { n: draft.tripDays, call: <a key="call" href={`tel:${SUPPORT_PHONE}`}>{t('call {phone}', { phone: SUPPORT_PHONE_DISPLAY })}</a> })}
               </Notice>
             ) : null}
 
@@ -314,7 +317,7 @@ export function ChooseStep() {
 
             {roundPick || !offersCng ? null : <SharedFuel value={sharedFuel} onChange={chooseSharedFuel} />}
 
-            {roundPick ? null : <div className="fcabs" role="radiogroup" aria-label="Available cabs">
+            {roundPick ? null : <div className="fcabs" role="radiogroup" aria-label={t('Available cabs')}>
               {categoryStatus === 'loading' && categories.length === 0 ? (
                 <>
                   <div className="skeleton fcab-skel" />
@@ -355,7 +358,7 @@ export function ChooseStep() {
                       }
                     }}
                   >
-                    {cheapest ? <span className="fcab__badge"><Icon name="star" size={11} /> Lowest fare</span> : null}
+                    {cheapest ? <span className="fcab__badge"><Icon name="star" size={11} /> {t('Lowest fare')}</span> : null}
                     <div className="fcab__top">
                       <span className="fcab__photo">
                         <img src={photo} alt={c.name} loading={index < 4 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 2 ? 'high' : 'auto'} />
@@ -368,23 +371,23 @@ export function ChooseStep() {
                     </div>
 
                     <ul className="fcab__facts">
-                      <li><Icon name="seats" size={14} /> <span><b>{c.seats}</b> seats</span></li>
-                      <li><Icon name="snowflake" size={14} /> <span><b>AC</b> cab</span></li>
-                      <li><Icon name="trolley-bag" size={14} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
+                      <li><Icon name="seats" size={14} /> <span>{richText(t('{n} seats'), { n: <b key="n">{c.seats}</b> })}</span></li>
+                      <li><Icon name="snowflake" size={14} /> <span>{richText(t('{ac} cab'), { ac: <b key="ac">AC</b> })}</span></li>
+                      <li><Icon name="trolley-bag" size={14} /> <span>{richText(t('{n} bags'), { n: <b key="n">{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> })}</span></li>
                     </ul>
 
                     {fq ? (
                       <p className="cs-strip">
                         <span className={`cs-strip__fuel cs-strip__fuel--${sharedFuel}`}>
                           <span className="cs-well"><LineIcon name={sharedFuel === 'cng' ? 'leaf' : 'pump'} size={14} /></span>
-                          {sharedFuel === 'cng' ? 'CNG' : 'Diesel'}
+                          {sharedFuel === 'cng' ? 'CNG' : t('Diesel')}
                         </span>
                         {includedKm ? (
                           <>
                             <span className="cs-strip__sep" aria-hidden="true" />
                             <span className="cs-strip__km">
                               <span className="cs-well cs-well--blue"><LineIcon name="road" size={14} /></span>
-                              <b>{+includedKm.toFixed(1)} km</b> <small>included</small>
+                              <b>{+includedKm.toFixed(1)} km</b> <small>{t('included')}</small>
                             </span>
                           </>
                         ) : null}
@@ -401,12 +404,12 @@ export function ChooseStep() {
                                 {fare.gst > 0 ? <small>+ {formatINR(fare.gst)} GST</small> : null}
                               </>
                             ) : unavailable ? (
-                              <span className="fcab__na">{q.unavailable.get(c.id) || 'Unavailable for this route'}</span>
+                              <span className="fcab__na">{t(q.unavailable.get(c.id) || 'Unavailable for this route')}</span>
                             ) : (
                               <span className="fcab__price-skel skeleton" />
                             )}
                           </span>
-                        {fare && fare.discount > 0 ? <span className="fcab__saving"><Icon name="tag" size={13} /> Save {formatINR(fare.discount)}</span> : null}
+                        {fare && fare.discount > 0 ? <span className="fcab__saving"><Icon name="tag" size={13} /> {t('Save {amount}', { amount: formatINR(fare.discount) })}</span> : null}
                       </div>
                       {fare ? (
                         <button
@@ -417,7 +420,7 @@ export function ChooseStep() {
                             setFareFor(c);
                           }}
                         >
-                          <Icon name="receipt" size={14} /> Fare details
+                          <Icon name="receipt" size={14} /> {t('Fare details')}
                         </button>
                       ) : null}
                     </div>
@@ -427,14 +430,14 @@ export function ChooseStep() {
 
               {shown.length === 0 && categoryStatus === 'ready' ? (
                 <EmptyState
-                  title="No vehicles match this filter"
+                  title={t('No vehicles match this filter')}
                   action={
                     <Button variant="secondary" onClick={() => setGroup('All')}>
-                      Show All Vehicles
+                      {t('Show All Vehicles')}
                     </Button>
                   }
                 >
-                  Try selecting "All Vehicles" to browse our complete driver fleet.
+                  {t('Try selecting “All Vehicles” to browse our complete driver fleet.')}
                 </EmptyState>
               ) : null}
             </div>}
@@ -443,34 +446,34 @@ export function ChooseStep() {
           <aside className="choose__aside">
             <div className="sel-card">
               <div className="sel-card__top">
-                <span className="sel-card__eyebrow">Trip Summary</span>
-                <Badge variant="blue">{tripTypeLabel(draft.multicity ? 'Multicity' : tripType)}</Badge>
+                <span className="sel-card__eyebrow">{t('Trip Summary')}</span>
+                <Badge variant="blue">{t(tripTypeLabel(draft.multicity ? 'Multicity' : tripType))}</Badge>
               </div>
 
               {selected ? (
                 <div className="sel-card__car">
                   <div>
                     <strong>{categoryName(selected)}</strong>
-                    <small className="muted">{selected.seats} seats · AC</small>
+                    <small className="muted">{t('{n} seats', { n: selected.seats })} · AC</small>
                   </div>
                   <img src={categoryPhoto(selected)} alt={selected.name} decoding="async" />
                 </div>
               ) : (
-                <div className="sel-card__placeholder muted">Please choose a vehicle category from the list.</div>
+                <div className="sel-card__placeholder muted">{t('Please choose a vehicle category from the list.')}</div>
               )}
 
               <dl className="sel-card__trip">
                 <div>
-                  <dt>Pickup Point</dt>
+                  <dt>{t('Pickup Point')}</dt>
                   <dd>{pickup.name}</dd>
                 </div>
                 <div>
-                  <dt>Destination</dt>
-                  <dd>{drop.id === 'place-local-disposal' ? 'Within City Disposal' : drop.name}</dd>
+                  <dt>{t('Destination')}</dt>
+                  <dd>{drop.id === 'place-local-disposal' ? t('Within City Disposal') : drop.name}</dd>
                 </div>
                 {scheduledAt ? (
                   <div>
-                    <dt>Pickup Schedule</dt>
+                    <dt>{t('Pickup Schedule')}</dt>
                     <dd>{formatDate(scheduledAt)}, {formatTime(scheduledAt)}</dd>
                   </div>
                 ) : null}
@@ -487,9 +490,9 @@ export function ChooseStep() {
                 <>
                   <div className="sel-card__total">
                     <div>
-                      <span>Estimated Upfront Fare</span>
+                      <span>{t('Estimated Upfront Fare')}</span>
                       {quote.discount > 0 ? (
-                        <p className="sel-card__saving">Promo applied: -{formatINR(quote.discount)}</p>
+                        <p className="sel-card__saving">{t('Promo applied: -{amount}', { amount: formatINR(quote.discount) })}</p>
                       ) : null}
                     </div>
                     <strong>{formatINR(quote.total)}</strong>
@@ -507,12 +510,12 @@ export function ChooseStep() {
                     onClick={handleNext}
                     iconTrailing="arrow-right"
                   >
-                    Book Now
+                    {t('Book Now')}
                   </Button>
                 </>
               ) : (
                 <Button variant="primary" size="lg" block disabled>
-                  Select a Cab
+                  {t('Select a Cab')}
                 </Button>
               )}
             </div>
@@ -522,13 +525,13 @@ export function ChooseStep() {
 
       <FlowBar
         onNext={handleNext}
-        nextLabel="Continue"
+        nextLabel={t('Continue')}
         nextIcon="arrow-right"
         nextDisabled={!canContinue}
         total={quote?.total}
         hideFare
         onBack={() => navigate(tripType === 'Local Rental' ? '/local-rentals?mode=hourly' : draft.pickupWhen ? '/local-rentals?mode=pickup' : draft.multicity ? '/book?service=multicity' : '/book')}
-        backLabel="Back"
+        backLabel={t('Back')}
         backText
       />
 

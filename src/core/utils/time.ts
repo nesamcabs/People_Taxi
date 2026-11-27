@@ -2,6 +2,8 @@
  * User-facing dates and times: India time, 12-hour clock ("06:30 PM").
  * Stored timestamps stay UTC; only the text shown to people is formatted here.
  */
+import { dateLocale } from '@/i18n';
+
 const TZ = 'Asia/Kolkata';
 
 export function toDate(v: unknown): Date | null {
@@ -29,7 +31,7 @@ export function formatTime12(v: unknown): string {
 /** "07 Oct 2026" */
 export function formatDate(v: unknown): string {
   const d = toDate(v);
-  return d ? d.toLocaleDateString('en-IN', { timeZone: TZ, day: '2-digit', month: 'short', year: 'numeric' }) : '';
+  return d ? d.toLocaleDateString(dateLocale(), { timeZone: TZ, day: '2-digit', month: 'short', year: 'numeric' }) : '';
 }
 
 /** "07 Oct 2026, 06:30 PM" */

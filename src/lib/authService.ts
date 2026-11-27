@@ -13,6 +13,7 @@ import {
   type User,
 } from 'firebase/auth';
 import { auth } from '@/platform/firebase';
+import { msg } from '@/i18n';
 
 let activeVerifier: RecaptchaVerifier | null = null;
 
@@ -117,10 +118,10 @@ export function describePhoneAuthError(error: unknown): string {
   const serverMsg = (err?.customData?.serverResponse?.error?.message ?? err?.message ?? '').toUpperCase();
   const has = (...needles: string[]) => needles.some((n) => serverMsg.includes(n));
 
-  if (has('ALREADY BEEN RENDERED')) return 'Security check refreshed. Please tap Continue again.';
+  if (has('ALREADY BEEN RENDERED')) return msg('Security check refreshed. Please tap Continue again.');
 
   if (code === 'auth/unauthorized-domain' || has('SITE_MISMATCH')) {
-    return 'Sign-in isn’t available from this web address. Please use the official People Taxi website.';
+    return msg('Sign-in isn’t available from this web address. Please use the official People Taxi website.');
   }
 
   if (
@@ -129,34 +130,34 @@ export function describePhoneAuthError(error: unknown): string {
     code === 'auth/internal-error' ||
     has('INVALID_APP_CREDENTIAL', 'INVALID-APP-CREDENTIAL', 'MISSING_CLIENT_IDENTIFIER')
   ) {
-    return 'We couldn’t complete the security check. Refresh the page and try again.';
+    return msg('We couldn’t complete the security check. Refresh the page and try again.');
   }
 
   if (code === 'auth/too-many-requests' || code === 'auth/quota-exceeded' || has('TOO_MANY_ATTEMPTS_TRY_LATER', 'SMS_QUOTA_EXCEEDED')) {
-    return 'Too many attempts. Please wait a few minutes and try again.';
+    return msg('Too many attempts. Please wait a few minutes and try again.');
   }
 
   if (code === 'auth/operation-not-allowed' || has('OPERATION_NOT_ALLOWED', 'BILLING_NOT_ENABLED')) {
-    return 'We can’t send verification codes right now. Please try again later or contact support.';
+    return msg('We can’t send verification codes right now. Please try again later or contact support.');
   }
 
   switch (code) {
     case 'auth/invalid-phone-number':
-      return 'Enter a valid 10-digit mobile number.';
+      return msg('Enter a valid 10-digit mobile number.');
     case 'auth/missing-phone-number':
-      return 'Please enter your mobile number.';
+      return msg('Please enter your mobile number.');
     case 'auth/invalid-verification-code':
-      return 'That code is not correct. Check your SMS and try again.';
+      return msg('That code is not correct. Check your SMS and try again.');
     case 'auth/code-expired':
     case 'auth/session-expired':
-      return 'This code has expired. Request a new one.';
+      return msg('This code has expired. Request a new one.');
     case 'auth/missing-verification-code':
-      return 'Enter the 6-digit code.';
+      return msg('Enter the 6-digit code.');
     case 'auth/network-request-failed':
-      return 'Network connection failed. Check your internet and try again.';
+      return msg('Network connection failed. Check your internet and try again.');
     case 'auth/user-disabled':
-      return 'This account has been disabled. Please contact support.';
+      return msg('This account has been disabled. Please contact support.');
     default:
-      return 'We couldn’t verify your number. Please try again.';
+      return msg('We couldn’t verify your number. Please try again.');
   }
 }

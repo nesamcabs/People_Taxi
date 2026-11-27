@@ -24,8 +24,11 @@ const ICON: Record<NotificationCategory, string> = {
   general: 'notifications',
 };
 
+import { dateLocale, msg, useT } from '@/i18n';
+
 export function NotificationsPage() {
-  useSeo({ title: 'Notifications', noindex: true });
+  const t = useT();
+  useSeo({ title: t('Notifications'), noindex: true });
   const navigate = useNavigate();
   const { state, openLoginModal } = useAuth();
   const { notifications, loaded } = useInbox();
@@ -36,15 +39,15 @@ export function NotificationsPage() {
   if (state.status !== 'ready') {
     return (
       <>
-        <PageHead title="Notifications" />
+        <PageHead title={t('Notifications')} />
         <div className="page">
           <div className="card card--center">
             <EmptyState
               art="welcome"
-              title="Sign in to view notifications"
+              title={t('Sign in to view notifications')}
               action={
-                <Button variant="primary" onClick={() => openLoginModal({ title: 'Sign in to view notifications' })}>
-                  Sign in
+                <Button variant="primary" onClick={() => openLoginModal({ title: msg('Sign in to view notifications') })}>
+                  {t('Sign in')}
                 </Button>
               }
             >
@@ -63,15 +66,15 @@ export function NotificationsPage() {
   const now = new Date();
   const days: { label: string; items: PartnerNotification[] }[] = [];
   for (const n of shown) {
-    const label = dayLabel(n.createdAtMs, now);
+    const label = dayLabel(n.createdAtMs, now, dateLocale());
     const last = days[days.length - 1];
     if (last?.label === label) last.items.push(n);
     else days.push({ label, items: [n] });
   }
 
   const filters: { id: Filter; label: string; count: number }[] = [
-    { id: 'all', label: 'All', count: notifications.length },
-    { id: 'unread', label: 'Unread', count: unread.length },
+    { id: 'all', label: msg('All'), count: notifications.length },
+    { id: 'unread', label: msg('Unread'), count: unread.length },
     ...present.map((c) => ({ id: c as Filter, label: CATEGORY_LABEL[c], count: notifications.filter((n) => n.category === c).length })),
   ];
 
@@ -81,7 +84,7 @@ export function NotificationsPage() {
     try {
       await markAllNotificationsRead(unread.map((n) => n.id));
     } catch (e) {
-      setError(describeError(e, 'We couldn’t update your notifications.'));
+      setError(describeError(e, msg('We couldn’t update your notifications.')));
     } finally {
       setBusy(false);
     }
@@ -98,7 +101,7 @@ export function NotificationsPage() {
     const booking = parseBookingNotice(n.message);
     const time = n.createdAtMs ? new Date(n.createdAtMs).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : n.time;
     const toBooking = Boolean(n.bookingId) && ['trips', 'booking-detail'].includes(n.ctaPage);
-    const action = toBooking ? 'View booking' : n.ctaLabel && n.ctaPage !== 'notifications' ? n.ctaLabel : '';
+    const action = toBooking ? t('View booking') : n.ctaLabel && n.ctaPage !== 'notifications' ? t(n.ctaLabel) : '';
     const code = booking?.code ?? n.bookingCode;
     return (
       <li key={n.id}>
@@ -108,11 +111,11 @@ export function NotificationsPage() {
               <Icon name={ICON[n.category]} size={18} />
             </span>
             <span className="nc-card__title">
-              <strong>{n.title}</strong>
+              <strong>{t(n.title)}</strong>
               {code ? <small>{code}</small> : null}
             </span>
             <time>{time}</time>
-            {!n.read ? <span className="nc-card__dot" role="img" aria-label="Unread" /> : null}
+            {!n.read ? <span className="nc-card__dot" role="img" aria-label={t('Unread')} /> : null}
           </span>
 
           {booking ? (
@@ -120,26 +123,26 @@ export function NotificationsPage() {
               <span className="nc-route">
                 <span>{booking.from}</span>
                 <i aria-hidden="true" />
-                <span className="sr-only">to</span>
+                <span className="sr-only">{t('to')}</span>
                 <span>{booking.to}</span>
               </span>
-              {booking.note ? <span className="nc-card__msg">{booking.note}</span> : null}
+              {booking.note ? <span className="nc-card__msg">{t(booking.note)}</span> : null}
             </>
           ) : n.message ? (
-            <span className="nc-card__msg">{n.message}</span>
+            <span className="nc-card__msg">{t(n.message)}</span>
           ) : null}
 
           {booking || action ? (
             <span className="nc-card__foot">
               {booking ? (
                 <span className="nc-fact">
-                  <small>Pickup</small>
+                  <small>{t('Pickup')}</small>
                   <b>{booking.pickup}</b>
                 </span>
               ) : null}
               {booking?.fare ? (
                 <span className="nc-fact">
-                  <small>Fare</small>
+                  <small>{t('Fare')}</small>
                   <b>{booking.fare}</b>
                 </span>
               ) : null}
@@ -153,10 +156,10 @@ export function NotificationsPage() {
 
   return (
     <>
-      <PageHead title="Notifications" />
+      <PageHead title={t('Notifications')} />
 
       <div className="page nc">
-        {error ? <Notice tone="error">{error}</Notice> : null}
+        {error ? <Notice tone="error">{t(error)}</Notice> : null}
 
         {!loaded ? (
           <div className="stack">
@@ -168,10 +171,10 @@ export function NotificationsPage() {
           <div className="card card--center">
             <EmptyState
               art="no-notifications"
-              title="You’re all caught up"
+              title={t('You’re all caught up')}
               action={
                 <LinkButton variant="primary" to="/book" icon="car">
-                  Book a ride
+                  {t('Book a ride')}
                 </LinkButton>
               }
             >
@@ -181,21 +184,21 @@ export function NotificationsPage() {
           <>
             <section className="nc-head">
               <div>
-                <h2>Notification centre</h2>
-                <p>{unread.length > 0 ? `${unread.length} unread ${unread.length === 1 ? 'update' : 'updates'}` : 'All updates have been read'}</p>
+                <h2>{t('Notification centre')}</h2>
+                <p>{unread.length > 0 ? (unread.length === 1 ? t('1 unread update') : t('{n} unread updates', { n: unread.length })) : t('All updates have been read')}</p>
               </div>
               {unread.length > 0 ? (
                 <button type="button" className="nc-head__btn" disabled={busy} onClick={() => void markAll()}>
                   <Icon name="check" size={16} />
-                  {busy ? 'Updating…' : 'Mark all as read'}
+                  {t(busy ? 'Updating…' : 'Mark all as read')}
                 </button>
               ) : null}
             </section>
 
-            <nav className="nc-filters" aria-label="Filter notifications">
+            <nav className="nc-filters" aria-label={t('Filter notifications')}>
               {filters.map((f) => (
                 <button key={f.id} type="button" className="nc-filter" aria-pressed={filter === f.id} onClick={() => setFilter(f.id)}>
-                  <span>{f.label}</span>
+                  <span>{t(f.label)}</span>
                   <b>{f.count}</b>
                 </button>
               ))}
@@ -204,10 +207,10 @@ export function NotificationsPage() {
             {shown.length === 0 ? (
               <div className="card card--center">
                 <EmptyState
-                  title={filter === 'unread' ? 'No unread notifications' : 'Nothing here'}
+                  title={t(filter === 'unread' ? 'No unread notifications' : 'Nothing here')}
                   action={
                     <Button variant="secondary" onClick={() => setFilter('all')}>
-                      Show all notifications
+                      {t('Show all notifications')}
                     </Button>
                   }
                 >
@@ -215,8 +218,8 @@ export function NotificationsPage() {
               </div>
             ) : (
               days.map((d) => (
-                <section key={d.label} className="nc-day" aria-label={d.label}>
-                  <h3>{d.label}</h3>
+                <section key={d.label} className="nc-day" aria-label={t(d.label)}>
+                  <h3>{t(d.label)}</h3>
                   <ul>{d.items.map(card)}</ul>
                 </section>
               ))

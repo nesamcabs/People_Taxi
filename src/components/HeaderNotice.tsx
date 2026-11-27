@@ -8,6 +8,7 @@ import { toneOf } from '@core/utils/notificationModel';
 import type { NotificationCategory } from '@core/types/notifications';
 import { pathForPage, useInbox } from '@/state/Inbox';
 import { Icon } from './Icon';
+import { translate } from '@/i18n';
 
 const SHOW_MS = 7000;
 const ICON: Record<NotificationCategory, string> = {
@@ -44,11 +45,11 @@ export function HeaderNotice() {
           <Icon name={ICON[live.category] ?? 'notifications'} size={18} />
         </span>
         <span className="header-notice__text">
-          <strong className="truncate">{live.title}</strong>
-          {live.message ? <span className="truncate">{live.message}</span> : null}
+          <strong className="truncate">{translate(live.title)}</strong>
+          {live.message ? <span className="truncate">{translate(live.message)}</span> : null}
         </span>
       </button>
-      <button type="button" className="header-notice__close" onClick={dismissLive} aria-label="Dismiss notification">
+      <button type="button" className="header-notice__close" onClick={dismissLive} aria-label={translate('Dismiss notification')}>
         <Icon name="close" size={16} />
       </button>
       <span className="header-notice__timer" style={{ animationDuration: `${SHOW_MS}ms` }} aria-hidden="true" />

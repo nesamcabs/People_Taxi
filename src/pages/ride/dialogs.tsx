@@ -10,6 +10,7 @@ import { Icon } from '@/components/Icon';
 import { buildTripShareText, shareText } from '@/lib/share';
 import { useToasts } from '@/state/Toasts';
 import { PolicyLinks } from '@/pages/PolicySections';
+import { msg, useT } from '@/i18n';
 import './cancel.css';
 
 /** Cancel with a reason and the live fee quote (the fee depends on elapsed time, so it ticks). */
@@ -20,10 +21,11 @@ export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () 
   const [error, setError] = useState('');
   const [, tick] = useState(0);
   const { push } = useToasts();
+  const t = useT();
 
   useEffect(() => {
-    const t = window.setInterval(() => tick((n) => n + 1), 15000);
-    return () => window.clearInterval(t);
+    const timer = window.setInterval(() => tick((n) => n + 1), 15000);
+    return () => window.clearInterval(timer);
   }, []);
 
   const quote = cancellationQuote(trip);
@@ -31,17 +33,17 @@ export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () 
 
   const confirm = async () => {
     if (!finalReason) {
-      setError('Please tell us why you’re cancelling.');
+      setError(msg('Please tell us why you’re cancelling.'));
       return;
     }
     setBusy(true);
     setError('');
     try {
       await cancelRide(trip, finalReason);
-      push({ title: 'Ride cancelled', message: quote.fee ? `A ₹${quote.fee} cancellation fee applies.` : 'No cancellation fee was charged.', tone: 'info' });
+      push({ title: msg('Ride cancelled'), message: quote.fee ? `A ₹${quote.fee} cancellation fee applies.` : msg('No cancellation fee was charged.'), tone: 'info' });
       onClose();
     } catch (e) {
-      setError(e instanceof Error && !('code' in e) ? e.message : describeError(e, 'We couldn’t cancel this ride. Please try again or call support.'));
+      setError(e instanceof Error && !('code' in e) ? e.message : describeError(e, msg('We couldn’t cancel this ride. Please try again or call support.')));
     } finally {
       setBusy(false);
     }
@@ -51,11 +53,11 @@ export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () 
   const stripped = quote.fee ? quote.explanation : quote.explanation.replace(/^free cancellation\s*[—–-]\s*/i, '');
   const feeNote = stripped ? stripped.charAt(0).toUpperCase() + stripped.slice(1) : '';
   // The route under the title (an hourly rental has no drop to name).
-  const route = trip.tripType === 'Local Rental' || trip.drop.id === 'place-local-disposal' ? `${trip.pickup.name} · Hourly rental` : `${trip.pickup.name} → ${trip.drop.name}`;
+  const route = trip.tripType === 'Local Rental' || trip.drop.id === 'place-local-disposal' ? `${trip.pickup.name} · ${t('Hourly rental')}` : `${trip.pickup.name} → ${trip.drop.name}`;
 
   return (
     <Dialog
-      title="Cancel this ride?"
+      title={t('Cancel this ride?')}
       subtitle={<><span className="num">{trip.bookingId}</span> · {route}</>}
       className="cx-sheet"
       onClose={onClose}
@@ -64,47 +66,47 @@ export function CancelDialog({ trip, onClose }: { trip: TripRecord; onClose: () 
         quote.allowed ? (
           <>
             <Button variant="secondary" onClick={onClose} disabled={busy}>
-              Keep ride
+              {t('Keep ride')}
             </Button>
             <Button variant="danger" className="cx-confirm" loading={busy} disabled={!finalReason} onClick={() => void confirm()}>
-              Cancel ride
+              {t('Cancel ride')}
             </Button>
           </>
         ) : (
           <Button variant="secondary" onClick={onClose}>
-            Close
+            {t('Close')}
           </Button>
         )
       }
     >
       {!quote.allowed ? (
-        <p className="cx-locked">{quote.explanation}</p>
+        <p className="cx-locked">{t(quote.explanation)}</p>
       ) : (
         <div className="cx">
           {/* What cancelling costs right now, in one line (it can change as time passes, so it ticks). */}
           <div className={`cx-fee ${quote.fee ? 'is-fee' : 'is-free'}`} role="status">
             <Icon name={quote.fee ? 'alert' : 'check-circle'} size={18} />
             <span className="cx-fee__text">
-              <strong>{quote.fee ? `₹${quote.fee} cancellation fee` : 'Free cancellation'}</strong>
-              {feeNote ? <small>{feeNote}</small> : null}
+              <strong>{quote.fee ? t('₹{fee} cancellation fee', { fee: quote.fee }) : t('Free cancellation')}</strong>
+              {feeNote ? <small>{t(feeNote)}</small> : null}
             </span>
           </div>
 
           {/* Reasons: one list, equal rows, a radio on the right. */}
           <fieldset className="cx-reasons">
-            <legend>Why are you cancelling?</legend>
+            <legend>{t('Why are you cancelling?')}</legend>
             <div className="cx-list">
               {CANCEL_REASONS.map((r) => (
                 <label key={r} className={`cx-row ${reason === r ? 'is-on' : ''}`}>
                   <input type="radio" name="cancel-reason" className="sr-only" checked={reason === r} onChange={() => { setReason(r); setError(''); }} />
-                  <span className="cx-row__label">{r}</span>
+                  <span className="cx-row__label">{t(r)}</span>
                   <span className="cx-row__radio" aria-hidden="true" />
                 </label>
               ))}
             </div>
           </fieldset>
-          {reason === 'Other' ? <TextArea label="Tell us more" value={other} onChange={(e) => setOther(e.target.value.slice(0, 200))} /> : null}
-          {error ? <Notice tone="error">{error}</Notice> : null}
+          {reason === 'Other' ? <TextArea label={t('Tell us more')} value={other} onChange={(e) => setOther(e.target.value.slice(0, 200))} /> : null}
+          {error ? <Notice tone="error">{t(error)}</Notice> : null}
           <div className="cx-policies">
             <PolicyLinks ids={['cancellation', 'refund']} newTab />
           </div>
@@ -121,6 +123,7 @@ export function SafetyDialog({ trip, profile, location, onClose }: { trip: TripR
   const [error, setError] = useState('');
   const { push } = useToasts();
   const emergencyLocal = localMobile(profile.emergencyContact);
+  const t = useT();
 
   const sendAlert = async () => {
     setAlerting(true);
@@ -131,7 +134,7 @@ export function SafetyDialog({ trip, profile, location, onClose }: { trip: TripR
       setState('sent');
     } catch (e) {
       setState('failed');
-      setError(`${describeError(e, 'The alert could not be sent.')} Call ${EMERGENCY_NUMBER} or People Taxi support now.`);
+      setError(`${t(describeError(e, 'The alert could not be sent.'))} ${t('Call {number} or People Taxi support now.', { number: EMERGENCY_NUMBER })}`);
     } finally {
       setAlerting(false);
     }
@@ -139,40 +142,40 @@ export function SafetyDialog({ trip, profile, location, onClose }: { trip: TripR
 
   const share = async () => {
     const result = await shareText(`People Taxi ride ${trip.bookingId}`, buildTripShareText(trip, location));
-    if (result === 'copied') push({ title: 'Trip details copied', message: 'Paste them into a message to share.', tone: 'success' });
+    if (result === 'copied') push({ title: msg('Trip details copied'), message: msg('Paste them into a message to share.'), tone: 'success' });
   };
 
   const sms = `sms:+91${emergencyLocal}?body=${encodeURIComponent(`EMERGENCY — I need help.\n${buildTripShareText(trip, location)}`)}`;
 
   return (
-    <Dialog title="Safety centre" onClose={onClose}>
+    <Dialog title={t('Safety centre')} onClose={onClose}>
       <div className="stack">
         <a className="btn btn--primary btn--lg btn--block" href={`tel:${EMERGENCY_NUMBER}`}>
-          <Icon name="emergency" /> Call emergency ({EMERGENCY_NUMBER})
+          <Icon name="emergency" /> {t('Call emergency ({number})', { number: EMERGENCY_NUMBER })}
         </a>
         <a className="btn btn--secondary btn--block" href={`tel:${SUPPORT_PHONE}`}>
-          <Icon name="phone" /> Call People Taxi support ({SUPPORT_PHONE_DISPLAY})
+          <Icon name="phone" /> {t('Call People Taxi support ({number})', { number: SUPPORT_PHONE_DISPLAY })}
         </a>
         {emergencyLocal ? (
           <a className="btn btn--secondary btn--block" href={sms}>
-            <Icon name="chat" /> Text emergency contact ({formatPhone(emergencyLocal)})
+            <Icon name="chat" /> {t('Text emergency contact ({number})', { number: formatPhone(emergencyLocal) })}
           </a>
         ) : null}
         <Button variant="secondary" block icon="share" onClick={() => void share()}>
-          Share trip details
+          {t('Share trip details')}
         </Button>
         <div className="sos">
-          <h3>Alert the People Taxi safety team</h3>
-          <p className="muted small">Sends your booking, driver, vehicle and location to People Taxi operations.</p>
-          {state === 'sent' ? <Notice tone="success">Alert sent. The People Taxi team has your trip and location.</Notice> : null}
+          <h3>{t('Alert the People Taxi safety team')}</h3>
+          <p className="muted small">{t('Sends your booking, driver, vehicle and location to People Taxi operations.')}</p>
+          {state === 'sent' ? <Notice tone="success">{t('Alert sent. The People Taxi team has your trip and location.')}</Notice> : null}
           {error ? <Notice tone="error">{error}</Notice> : null}
           <Button variant="dark" block loading={alerting} onClick={() => void sendAlert()}>
-            {state === 'sent' ? 'Send again' : 'Send SOS alert'}
+            {t(state === 'sent' ? 'Send again' : 'Send SOS alert')}
           </Button>
         </div>
         {trip.driver ? (
           <p className="muted small">
-            Your ride: {trip.driver.name} · {trip.driver.vehicleNumber || trip.categoryName} · Booking {trip.bookingId}
+            {t('Your ride:')} {trip.driver.name} · {trip.driver.vehicleNumber || trip.categoryName} · {t('Booking')} {trip.bookingId}
           </p>
         ) : null}
         <PolicyLinks ids={['safety']} newTab />

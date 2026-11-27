@@ -5,6 +5,7 @@ import { formatINR } from '@core/utils/format';
 import { Button, Dialog } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { FareBreakdown } from '@/components/FareBreakdown';
+import { richText, useT } from '@/i18n';
 
 export function PromoControl({
   code,
@@ -21,14 +22,15 @@ export function PromoControl({
 }) {
   const [val, setVal] = useState(code);
   const [open, setOpen] = useState(false);
+  const t = useT();
 
   if (applied && code) {
     return (
       <div className="promo">
         <span className="promo-chip">
           <Icon name="tag" size={14} />
-          <strong>{code.toUpperCase()}</strong> applied
-          <button type="button" onClick={onRemove} disabled={disabled} aria-label="Remove coupon">
+          {richText(t('{code} applied'), { code: <strong key="c">{code.toUpperCase()}</strong> })}
+          <button type="button" onClick={onRemove} disabled={disabled} aria-label={t('Remove coupon')}>
             <Icon name="close" size={12} />
           </button>
         </span>
@@ -40,7 +42,7 @@ export function PromoControl({
     <div className="promo">
       {!open ? (
         <button type="button" className="btn btn--text" onClick={() => setOpen(true)} disabled={disabled}>
-          <Icon name="tag" size={14} /> Have a coupon code?
+          <Icon name="tag" size={14} /> {t('Have a coupon code?')}
         </button>
       ) : (
         <form
@@ -54,16 +56,16 @@ export function PromoControl({
           <input
             type="text"
             className="input"
-            placeholder="Enter promo code"
+            placeholder={t('Enter promo code')}
             value={val}
             onChange={(e) => setVal(e.target.value.toUpperCase())}
             autoFocus
           />
           <Button type="submit" variant="secondary" size="sm" disabled={!val.trim() || disabled}>
-            Apply
+            {t('Apply')}
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
-            Cancel
+            {t('Cancel')}
           </Button>
         </form>
       )}
@@ -88,10 +90,11 @@ export function FareDialog({
   note?: ReactNode;
   onClose: () => void;
 }) {
+  const t = useT();
   const finalLines: FareLine[] = lines ?? ((fare as any)?.lines ?? []);
   const finalTotal: number = total ?? ((fare as any)?.packageTotal ?? (fare as any)?.total ?? 0);
   return (
-    <Dialog title={title} onClose={onClose} variant="sheet" className="fare-sheet">
+    <Dialog title={typeof title === 'string' ? t(title) : title} onClose={onClose} variant="sheet" className="fare-sheet">
       {note ? <p className="fare-note">{note}</p> : null}
       <FareBreakdown lines={finalLines} total={finalTotal} estimated={estimated} />
     </Dialog>
@@ -134,6 +137,9 @@ export function FlowBar({
   /** Show the Back label next to its arrow (the icon-only Back stays the default). */
   backText?: boolean;
 }) {
+  const t = useT();
+  backLabel = t(backLabel);
+  nextLabel = t(nextLabel);
   return (
     <div className="flow-bar">
       {above}
@@ -147,7 +153,7 @@ export function FlowBar({
           ) : null}
           {hideFare ? null : (
             <div>
-              <small>Estimated Fare</small>
+              <small>{t('Estimated Fare')}</small>
               <strong>{formatINR(total)}</strong>
             </div>
           )}
@@ -162,7 +168,7 @@ export function FlowBar({
             {nextLabel}
           </Button>
           {hideFare && onHome ? (
-            <button type="button" className="flow-bar__icon" aria-label="Home" title="Home" onClick={onHome}>
+            <button type="button" className="flow-bar__icon" aria-label={t('Home')} title={t('Home')} onClick={onHome}>
               <Icon name="home" size={20} />
             </button>
           ) : null}
@@ -197,11 +203,13 @@ export function FlowBar({
 
 /** The blue banner at the top of every "choose your fare" screen: a headline with its middle words in yellow, a line under it, and the car. */
 export function ChooseHero({ title, sub, photo, id }: { title: [string, string, string]; sub: string; photo?: string; id?: string }) {
+  const t = useT();
+  // Translated as one sentence with the highlighted words as {em}, so the highlight can move (Tamil word order).
   return (
     <header className="chero">
       <div className="chero__text">
-        <h2 id={id} className="chero__title">{title[0]}<em>{title[1]}</em>{title[2]}</h2>
-        <p>{sub}</p>
+        <h2 id={id} className="chero__title">{richText(t(`${title[0]}{em}${title[2]}`), { em: <em key="em">{t(title[1])}</em> })}</h2>
+        <p>{t(sub)}</p>
       </div>
       {photo ? <img className="chero__img" src={photo} alt="" decoding="async" /> : null}
     </header>

@@ -4,6 +4,7 @@ import { Fragment, type ReactNode } from 'react';
 import { directory, KIND_LABEL, norm, type TreeRow } from './model';
 import { PlaceIcon } from './PlaceIcon';
 import type { Suggestions } from './usePlaceSuggestions';
+import { useT, type Translate } from '@/i18n';
 
 export interface Shortcut {
   id: 'current' | 'map';
@@ -28,11 +29,13 @@ function Marked({ text, query }: { text: string; query: string }) {
 }
 
 /** "6 towns" / "9 areas" under a branch. */
-function countLabel(row: TreeRow): string {
+function countLabel(row: TreeRow, t: Translate): string {
   const n = row.node.children?.length ?? 0;
   if (!n) return '';
   const word = row.node.kind === 'state' ? (row.node.children?.some((c) => c.kind === 'district') ? 'district' : 'place') : row.node.kind === 'district' ? 'place' : 'area';
-  return `${n} ${word}${n === 1 ? '' : 's'}`;
+  if (word === 'district') return n === 1 ? t('1 district') : t('{n} districts', { n });
+  if (word === 'place') return n === 1 ? t('1 place') : t('{n} places', { n });
+  return n === 1 ? t('1 area') : t('{n} areas', { n });
 }
 
 export function SuggestionList({
@@ -59,6 +62,7 @@ export function SuggestionList({
 }) {
   let index = -1;
   const q = query.trim();
+  const t = useT();
 
   const press = (row: TreeRow) => (row.node.place ? onPick(row) : model.toggle(row));
 
@@ -67,9 +71,10 @@ export function SuggestionList({
     const i = index;
     const { node } = row;
     const branch = !node.place;
-    const count = countLabel(row);
+    const count = countLabel(row, t);
     // A town already carries its district and state in the tree, so its second line says what kind of place it is.
-    const sub = branch ? count : node.subtitle ?? (tree ? KIND_LABEL[node.kind] : '');
+    // (Kind labels are translated; an address passes through unchanged.)
+    const sub = branch ? count : t(node.subtitle ?? (tree ? KIND_LABEL[node.kind] : '') ?? '');
     const alias = q.length >= 2 && node.aka?.length && !norm(node.title).includes(norm(q)) ? node.aka.find((a) => norm(a).startsWith(norm(q))) : undefined;
     return (
       <div
@@ -106,7 +111,7 @@ export function SuggestionList({
             </strong>
             {sub ? <small>{sub}</small> : null}
           </span>
-          {node.kind === 'state' || node.kind === 'district' || node.kind === 'main' ? <span className="ps-tag">{KIND_LABEL[node.kind]}</span> : null}
+          {node.kind === 'state' || node.kind === 'district' || node.kind === 'main' ? <span className="ps-tag">{t(KIND_LABEL[node.kind] ?? '')}</span> : null}
           {branch && row.expandable ? (
             <span className={`ps-chev ${row.open ? 'is-open' : ''}`}>
               <PlaceIcon kind="chevron" size={16} />
@@ -119,8 +124,8 @@ export function SuggestionList({
             tabIndex={-1}
             className={`ps-more ${row.open ? 'is-open' : ''}`}
             aria-expanded={row.open}
-            aria-label={`${row.open ? 'Hide' : 'Show'} places in ${node.title}`}
-            title={`${row.open ? 'Hide' : 'Show'} places in ${node.title}`}
+            aria-label={t(row.open ? 'Hide places in {name}' : 'Show places in {name}', { name: node.title })}
+            title={t(row.open ? 'Hide places in {name}' : 'Show places in {name}', { name: node.title })}
             onClick={() => model.toggle(row)}
           >
             <span>{node.children!.length}</span>
@@ -140,8 +145,8 @@ export function SuggestionList({
             <button key={s.id} type="button" className="ps-shortcut" data-kind={s.id} onClick={s.onClick} disabled={s.busy}>
               <span className="ps-ico">{s.busy ? <span className="spinner" aria-hidden="true" /> : <PlaceIcon kind={s.id} />}</span>
               <span className="ps-row__text">
-                <strong>{s.title}</strong>
-                <small>{s.subtitle}</small>
+                <strong>{t(s.title)}</strong>
+                <small>{t(s.subtitle)}</small>
               </span>
             </button>
           ))}
@@ -151,10 +156,10 @@ export function SuggestionList({
       {model.sections.map((s) => (
         <Fragment key={s.id}>
           <p className="ps-head" role="presentation">
-            {s.title}
+            {t(s.title)}
           </p>
           {s.id === 'browse' ? (
-            <div className="ps-tabs" role="group" aria-label="State">
+            <div className="ps-tabs" role="group" aria-label={t('State')}>
               {directory().map((st) => (
                 <button key={st.id} type="button" className={`ps-tab ${st.id === model.stateTab ? 'is-on' : ''}`} aria-pressed={st.id === model.stateTab} onClick={() => model.setStateTab(st.id)}>
                   {st.title}
@@ -196,7 +201,7 @@ export function SuggestionList({
 
       {model.searching ? (
         <div className="ps-loading" role="status">
-          <span className="sr-only">Searching…</span>
+          <span className="sr-only">{t('Searching…')}</span>
           <i />
           <i />
           <i />
@@ -204,10 +209,10 @@ export function SuggestionList({
       ) : model.status ? (
         <div className="ps-empty" role="status">
           <PlaceIcon kind="search" size={22} />
-          <p>{model.status}</p>
+          <p>{t(model.status)}</p>
           {model.failed ? (
             <button type="button" className="ps-tab is-on" onClick={model.retry}>
-              Try again
+              {t('Try again')}
             </button>
           ) : null}
         </div>

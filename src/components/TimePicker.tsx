@@ -60,6 +60,8 @@ function Wheel<T extends string | number>({ label, items, value, format = String
   );
 }
 
+import { msg, useT } from '@/i18n';
+
 export function TimePicker({
   title = 'Pickup time',
   date,
@@ -82,6 +84,7 @@ export function TimePicker({
   resolveDate?: (hhmm: string) => string;
 }) {
   const init = split(value);
+  const t = useT();
   const [hour, setHour] = useState(init.hour);
   const [minute, setMinute] = useState(init.minute);
   const [pm, setPm] = useState(init.pm);
@@ -95,31 +98,31 @@ export function TimePicker({
   const hhmm = () => `${String((hour % 12) + (pm ? 12 : 0)).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 
   const confirm = () => {
-    const t = hhmm();
-    const day = resolveDate ? resolveDate(t) : date;
-    const at = day ? combineDateTime(day, t) : null;
+    const hm = hhmm();
+    const day = resolveDate ? resolveDate(hm) : date;
+    const at = day ? combineDateTime(day, hm) : null;
     if (at) {
-      const problem = validate === 'pickup' ? scheduleProblem(at) : notBefore && at.getTime() <= notBefore.getTime() ? 'The return must be after the pickup.' : '';
+      const problem = validate === 'pickup' ? scheduleProblem(at) : notBefore && at.getTime() <= notBefore.getTime() ? msg('The return must be after the pickup.') : '';
       if (problem) {
         setError(problem);
         return;
       }
     }
-    onConfirm(t, day);
+    onConfirm(hm, day);
   };
 
   return (
     <Dialog
-      title={title}
-      subtitle="Times are in IST."
+      title={t(title)}
+      subtitle={t('Times are in IST.')}
       onClose={onClose}
       footer={
         <>
           <Button variant="secondary" onClick={onClose}>
-            Close
+            {t('Close')}
           </Button>
           <Button icon="check" onClick={confirm}>
-            Confirm time
+            {t('Confirm time')}
           </Button>
         </>
       }
@@ -129,13 +132,13 @@ export function TimePicker({
           {hour}:{String(minute).padStart(2, '0')} <span>{pm ? 'PM' : 'AM'}</span>
         </p>
         <div className="timepick__wheels">
-          <Wheel label="Hour" items={HOURS} value={hour} onChange={pick(setHour)} />
-          <Wheel label="Minutes" items={MINUTES} value={minute} format={(m) => String(m).padStart(2, '0')} onChange={pick(setMinute)} />
-          <Wheel label="AM or PM" items={MERIDIEMS} value={pm ? 'PM' : 'AM'} onChange={pick<string>((m) => setPm(m === 'PM'))} />
+          <Wheel label={t('Hour')} items={HOURS} value={hour} onChange={pick(setHour)} />
+          <Wheel label={t('Minutes')} items={MINUTES} value={minute} format={(m) => String(m).padStart(2, '0')} onChange={pick(setMinute)} />
+          <Wheel label={t('AM or PM')} items={MERIDIEMS} value={pm ? 'PM' : 'AM'} onChange={pick<string>((m) => setPm(m === 'PM'))} />
         </div>
         {error ? (
           <p className="field__error" role="alert">
-            {error}
+            {t(error)}
           </p>
         ) : null}
       </div>

@@ -38,12 +38,12 @@ export function parseBookingNotice(message: string): BookingNotice | null {
 }
 
 /** "Today", "Yesterday" or "26 Nov 2026"; entries without a time yet are "Earlier". */
-export function dayLabel(ms: number, now: Date): string {
+export function dayLabel(ms: number, now: Date, locale = 'en-GB'): string {
   if (!ms) return 'Earlier';
   const day = new Date(ms);
   const midnight = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const diff = Math.round((midnight(now) - midnight(day)) / 86_400_000);
   if (diff === 0) return 'Today';
   if (diff === 1) return 'Yesterday';
-  return day.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return day.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' });
 }

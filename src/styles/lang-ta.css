@@ -1,0 +1,62 @@
+/* App language: the Language / மொழி picker (Account › Settings) and the Tamil text adjustments.
+   Loaded last. Tamil words run longer than English and its vowel signs sit above and below the line, so in Tamil
+   one-line labels may wrap instead of being cut with "…", and letter-spacing is left at normal (spacing out Tamil
+   letters breaks the joined vowel signs). */
+
+/* ── Language picker ──────────────────────────────────────────────────────────────────────────────────────────── */
+.lang-options { display: grid; gap: 8px; padding: 6px 14px 14px; border-top: 1px solid var(--line, #e6ebf2); }
+.lang-option {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; min-height: 50px; padding: 10px 14px;
+  border: 1.5px solid var(--line, #e6ebf2); border-radius: 14px; background: #fff; color: var(--ink, #0f1f3d);
+  font: inherit; font-size: 0.98rem; font-weight: 700; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: border-color 160ms, background 160ms;
+}
+.lang-option:hover { border-color: color-mix(in srgb, var(--brand, #1665e8) 45%, #fff); }
+.lang-option.is-on { border-color: var(--brand, #1665e8); background: color-mix(in srgb, var(--brand, #1665e8) 7%, #fff); }
+.lang-option:focus-visible { outline: 3px solid color-mix(in srgb, var(--brand, #1665e8) 40%, transparent); outline-offset: 2px; }
+.lang-option__label { flex: 1 1 auto; min-width: 0; }
+.lang-option__check {
+  display: grid; flex: none; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  border: 1.5px solid var(--line, #d7dee9); color: #fff; font-size: 15px; font-weight: 900; line-height: 1;
+}
+.lang-option.is-on .lang-option__check { border-color: var(--brand, #1665e8); background: var(--brand, #1665e8); }
+/* The settings row that opens it: its chevron turns down while the choices show (the drawer already does this). */
+.setting--button[aria-expanded='true'] > .icon:last-child { transform: rotate(90deg); }
+/* "Language / மொழி" is how a rider who cannot read the current language finds the switch: never cut it, in any language. */
+html body .setting--lang .setting__text .setting__label { white-space: normal; overflow: visible; text-overflow: clip; }
+html body .setting--lang .setting__value { flex: none; max-width: none; overflow: visible; }
+
+/* ── Tamil ────────────────────────────────────────────────────────────────────────────────────────────────────── */
+html[lang='ta'] {
+  --font: 'Nunito', 'Noto Sans Tamil', 'Nirmala UI', 'Latha', 'Tamil Sangam MN', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+html[lang='ta'] body,
+html[lang='ta'] body * { letter-spacing: normal !important; }
+
+/* Settings and drawer rows: labels and hints wrap instead of ending in "…"; the language name keeps its width. */
+html[lang='ta'] .setting__text .setting__label,
+html[lang='ta'] .setting__hint { white-space: normal; overflow: visible; text-overflow: clip; }
+html[lang='ta'] .setting { height: auto; }
+html[lang='ta'] .setting__value { flex: none; max-width: none; overflow: visible; }
+
+/* Home: the two-line slogan wraps on narrow phones instead of running off the screen. */
+html[lang='ta'] body .home .hero-copy h1,
+html[lang='ta'] body .home .hero-copy h1 .hero-accent { white-space: normal !important; text-wrap: balance; overflow-wrap: break-word; }
+@media (max-width: 899.98px) {
+  html[lang='ta'] body .home .hero-copy h1,
+  html[lang='ta'] body .home .hero-copy h1.journey-slogan,
+  html[lang='ta'] body .home .hero-copy h1.multicity-slogan { font-size: clamp(0.8rem, 4vw, 1.4rem); line-height: 1.35; }
+}
+
+/* Phone bottom bar: five Tamil labels share a 320px screen. */
+html[lang='ta'] body .tabbar .tabbar__label,
+html[lang='ta'] body .tabbar .tabbar__link--wide .tabbar__label { font-size: clamp(9px, 2.75vw, 12.5px); font-weight: 700; }
+
+/* Local / Rental sheet: the location note's button and the "Confirm pickup" button move under the text when the Tamil
+   words need the room, so the note and the address are never squeezed or cut. */
+html[lang='ta'] .lr-perm { flex-wrap: wrap; }
+html[lang='ta'] .lr-perm p { flex: 1 1 100%; }
+html[lang='ta'] .lr-row { flex-wrap: wrap; }
+html[lang='ta'] .lr-row > .lr-addr { flex: 1 1 100%; }
+html[lang='ta'] .lr-row > .lr-cta { flex: 1 1 100%; margin-top: 0; }
+html[lang='ta'] .lr-addr .is-empty { white-space: normal; overflow: visible; }

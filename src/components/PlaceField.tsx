@@ -18,6 +18,7 @@ import { usePlaceSuggestions } from './placeSearch/usePlaceSuggestions';
 import type { TreeRow } from './placeSearch/model';
 import { useDeviceLocation, useMediaQuery } from '@/lib/hooks';
 import { LOCATION_HELP } from '@/lib/schedule';
+import { msg, useT } from '@/i18n';
 
 /** Phones (and short touch screens, such as a phone held sideways) search on a separate page. */
 const PAGE_QUERY = '(max-width: 899.98px), (pointer: coarse) and (max-height: 599.98px)';
@@ -55,6 +56,7 @@ const MIN_W = 360;
 
 export function PlaceField({ value, config, saved, recent, onSelect, placeholder, inputClassName = '', inputId, inputRef, ariaLabelledBy, ariaDescribedBy, invalid, showLocate, anchorSelector = '[data-pf-anchor]' }: PlaceFieldProps) {
   const uid = useId();
+  const t = useT();
   const listId = `${uid}-list`;
   const rootRef = useRef<HTMLDivElement>(null);
   const inputEl = useRef<HTMLInputElement | null>(null);
@@ -197,7 +199,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
       const at = await locate();
       if (mine !== intent.current) return;
       if (!at) {
-        failed('We couldn’t get your current location. Allow location access, or search for the place instead.');
+        failed(msg('We couldn’t get your current location. Allow location access, or search for the place instead.'));
         return;
       }
       const found = await reverseGeocode(at);
@@ -205,7 +207,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
       choose({ ...found, type: 'current' });
     } catch {
       if (mine !== intent.current) return;
-      const why = 'We couldn’t read your address. Please search for it instead.';
+      const why = msg('We couldn’t read your address. Please search for it instead.');
       if (!onPage) setReject(why);
       failed(why);
     } finally {
@@ -256,7 +258,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
   const locNote = locError ? LOCATION_HELP[locError.kind] : permission === 'denied' || permission === 'blocked' ? LOCATION_HELP.blocked : '';
   const shown = dropdown && dirty ? text : value?.name ?? '';
   const shortcuts: Shortcut[] = config.pinMode
-    ? [{ id: 'map', title: 'Choose on map', subtitle: 'Drop a pin on the exact spot', onClick: () => { intent.current += 1; setOpen(false); setMapMode(true); } }]
+    ? [{ id: 'map', title: msg('Choose on map'), subtitle: msg('Drop a pin on the exact spot'), onClick: () => { intent.current += 1; setOpen(false); setMapMode(true); } }]
     : [];
 
   const popup =
@@ -283,12 +285,12 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
                 <>
                   {reject ? (
                     <p className="ps-note ps-note--error" role="alert">
-                      <Icon name="warning" size={16} /> {reject}
+                      <Icon name="warning" size={16} /> {t(reject)}
                     </p>
                   ) : null}
                   {locTried && locNote && !busy && !locating ? (
                     <p className="ps-note" role="status">
-                      <Icon name="info" size={16} /> {locNote}
+                      <Icon name="info" size={16} /> {t(locNote)}
                     </p>
                   ) : null}
                 </>
@@ -325,7 +327,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
         className={`pf__input ${inputClassName}`}
         value={shown}
         readOnly={onPage}
-        placeholder={config.placeholder ?? placeholder ?? 'City, area or landmark'}
+        placeholder={config.placeholder ?? placeholder ?? t('City, area or landmark')}
         autoComplete="off"
         autoCorrect="off"
         autoCapitalize="none"
@@ -361,7 +363,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
         }}
       />
       {dropdown && dirty && text ? (
-        <button type="button" className="pf__btn pf__btn--clear" aria-label="Clear" onMouseDown={(e) => e.preventDefault()} onClick={() => { setText(''); setDirty(true); inputEl.current?.focus(); }}>
+        <button type="button" className="pf__btn pf__btn--clear" aria-label={t('Clear')} onMouseDown={(e) => e.preventDefault()} onClick={() => { setText(''); setDirty(true); inputEl.current?.focus(); }}>
           <Icon name="close" size={15} />
         </button>
       ) : null}
@@ -369,8 +371,8 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
         <button
           type="button"
           className={`pf__btn pf__btn--locate ${busy || locating ? 'is-busy' : ''}`}
-          aria-label="Use my current location"
-          title="Use my current location"
+          aria-label={t('Use my current location')}
+          title={t('Use my current location')}
           disabled={busy || locating}
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => void detectCurrent()}

@@ -10,6 +10,7 @@ import { TimePicker, formatTime12 } from '@/components/TimePicker';
 import { useBooking } from '@/state/Booking';
 import { combineDateTime, earliestSlot, latestPickup, toDateInput, toTimeInput } from '@/lib/schedule';
 import { isOvernightPickup } from '@core/utils/timePackages';
+import { useT } from '@/i18n';
 import './editTrip.css';
 
 /** The calendar date `n` days after a YYYY-MM-DD date (plain calendar arithmetic). */
@@ -31,6 +32,7 @@ export function EditTripDialog({ onClose }: { onClose: () => void }) {
   const [auto, setAuto] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
   const [error, setError] = useState('');
+  const t = useT();
 
   const overnight = round && isOvernightPickup(combineDateTime(date, time));
   const minDays = overnight ? 2 : 1;
@@ -67,21 +69,21 @@ export function EditTripDialog({ onClose }: { onClose: () => void }) {
   return (
     <>
       <Dialog
-        title="Edit your pickup"
-        subtitle="Choose your pickup date and time. Available packages and fares will update."
+        title={t('Edit your pickup')}
+        subtitle={t('Choose your pickup date and time. Available packages and fares will update.')}
         onClose={onClose}
         className="etd"
-        footer={<button type="button" className="etd__save" onClick={save}>Update trip</button>}
+        footer={<button type="button" className="etd__save" onClick={save}>{t('Update trip')}</button>}
       >
         <div className="etd__grid">
           <label className="etd__field">
-            <span>Pickup date</span>
+            <span>{t('Pickup date')}</span>
             <input type="date" value={date} min={firstDay} max={lastDay} onChange={(e) => { if (e.target.value) { setDate(e.target.value); setError(''); } }} />
           </label>
           <div className="etd__field">
-            <span>Pickup time</span>
-            <button type="button" className="etd__time" onClick={() => setTimeOpen(true)} aria-label={`Pickup time: ${formatTime12(time)}`}>
-              {formatTime12(time) || 'Select'}
+            <span>{t('Pickup time')}</span>
+            <button type="button" className="etd__time" onClick={() => setTimeOpen(true)} aria-label={`${t('Pickup time')}: ${formatTime12(time)}`}>
+              {formatTime12(time) || t('Select')}
               <Icon name="clock" size={18} />
             </button>
           </div>
@@ -89,19 +91,19 @@ export function EditTripDialog({ onClose }: { onClose: () => void }) {
 
         {round ? (
           <div className="etd__days">
-            <span id="etd-days">{overnight ? 'Trip days' : 'Days'}{overnight ? <small>Overnight</small> : null}</span>
+            <span id="etd-days">{overnight ? t('Trip days') : t('Days')}{overnight ? <small>{t('Overnight')}</small> : null}</span>
             <div role="group" aria-labelledby="etd-days">
-              <button type="button" aria-label="One day less" disabled={days <= minDays} onClick={() => step(-1)}>−</button>
-              <output aria-live="polite">{days} {days === 1 ? 'day' : 'days'}</output>
-              <button type="button" aria-label="One day more" disabled={days >= RT_MAX_DAYS} onClick={() => step(1)}>+</button>
+              <button type="button" aria-label={t('One day less')} disabled={days <= minDays} onClick={() => step(-1)}>−</button>
+              <output aria-live="polite">{days === 1 ? t('1 day') : t('{n} days', { n: days })}</output>
+              <button type="button" aria-label={t('One day more')} disabled={days >= RT_MAX_DAYS} onClick={() => step(1)}>+</button>
             </div>
-            <p>{overnight && days === 2 ? 'Overnight trip · ' : ''}Ends {formatDate(combineDateTime(addDaysISO(date, days - 1), '00:00') ?? new Date())}</p>
+            <p>{overnight && days === 2 ? `${t('Overnight trip')} · ` : ''}{t('Ends {date}', { date: formatDate(combineDateTime(addDaysISO(date, days - 1), '00:00') ?? new Date()) })}</p>
           </div>
         ) : null}
 
-        {error ? <p className="etd__error" role="alert">{error}</p> : null}
+        {error ? <p className="etd__error" role="alert">{t(error)}</p> : null}
       </Dialog>
-      {timeOpen ? <TimePicker title="Pickup time" date={date} value={time} validate="pickup" onClose={() => setTimeOpen(false)} onConfirm={(t) => { chooseTime(t); setTimeOpen(false); }} /> : null}
+      {timeOpen ? <TimePicker title={t('Pickup time')} date={date} value={time} validate="pickup" onClose={() => setTimeOpen(false)} onConfirm={(t) => { chooseTime(t); setTimeOpen(false); }} /> : null}
     </>
   );
 }

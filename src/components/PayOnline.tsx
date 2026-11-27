@@ -10,6 +10,7 @@ import { Button, Notice } from '@/components/ui';
 import { useAuth } from '@/state/Auth';
 import { amountDue } from '@/lib/tripMoney';
 import { brandColor, openCheckout } from '@/lib/razorpayCheckout';
+import { msg, useT } from '@/i18n';
 import './payOnline.css';
 
 type Msg = { tone: 'info' | 'success' | 'error' | 'warning'; text: string } | null;
@@ -18,7 +19,8 @@ export function PayOnline({ trip, compact = false }: { trip: TripRecord; compact
   const { state } = useAuth();
   const [online, setOnline] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<Msg>(null);
+  const [note, setNote] = useState<Msg>(null);
+  const t = useT();
   useEffect(() => {
     let alive = true;
     void getPaymentOptions().then((o) => { if (alive) setOnline(o.online); });
@@ -27,13 +29,13 @@ export function PayOnline({ trip, compact = false }: { trip: TripRecord; compact
 
   const due = amountDue(trip);
   const blocked = trip.status === 'Cancelled' || trip.status === 'Rejected';
-  if (!online || due < 1 || blocked) return msg?.tone === 'success' ? <Notice tone="success">{msg.text}</Notice> : null;
+  if (!online || due < 1 || blocked) return note?.tone === 'success' ? <Notice tone="success">{t(note.text)}</Notice> : null;
 
   const profile = state.status === 'ready' || state.status === 'on-hold' ? state.profile : null;
   const pay = async () => {
     if (busy) return;
     setBusy(true);
-    setMsg(null);
+    setNote(null);
     try {
       const order = await createBookingPayment(trip.id);
       const result = await openCheckout(
@@ -44,18 +46,18 @@ export function PayOnline({ trip, compact = false }: { trip: TripRecord; compact
           color: brandColor(),
           prefill: { name: profile?.name || undefined, contact: profile?.phone || undefined, email: profile?.email || undefined },
         },
-        (reason) => setMsg({ tone: 'warning', text: `${reason} You can try again in the payment window.` }),
+        (reason) => setNote({ tone: 'warning', text: `${t(reason)} ${t('You can try again in the payment window.')}` }),
       );
-      if (result === 'dismissed') { setMsg(null); return; }
-      setMsg({ tone: 'info', text: 'Confirming your payment…' });
+      if (result === 'dismissed') { setNote(null); return; }
+      setNote({ tone: 'info', text: msg('Confirming your payment…') });
       const v = await verifyBookingPayment(trip.id, result);
       if (v.status === 'paid') {
-        setMsg({ tone: 'success', text: v.balanceDue && v.balanceDue > 0 ? `Payment received. Balance ${formatINR(v.balanceDue)}.` : 'Payment received. Thank you!' });
+        setNote({ tone: 'success', text: v.balanceDue && v.balanceDue > 0 ? `Payment received. Balance ${formatINR(v.balanceDue)}.` : msg('Payment received. Thank you!') });
       } else {
-        setMsg({ tone: 'info', text: v.message || 'Your payment is being confirmed. It will show on the booking shortly.' });
+        setNote({ tone: 'info', text: v.message || msg('Your payment is being confirmed. It will show on the booking shortly.') });
       }
     } catch (e) {
-      setMsg({ tone: 'error', text: paymentErrorText(e) });
+      setNote({ tone: 'error', text: paymentErrorText(e) });
     } finally {
       setBusy(false);
     }
@@ -64,10 +66,10 @@ export function PayOnline({ trip, compact = false }: { trip: TripRecord; compact
   return (
     <div className={`pay-online ${compact ? 'pay-online--compact' : ''}`}>
       <Button size={compact ? 'sm' : 'md'} block={!compact} loading={busy} onClick={() => void pay()} icon="wallet">
-        Pay {formatINR(due)} online
+        {t('Pay {amount} online', { amount: formatINR(due) })}
       </Button>
-      {compact ? null : <p className="pay-online__fine">UPI, cards, net banking and wallets · Secured by Razorpay</p>}
-      {msg ? <Notice tone={msg.tone}>{msg.text}</Notice> : null}
+      {compact ? null : <p className="pay-online__fine">{t('UPI, cards, net banking and wallets · Secured by Razorpay')}</p>}
+      {note ? <Notice tone={note.tone}>{t(note.text)}</Notice> : null}
     </div>
   );
 }

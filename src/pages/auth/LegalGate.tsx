@@ -9,6 +9,7 @@ import { db } from '@/platform/firebase';
 import { ActionError, callFunction } from '@core/services/callables';
 import { Button, Checkbox, Notice, PageHead } from '@/components/ui';
 import { Icon } from '@/components/Icon';
+import { msg, richText, useT } from '@/i18n';
 
 interface RequiredDoc {
   key: string;
@@ -27,6 +28,7 @@ export function LegalGate({ active, children }: { active: boolean; children: Rea
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const { pathname } = useLocation();
+  const t = useT();
 
   useEffect(() => {
     if (!active) {
@@ -74,15 +76,15 @@ export function LegalGate({ active, children }: { active: boolean; children: Rea
       });
       setState('ok');
     } catch (err) {
-      setError(err instanceof ActionError ? err.message : 'Could not record your acceptance. Try again.');
+      setError(err instanceof ActionError ? err.message : msg('Could not record your acceptance. Try again.'));
       setBusy(false);
     }
   };
 
   return (
     <main id="main" tabIndex={-1}>
-      <PageHead eyebrow="Before you continue" title="Please review and accept to continue">
-        These documents are new or have changed since you last accepted. You can also read our <Link to="/legal">customer policies</Link>.
+      <PageHead eyebrow={t('Before you continue')} title={t('Please review and accept to continue')}>
+        {richText(t('These documents are new or have changed since you last accepted. You can also read our {policies}.'), { policies: <Link key="p" to="/legal">{t('customer policies')}</Link> })}
       </PageHead>
       <div className="page">
         <div className="stack gate">
@@ -91,20 +93,20 @@ export function LegalGate({ active, children }: { active: boolean; children: Rea
               <button type="button" className="legal-doc__head" aria-expanded={open === m.key} onClick={() => setOpen(open === m.key ? '' : m.key)}>
                 <span>
                   <strong>{m.title}</strong>
-                  <small className="muted"> · version {m.version}</small>
+                  <small className="muted"> · {t('version {n}', { n: m.version })}</small>
                 </span>
                 <Icon name={open === m.key ? 'chevron-up' : 'chevron-down'} />
               </button>
-              {open === m.key ? <div className="legal-doc__body">{bodies[m.key] || 'This document has no text yet.'}</div> : null}
+              {open === m.key ? <div className="legal-doc__body">{bodies[m.key] || t('This document has no text yet.')}</div> : null}
             </section>
           ))}
-          {error ? <Notice tone="error">{error}</Notice> : null}
+          {error ? <Notice tone="error">{t(error)}</Notice> : null}
           <Checkbox checked={checked} onChange={setChecked}>
             {text}
           </Checkbox>
           <div>
             <Button size="lg" loading={busy} disabled={!checked} onClick={() => void accept()}>
-              Accept and continue
+              {t('Accept and continue')}
             </Button>
           </div>
         </div>

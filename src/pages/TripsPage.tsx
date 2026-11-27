@@ -17,27 +17,30 @@ import { useAuth } from '@/state/Auth';
 import { useBooking } from '@/state/Booking';
 import { CancelDialog } from './ride/dialogs';
 
+import { msg, useT } from '@/i18n';
+
 const TABS: TripTab[] = ['Upcoming', 'Completed', 'Cancelled'];
 const PAGE = 12;
 
 const EMPTY: Record<TripTab, { title: string; text: string }> = {
-  Upcoming: { title: 'No upcoming bookings', text: 'New reservations appear here with their live status.' },
-  Completed: { title: 'No completed journeys', text: 'Completed journeys and invoices will be listed here.' },
-  Cancelled: { title: 'No cancelled bookings', text: 'Cancelled or declined reservations will be listed here.' },
+  Upcoming: { title: msg('No upcoming bookings'), text: msg('New reservations appear here with their live status.') },
+  Completed: { title: msg('No completed journeys'), text: msg('Completed journeys and invoices will be listed here.') },
+  Cancelled: { title: msg('No cancelled bookings'), text: msg('Cancelled or declined reservations will be listed here.') },
 };
 
 /** The rider's boarding code for an open booking, once the booking has one (only the rider can read it). */
 function BoardingOtp({ id }: { id: string }) {
   const [otp, setOtp] = useState<string | null>(null);
+  const t = useT();
   useEffect(() => subscribeToBoardingOtp(id, setOtp), [id]);
   if (!otp) return null;
   return (
     <div className="bk__otp">
       <span>
-        <strong>Boarding OTP</strong>
-        <small>Share only after you board the cab</small>
+        <strong>{t('Boarding OTP')}</strong>
+        <small>{t('Share only after you board the cab')}</small>
       </span>
-      <b className="num" aria-label={`Boarding OTP ${otp.split('').join(' ')}`}>
+      <b className="num" aria-label={`${t('Boarding OTP')} ${otp.split('').join(' ')}`}>
         {otp}
       </b>
     </div>
@@ -51,6 +54,7 @@ const SETTLEMENT: Record<string, string> = { 'Pay at drop': 'Payable at drop', '
  *  the actions sit on their own line underneath. */
 function TripRow({ trip, onCancel }: { trip: TripRecord; onCancel: (t: TripRecord) => void }) {
   const navigate = useNavigate();
+  const t = useT();
   const { startFrom, categories } = useBooking();
   const chip = tripStatusChip(trip);
   const tag = statusTag(trip);
@@ -60,15 +64,15 @@ function TripRow({ trip, onCancel }: { trip: TripRecord; onCancel: (t: TripRecor
   const total = trip.status === 'Completed' ? (trip.fareBreakdown?.total ?? trip.fare) + trip.tollCharges + (trip.extraCharges ?? 0) : trip.status === 'Cancelled' || trip.status === 'Rejected' ? trip.cancellationFee : trip.fare;
   const unrated = trip.status === 'Completed' && trip.rating == null;
   const canRebook = trip.status === 'Completed' && isValidLatLng(trip.pickup) && isValidLatLng(trip.drop);
-  const drop = trip.drop.id === 'place-local-disposal' ? 'Within the city' : trip.drop.name;
+  const drop = trip.drop.id === 'place-local-disposal' ? t('Within the city') : trip.drop.name;
 
   return (
     <li className="bk">
-      <Link className="bk__link" to={`/trips/${trip.id}`} aria-label={`Booking from ${trip.pickup.name} to ${drop}, ${tag}`}>
+      <Link className="bk__link" to={`/trips/${trip.id}`} aria-label={t('Booking from {from} to {to}, {status}', { from: trip.pickup.name, to: drop, status: t(tag) })}>
         <span className="bk__top">
           <span className="bk__when">{when ? `${formatDate(when)} · ${formatTime(when)}` : trip.date}</span>
           <span className="bk__tag" style={{ color: chip.fg, background: chip.bg }}>
-            {tag}
+            {t(tag)}
           </span>
         </span>
         <span className="bk__route">
@@ -79,11 +83,11 @@ function TripRow({ trip, onCancel }: { trip: TripRecord; onCancel: (t: TripRecor
           <img className="bk__art" src={tripCategoryPhoto(categories, trip)} alt="" width={52} height={34} loading="lazy" decoding="async" />
           <span className="bk__cab">
             <strong>{tripCategoryName(categories, trip)}</strong>
-            <small>{trip.tripType}</small>
+            <small>{t(trip.tripType)}</small>
           </span>
           <span className="bk__fare">
             <strong className="num">{total > 0 || trip.status === 'Completed' ? formatINR(total) : ''}</strong>
-            <small className={`pay-${pay.tone}`}>{SETTLEMENT[pay.text] ?? pay.text}</small>
+            <small className={`pay-${pay.tone}`}>{t(SETTLEMENT[pay.text] ?? pay.text)}</small>
           </span>
         </span>
       </Link>
@@ -91,12 +95,12 @@ function TripRow({ trip, onCancel }: { trip: TripRecord; onCancel: (t: TripRecor
       <div className="bk__actions">
         {canCancel ? (
           <button type="button" className="bk__act bk__act--danger" onClick={() => onCancel(trip)}>
-            Cancel booking
+            {t('Cancel booking')}
           </button>
         ) : null}
         {unrated ? (
           <Link className="bk__act" to={`/trips/${trip.id}`}>
-            Rate journey
+            {t('Rate journey')}
           </Link>
         ) : null}
         {canRebook ? (
@@ -108,11 +112,11 @@ function TripRow({ trip, onCancel }: { trip: TripRecord; onCancel: (t: TripRecor
               navigate('/book');
             }}
           >
-            Rebook
+            {t('Rebook')}
           </button>
         ) : null}
         <Link className="bk__act bk__act--view" to={`/trips/${trip.id}`}>
-          View details <Icon name="arrow-right" size={13} />
+          {t('View details')} <Icon name="arrow-right" size={13} />
         </Link>
       </div>
     </li>
@@ -120,7 +124,8 @@ function TripRow({ trip, onCancel }: { trip: TripRecord; onCancel: (t: TripRecor
 }
 
 export function TripsPage() {
-  useSeo({ title: 'My Trips', noindex: true });
+  const tr = useT();
+  useSeo({ title: tr('My Trips'), noindex: true });
   const { trips, tripsLoading, tripsError, retryTrips, profile } = useCustomerData();
   const { openLoginModal } = useAuth();
   const [tab, setTab] = useState<TripTab>('Upcoming');
@@ -141,21 +146,21 @@ export function TripsPage() {
   if (!profile) {
     return (
       <>
-        <PageHead eyebrow="Your journeys" title="My trips">
-          Track what’s coming up and find receipts for what you’ve taken.
+        <PageHead eyebrow="Your journeys" title={tr('My trips')}>
+          {tr('Track what’s coming up and find receipts for what you’ve taken.')}
         </PageHead>
         <div className="page">
           <div className="card card--center">
             <EmptyState
               art="welcome"
-              title="Sign in to see your trips"
+              title={tr('Sign in to see your trips')}
               action={
-                <Button variant="primary" onClick={() => openLoginModal({ title: 'Sign in to see trips' })}>
-                  Sign in
+                <Button variant="primary" onClick={() => openLoginModal({ title: msg('Sign in to see trips') })}>
+                  {tr('Sign in')}
                 </Button>
               }
             >
-              Sign in with your mobile number to view upcoming bookings, trip history and receipts.
+              {tr('Sign in with your mobile number to view upcoming bookings, trip history and receipts.')}
             </EmptyState>
           </div>
         </div>
@@ -167,15 +172,15 @@ export function TripsPage() {
     <>
       <PageHead
         eyebrow="Your journeys"
-        title="My trips"
+        title={tr('My trips')}
       >
-        Track what’s coming up and find receipts for what you’ve taken.
+        {tr('Track what’s coming up and find receipts for what you’ve taken.')}
       </PageHead>
 
       <div className="page page--bookings">
         <TourQuotes brand="people_taxi" />
         <div className="toolbar">
-          <div className="tabs tabs--trips" role="tablist" aria-label="Trip status">
+          <div className="tabs tabs--trips" role="tablist" aria-label={tr('Trip status')}>
             {TABS.map((t) => (
               <button
                 key={t}
@@ -188,16 +193,16 @@ export function TripsPage() {
                   setLimit(PAGE);
                 }}
               >
-                {t}
+                {tr(t)}
               </button>
             ))}
           </div>
           <div className="search">
             <Icon name="search" size={18} />
             <label className="sr-only" htmlFor="trip-search">
-              Search trips
+              {tr('Search trips')}
             </label>
-            <input id="trip-search" type="search" placeholder="Search by location or reference" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input id="trip-search" type="search" placeholder={tr('Search by location or reference')} value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
         </div>
 
@@ -206,15 +211,15 @@ export function TripsPage() {
             tone="error"
             action={
               <Button size="sm" variant="secondary" onClick={retryTrips}>
-                Try again
+                {tr('Try again')}
               </Button>
             }
           >
-            {tripsError}
+            {tr(tripsError)}
           </Notice>
         ) : null}
 
-        <div role="tabpanel" aria-label={`${tab} trips`}>
+        <div role="tabpanel" aria-label={tr(tab)}>
           {tripsLoading ? (
             <div className="trip-list" aria-busy="true">
               {[0, 1, 2, 3, 4].map((i) => (
@@ -225,14 +230,14 @@ export function TripsPage() {
             <div className="card card--center">
               {query ? (
                 <EmptyState
-                  title="No trips match your search"
+                  title={tr('No trips match your search')}
                   action={
                     <Button variant="secondary" onClick={() => setQuery('')}>
-                      Clear search
+                      {tr('Clear search')}
                     </Button>
                   }
                 >
-                  Try a different place name or booking ID.
+                  {tr('Try a different place name or booking ID.')}
                 </EmptyState>
               ) : (
                 <EmptyState
@@ -241,7 +246,7 @@ export function TripsPage() {
                   action={
                     tab === 'Upcoming' ? (
                       <LinkButton variant="primary" to="/book">
-                        Book a ride
+                        {tr('Book a ride')}
                       </LinkButton>
                     ) : undefined
                   }
@@ -260,7 +265,7 @@ export function TripsPage() {
               {shown.length > limit ? (
                 <div className="more">
                   <Button variant="secondary" onClick={() => setLimit((n) => n + PAGE)}>
-                    Show more ({shown.length - limit} left)
+                    {tr('Show more ({n} left)', { n: shown.length - limit })}
                   </Button>
                 </div>
               ) : null}

@@ -1,8 +1,10 @@
 // The home booking form's main action: "Find Cab", with a cab inside a gentle radar pulse before it.
 // Presentation only: the button around it keeps its own submit handler, validation and states. The pulse is decorative.
+import { useT } from '@/i18n';
 import './findCabLabel.css';
 
 export function FindCabLabel() {
+  const t = useT();
   return (
     <span className="bf-findcab">
       <span className="bf-findcab__radar" aria-hidden="true">
@@ -19,7 +21,7 @@ export function FindCabLabel() {
           />
         </svg>
       </span>
-      <span className="bf-findcab__text">Find Cab</span>
+      <span className="bf-findcab__text">{t('Find Cab')}</span>
     </span>
   );
 }

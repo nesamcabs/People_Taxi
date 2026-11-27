@@ -11,6 +11,7 @@ import { QUICK_CITIES } from '@/pages/book/content';
 import { useDeviceLocation } from '@/lib/hooks';
 import { useAuth } from '@/state/Auth';
 import { useSeo } from '@/lib/seo';
+import { msg, useT } from '@/i18n';
 
 type Kind = 'home' | 'work' | 'favorite';
 const ICON: Record<string, string> = { home: 'home', work: 'briefcase', favorite: 'favourite' };
@@ -23,10 +24,11 @@ function AddPlaceDialog({ onClose }: { onClose: () => void }) {
   const [label, setLabel] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const t = useT();
 
   const save = async () => {
-    if (!picked) return setError('Search for the place to save.');
-    if (!profile) return setError('Sign in to save this place.');
+    if (!picked) return setError(msg('Search for the place to save.'));
+    if (!profile) return setError(msg('Sign in to save this place.'));
     const name = kind === 'home' ? 'Home' : kind === 'work' ? 'Work' : label.trim() || picked.name;
     // Only one Home and one Work: replace the existing entry.
     const existing = kind !== 'favorite' ? savedPlaces.find((p) => p.type === kind) : undefined;
@@ -36,36 +38,36 @@ function AddPlaceDialog({ onClose }: { onClose: () => void }) {
       await savePlace({ ...picked, id: existing?.id ?? '', name, address: picked.address, type: kind }, profile.uid);
       onClose();
     } catch (e) {
-      setError(describeError(e, 'We couldn’t save this place.'));
+      setError(describeError(e, msg('We couldn’t save this place.')));
       setBusy(false);
     }
   };
 
   return (
     <Dialog
-      title="Add a saved place"
+      title={t('Add a saved place')}
       onClose={onClose}
       dismissible={!busy}
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={busy}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button loading={busy} disabled={!picked} onClick={() => void save()}>
-            Save place
+            {t('Save place')}
           </Button>
         </>
       }
     >
       <div className="stack">
         <Segmented
-          label="Place type"
+          label={msg('Place type')}
           value={kind}
           onChange={setKind}
           options={[
-            { value: 'home', label: 'Home' },
-            { value: 'work', label: 'Work' },
-            { value: 'favorite', label: 'Favourite' },
+            { value: 'home', label: msg('Home') },
+            { value: 'work', label: msg('Work') },
+            { value: 'favorite', label: msg('Favourite') },
           ]}
         />
         {picked ? (
@@ -76,34 +78,35 @@ function AddPlaceDialog({ onClose }: { onClose: () => void }) {
               <small className="muted">{picked.address}</small>
             </div>
             <button type="button" className="link-btn" onClick={() => setPicked(null)}>
-              Change
+              {t('Change')}
             </button>
           </div>
         ) : (
           <div className="search search--field" data-pf-anchor>
             <Icon name="search" size={18} />
             <label className="sr-only" htmlFor="place-q">
-              Search address, street or landmark
+              {t('Search address, street or landmark')}
             </label>
             <PlaceField
               inputId="place-q"
               value={null}
-              config={{ title: 'Search a place to save', placeholder: 'Search address, street or landmark', allowCurrent: true, popular: QUICK_CITIES, popularLabel: 'Popular cities', near: position, pinMode: 'pickup' }}
+              config={{ title: t('Search a place to save'), placeholder: t('Search address, street or landmark'), allowCurrent: true, popular: QUICK_CITIES, popularLabel: t('Popular cities'), near: position, pinMode: 'pickup' }}
               saved={[]}
               recent={[]}
               onSelect={setPicked}
             />
           </div>
         )}
-        {kind === 'favorite' && picked ? <TextField label="Label (optional)" value={label} onChange={(e) => setLabel(e.target.value.slice(0, 40))} placeholder="e.g. Hospital, College, Mom’s house" /> : null}
-        {error ? <Notice tone="error">{error}</Notice> : null}
+        {kind === 'favorite' && picked ? <TextField label={t('Label (optional)')} value={label} onChange={(e) => setLabel(e.target.value.slice(0, 40))} placeholder={t('e.g. Hospital, College, Mom’s house')} /> : null}
+        {error ? <Notice tone="error">{t(error)}</Notice> : null}
       </div>
     </Dialog>
   );
 }
 
 export function SavedPlacesPage() {
-  useSeo({ title: 'Saved Places', noindex: true });
+  const t = useT();
+  useSeo({ title: t('Saved Places'), noindex: true });
   const { savedPlaces, profile } = useCustomerData();
   const { openLoginModal } = useAuth();
   const [adding, setAdding] = useState(false);
@@ -124,14 +127,14 @@ export function SavedPlacesPage() {
           <div className="card card--center">
             <EmptyState
               art="welcome"
-              title="Sign in to view saved places"
+              title={t('Sign in to view saved places')}
               action={
-                <Button variant="primary" onClick={() => openLoginModal({ title: 'Sign in to saved places' })}>
-                  Sign in
+                <Button variant="primary" onClick={() => openLoginModal({ title: msg('Sign in to saved places') })}>
+                  {t('Sign in')}
                 </Button>
               }
             >
-              Sign in with your mobile number to save your home, work and favorite locations for quick booking.
+              {t('Sign in with your mobile number to save your home, work and favorite locations for quick booking.')}
             </EmptyState>
           </div>
         </div>
@@ -146,7 +149,7 @@ export function SavedPlacesPage() {
       await deleteSavedPlace(removing.id);
       setRemoving(null);
     } catch (e) {
-      setError(describeError(e, 'We couldn’t remove this place.'));
+      setError(describeError(e, msg('We couldn’t remove this place.')));
       setRemoving(null);
     } finally {
       setBusy(false);
@@ -160,25 +163,25 @@ export function SavedPlacesPage() {
     <>
       <PageHead
         eyebrow="Account"
-        title="Saved places"
+        title={t('Saved places')}
       >
-        Home, work and the places you go often — one tap when booking.
+        {t('Home, work and the places you go often — one tap when booking.')}
       </PageHead>
       <div className="page">
-        {error ? <Notice tone="error">{error}</Notice> : null}
+        {error ? <Notice tone="error">{t(error)}</Notice> : null}
 
         {sorted.length === 0 ? (
           <div className="card card--center">
             <EmptyState
               art="no-saved-places"
-              title="No saved places yet"
+              title={t('No saved places yet')}
               action={
                 <Button icon="add" onClick={() => setAdding(true)}>
-                  Add your first place
+                  {t('Add your first place')}
                 </Button>
               }
             >
-              Save Home and Work to start a booking in one tap.
+              {t('Save Home and Work to start a booking in one tap.')}
             </EmptyState>
           </div>
         ) : (
@@ -189,10 +192,10 @@ export function SavedPlacesPage() {
                   <Icon name={ICON[p.type] ?? 'saved-place'} size={22} />
                 </span>
                 <span className="saved__text">
-                  <strong>{p.name}</strong>
+                  <strong>{p.type === 'home' || p.type === 'work' ? t(p.name) : p.name}</strong>
                   <small className="muted">{p.address}</small>
                 </span>
-                <button type="button" className="icon-btn" aria-label={`Remove ${p.name}`} onClick={() => setRemoving(p)}>
+                <button type="button" className="icon-btn" aria-label={t('Remove {name}', { name: p.name })} onClick={() => setRemoving(p)}>
                   <Icon name="trash" size={20} />
                 </button>
               </li>
@@ -203,8 +206,8 @@ export function SavedPlacesPage() {
                   <Icon name="add" size={20} />
                 </span>
                 <span className="saved__text">
-                  <strong>Add a place</strong>
-                  <small className="muted">Home, work or anywhere you go often</small>
+                  <strong>{t('Add a place')}</strong>
+                  <small className="muted">{t('Home, work or anywhere you go often')}</small>
                 </span>
               </button>
             </li>
@@ -215,21 +218,21 @@ export function SavedPlacesPage() {
       {adding ? <AddPlaceDialog onClose={() => setAdding(false)} /> : null}
       {removing ? (
         <Dialog
-          title="Remove this place?"
+          title={t('Remove this place?')}
           onClose={() => setRemoving(null)}
           dismissible={!busy}
           footer={
             <>
               <Button variant="secondary" onClick={() => setRemoving(null)} disabled={busy}>
-                Keep
+                {t('Keep')}
               </Button>
               <Button variant="primary" loading={busy} onClick={() => void remove()}>
-                Remove
+                {t('Remove')}
               </Button>
             </>
           }
         >
-          <p className="muted">“{removing.name}” will be removed from your saved places.</p>
+          <p className="muted">{t('“{name}” will be removed from your saved places.', { name: removing.name })}</p>
         </Dialog>
       ) : null}
     </>

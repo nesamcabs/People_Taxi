@@ -12,6 +12,11 @@ import {
 import { createPortal } from 'react-dom';
 import { Link, type LinkProps, useNavigate } from 'react-router-dom';
 import { Icon } from './Icon';
+import { useT, type Translate } from '@/i18n';
+
+/** Text props arrive in English (or already translated): strings are translated where they are shown, so a message kept
+ *  in state follows a language switch. Elements pass through unchanged. */
+const tx = (t: Translate, v: ReactNode): ReactNode => (typeof v === 'string' ? t(v) : v);
 
 type Variant = 'primary' | 'secondary' | 'dark' | 'ghost' | 'danger';
 type Size = 'sm' | 'md' | 'lg';
@@ -87,6 +92,8 @@ export function IconButton({
 
 export function BackButton({ to, onClick, label = 'Back' }: { to?: string; onClick?: () => void; label?: string }) {
   const navigate = useNavigate();
+  const t = useT();
+  label = t(label);
   const handle = () => {
     if (onClick) onClick();
     else if (to) navigate(to);
@@ -115,20 +122,21 @@ export function FieldShell({
   className?: string;
 }) {
   const id = useId();
+  const t = useT();
   const describedBy = error ? `${id}-err` : hint ? `${id}-hint` : undefined;
   return (
     <div className={`field ${error ? 'is-invalid' : ''} ${className}`}>
       <label htmlFor={id} className="field__label">
-        {label}
+        {tx(t, label)}
       </label>
       {children({ id, describedBy, invalid: !!error })}
       {error ? (
         <p id={`${id}-err`} className="field__error" role="alert">
-          {error}
+          {t(error)}
         </p>
       ) : hint ? (
         <p id={`${id}-hint`} className="field__hint">
-          {hint}
+          {tx(t, hint)}
         </p>
       ) : null}
     </div>
@@ -149,24 +157,25 @@ export const TextField = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLIn
   ref,
 ) {
   const autoId = useId();
+  const t = useT();
   const id = explicitId || autoId;
   const descId = hint || error ? `${id}-desc` : undefined;
   return (
     <div className={`field ${error ? 'is-invalid' : ''} ${block ? 'field--block' : ''} ${className}`}>
       {label ? (
         <label htmlFor={id} className="field__label">
-          {label}
-          {optional ? <span className="field__opt">Optional</span> : null}
+          {tx(t, label)}
+          {optional ? <span className="field__opt">{t('Optional')}</span> : null}
         </label>
       ) : null}
       <input ref={ref} id={id} className="input" aria-invalid={!!error || undefined} aria-describedby={descId} required={required} {...rest} />
       {error ? (
         <p id={descId} className="field__error" role="alert">
-          {error}
+          {t(error)}
         </p>
       ) : hint ? (
         <p id={descId} className="field__hint">
-          {hint}
+          {tx(t, hint)}
         </p>
       ) : null}
     </div>
@@ -178,24 +187,25 @@ export const TextArea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<H
   ref,
 ) {
   const autoId = useId();
+  const t = useT();
   const id = explicitId || autoId;
   const descId = hint || error ? `${id}-desc` : undefined;
   return (
     <div className={`field ${error ? 'is-invalid' : ''} ${block ? 'field--block' : ''} ${className}`}>
       {label ? (
         <label htmlFor={id} className="field__label">
-          {label}
-          {optional ? <span className="field__opt">Optional</span> : null}
+          {tx(t, label)}
+          {optional ? <span className="field__opt">{t('Optional')}</span> : null}
         </label>
       ) : null}
       <textarea ref={ref} id={id} rows={rows} className="textarea" aria-invalid={!!error || undefined} aria-describedby={descId} required={required} {...rest} />
       {error ? (
         <p id={descId} className="field__error" role="alert">
-          {error}
+          {t(error)}
         </p>
       ) : hint ? (
         <p id={descId} className="field__hint">
-          {hint}
+          {tx(t, hint)}
         </p>
       ) : null}
     </div>
@@ -207,14 +217,15 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   ref,
 ) {
   const autoId = useId();
+  const t = useT();
   const id = explicitId || autoId;
   const descId = hint || error ? `${id}-desc` : undefined;
   return (
     <div className={`field ${error ? 'is-invalid' : ''} ${block ? 'field--block' : ''} ${className}`}>
       {label ? (
         <label htmlFor={id} className="field__label">
-          {label}
-          {optional ? <span className="field__opt">Optional</span> : null}
+          {tx(t, label)}
+          {optional ? <span className="field__opt">{t('Optional')}</span> : null}
         </label>
       ) : null}
       <div className="select-wrap">
@@ -227,11 +238,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
       </div>
       {error ? (
         <p id={descId} className="field__error" role="alert">
-          {error}
+          {t(error)}
         </p>
       ) : hint ? (
         <p id={descId} className="field__hint">
-          {hint}
+          {tx(t, hint)}
         </p>
       ) : null}
     </div>
@@ -309,8 +320,9 @@ export function Segmented<T extends string>({
   label?: string;
   className?: string;
 }) {
+  const t = useT();
   return (
-    <div className={`segmented ${className}`} role="tablist" aria-label={label}>
+    <div className={`segmented ${className}`} role="tablist" aria-label={label && t(label)}>
       {options.map((opt) => (
         <button
           key={opt.value}
@@ -321,7 +333,7 @@ export function Segmented<T extends string>({
           onClick={() => onChange(opt.value)}
         >
           {opt.icon ? <Icon name={opt.icon} /> : null}
-          <span>{opt.label}</span>
+          <span>{t(opt.label)}</span>
         </button>
       ))}
     </div>
@@ -503,6 +515,7 @@ export function Tabs({
   variant?: 'line' | 'boxed';
   className?: string;
 }) {
+  const tr = useT();
   return (
     <div className={`tabs tabs--${variant} ${className}`} role="tablist">
       {items.map((t) => {
@@ -518,8 +531,8 @@ export function Tabs({
             onClick={() => onChange(t.id)}
           >
             {t.icon ? <Icon name={t.icon} size={16} /> : null}
-            <span>{t.label}</span>
-            {t.disabled && t.note ? <span className="tab__note">{t.note}</span> : null}
+            <span>{tr(t.label)}</span>
+            {t.disabled && t.note ? <span className="tab__note">{tr(t.note)}</span> : null}
             {typeof t.count === 'number' ? <span className="tab__count">{t.count}</span> : null}
           </button>
         );
@@ -556,11 +569,12 @@ export function Avatar({
 }
 
 export function PageLoader({ label = 'Loading…' }: { label?: string }) {
+  const t = useT();
   return (
     <div className="page-loader" role="status">
       <div className="page-loader__inner">
         <Spinner />
-        <span>{label}</span>
+        <span>{t(label)}</span>
       </div>
     </div>
   );
@@ -577,13 +591,14 @@ export function EmptyState({
   action?: ReactNode;
   children?: ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="empty">
       <div className="empty__icon">
         <Icon name={art === 'error' ? 'circle-xmark' : 'route'} size={28} />
       </div>
-      <h2>{title}</h2>
-      {children ? <p>{children}</p> : null}
+      <h2>{t(title)}</h2>
+      {children ? <p>{tx(t, children)}</p> : null}
       {action ? <div className="empty__action">{action}</div> : null}
     </div>
   );
@@ -617,6 +632,7 @@ export function Dialog({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const t = useT();
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
@@ -667,10 +683,10 @@ export function Dialog({
       >
         <div className="dialog__head">
           <div>
-            <h2 id={titleId}>{title}</h2>
-            {subtitle ? <p className="dialog__sub">{subtitle}</p> : null}
+            <h2 id={titleId}>{tx(t, title)}</h2>
+            {subtitle ? <p className="dialog__sub">{tx(t, subtitle)}</p> : null}
           </div>
-          {dismissible ? <IconButton icon="close" label="Close" onClick={onClose} /> : null}
+          {dismissible ? <IconButton icon="close" label={t('Close')} onClick={onClose} /> : null}
         </div>
         <div className="dialog__body">{children}</div>
         {footer ? <div className="dialog__foot">{footer}</div> : null}
@@ -695,9 +711,12 @@ export function PageHead({
   actions?: ReactNode;
   back?: ReactNode;
 }) {
+  const t = useT();
+  title = tx(t, title);
+  if (typeof children === 'string') children = t(children);
   // No visible page titles: the screen itself says what it is. The title stays as a hidden heading for screen readers
   // and search engines; a back link, step label or actions passed in still show in a slim row.
-  const step = eyebrow && /^Step \d/.test(eyebrow) ? eyebrow : '';
+  const step = eyebrow && /^Step \d/.test(eyebrow) ? t(eyebrow) : '';
   const extras = children && typeof children !== 'string' ? children : null;
   // On desktop screens (1000px and wider) the title is also shown as a visible heading; styles/desktop.css hides this block below that width.
   const heading = (

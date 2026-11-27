@@ -4,10 +4,12 @@ import { Button, EmptyState, PageHead } from '@/components/ui';
 import { EmergencyContactForm } from '@/components/ProfileForms';
 import { useAuth } from '@/state/Auth';
 import { useSeo } from '@/lib/seo';
+import { msg, useT } from '@/i18n';
 
 /** Emergency contact on its own page (the profile drawer shows the same form in place). */
 export function EmergencyContactPage() {
-  useSeo({ title: 'Emergency contact', noindex: true });
+  const t = useT();
+  useSeo({ title: t('Emergency contact'), noindex: true });
   const navigate = useNavigate();
   const { profile } = useCustomerData();
   const { openLoginModal } = useAuth();
@@ -19,10 +21,10 @@ export function EmergencyContactPage() {
         <div className="card card--center">
           <EmptyState
             art="welcome"
-            title="Sign in to add an emergency contact"
+            title={t('Sign in to add an emergency contact')}
             action={
-              <Button variant="primary" onClick={() => openLoginModal({ title: 'Sign in' })}>
-                Sign in
+              <Button variant="primary" onClick={() => openLoginModal({ title: msg('Sign in') })}>
+                {t('Sign in')}
               </Button>
             }
           />
@@ -33,7 +35,7 @@ export function EmergencyContactPage() {
 
   return (
     <>
-      <PageHead title="Emergency contact" />
+      <PageHead title={t('Emergency contact')} />
       <div className="page">
         <div className="card simple-form-wrap">
           <EmergencyContactForm onDone={leave} onCancel={leave} />

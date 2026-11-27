@@ -2,6 +2,7 @@
 // to move it to an Outstation booking or stay on Local.
 import { Button, Dialog } from '@/components/ui';
 import './outstationDialog.css';
+import { richText, useT } from '@/i18n';
 
 export function OutstationDialog({
   from,
@@ -16,26 +17,27 @@ export function OutstationDialog({
   onStay: () => void;
   onSwitch: () => void;
 }) {
+  const t = useT();
   return (
     <Dialog
       className="ostn"
       title={
         <>
-          <span className="ostn__eyebrow">Service advisory</span>
-          Outstation service required
+          <span className="ostn__eyebrow">{t('Service advisory')}</span>
+          {t('Outstation service required')}
         </>
       }
       onClose={onStay}
       footer={
         <>
-          <Button variant="secondary" onClick={onStay}>Remain on Local</Button>
-          <Button onClick={onSwitch}>Continue with Outstation</Button>
+          <Button variant="secondary" onClick={onStay}>{t('Remain on Local')}</Button>
+          <Button onClick={onSwitch}>{t('Continue with Outstation')}</Button>
         </>
       }
     >
       <div className="ostn__trip">
         <div className="ostn__place">
-          <small>Pickup</small>
+          <small>{t('Pickup')}</small>
           <strong>{from}</strong>
         </div>
         <div className="ostn__gap">
@@ -43,13 +45,13 @@ export function OutstationDialog({
           <i aria-hidden="true" />
         </div>
         <div className="ostn__place ostn__place--end">
-          <small>Drop</small>
+          <small>{t('Drop')}</small>
           <strong>{to}</strong>
         </div>
       </div>
 
       <p className="ostn__text">
-        <b>Local Pickup &amp; Drop</b> covers travel within one city. We recommend booking this journey as an <b>Outstation</b> trip.
+        {richText(t('{local} covers travel within one city. We recommend booking this journey as an {outstation} trip.'), { local: <b key="l">{t('Local Pickup & Drop')}</b>, outstation: <b key="o">{t('Outstation')}</b> })}
       </p>
     </Dialog>
   );

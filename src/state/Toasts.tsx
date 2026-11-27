@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Icon } from '@/components/Icon';
+import { useT } from '@/i18n';
 
 interface ToastInput {
   title: string;
@@ -23,6 +24,8 @@ export const useToasts = () => useContext(Ctx);
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
+  // Titles and messages are passed in English and translated here, so an open toast follows a language switch.
+  const tr = useT();
   const nextId = useRef(1);
   const timers = useRef(new Map<number, number>());
 
@@ -57,8 +60,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div className="toast" key={t.id}>
             <Icon name={t.tone === 'success' ? 'success' : t.tone === 'warning' ? 'warning' : 'notifications'} />
             <div className="toast__body">
-              <strong>{t.title}</strong>
-              {t.message ? <span>{t.message}</span> : null}
+              <strong>{tr(t.title)}</strong>
+              {t.message ? <span>{tr(t.message)}</span> : null}
               {t.action ? (
                 <button
                   type="button"
@@ -68,11 +71,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     dismiss(t.id);
                   }}
                 >
-                  {t.action.label}
+                  {tr(t.action.label)}
                 </button>
               ) : null}
             </div>
-            <button type="button" aria-label="Dismiss" onClick={() => dismiss(t.id)}>
+            <button type="button" aria-label={tr('Dismiss')} onClick={() => dismiss(t.id)}>
               <Icon name="close" size={18} />
             </button>
           </div>

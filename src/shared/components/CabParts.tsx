@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { msg, translate } from '@/i18n';
 import './cabParts.css';
 
 // Colourful icons and the fuel picker used on the vehicle cards of all three customer sites. Plain React and inline SVG only,
@@ -87,17 +88,17 @@ export type FuelChoice = 'cng' | 'diesel';
 export function FuelPick({ name, value, onChange }: { name: string; value: FuelChoice; onChange: (v: FuelChoice) => void }) {
   const opts: { id: FuelChoice; label: string }[] = [
     { id: 'cng', label: 'CNG' },
-    { id: 'diesel', label: 'Diesel' },
+    { id: 'diesel', label: msg('Diesel') },
   ];
   return (
-    <div className="cabx-fuel" role="radiogroup" aria-label="Fuel type" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-      <span className="cabx-fuel__title">Select fuel type</span>
+    <div className="cabx-fuel" role="radiogroup" aria-label={translate('Fuel type')} onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+      <span className="cabx-fuel__title">{translate('Select fuel type')}</span>
       <div className="cabx-fuel__opts">
         {opts.map((o) => (
           <label key={o.id} className={`cabx-fuel__opt cabx-fuel__opt--${o.id} ${value === o.id ? 'is-on' : ''}`}>
             <input type="radio" name={name} value={o.id} checked={value === o.id} onChange={() => onChange(o.id)} />
             <CabIcon kind={o.id} size={22} />
-            <span>{o.label}</span>
+            <span>{translate(o.label)}</span>
           </label>
         ))}
       </div>
@@ -108,15 +109,15 @@ export function FuelPick({ name, value, onChange }: { name: string; value: FuelC
 /** "Fuel type" above the cab list: Diesel / Petrol or CNG, as two buttons. */
 export function FuelBar({ value, onChange }: { value: FuelChoice; onChange: (v: FuelChoice) => void }) {
   const opts: { id: FuelChoice; label: string }[] = [
-    { id: 'diesel', label: 'Diesel / Petrol' },
+    { id: 'diesel', label: msg('Diesel / Petrol') },
     { id: 'cng', label: 'CNG' },
   ];
   return (
-    <div className="cabx-fuelbar" role="radiogroup" aria-label="Fuel type">
+    <div className="cabx-fuelbar" role="radiogroup" aria-label={translate('Fuel type')}>
       {opts.map((o) => (
         <button key={o.id} type="button" role="radio" aria-checked={value === o.id} className={`cabx-fuelbar__btn cabx-fuelbar__btn--${o.id} ${value === o.id ? 'is-on' : ''}`} onClick={() => onChange(o.id)}>
           <CabIcon kind={o.id} size={20} />
-          <span>{o.label}</span>
+          <span>{translate(o.label)}</span>
         </button>
       ))}
     </div>

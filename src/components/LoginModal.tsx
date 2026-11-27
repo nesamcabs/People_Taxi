@@ -12,26 +12,37 @@ import { useAuth } from '@/state/Auth';
 import { useOnline } from '@/lib/hooks';
 import { CountryCodeSelect } from '@/components/CountryCodeSelect';
 import { OtpInput, OTP_LENGTH } from '@/components/OtpInput';
+import { msg, richText, useT } from '@/i18n';
 
 const RESEND_SECONDS = 30;
 
-const agreement = (
-  <p className="login-modal__agree">
-    By continuing you agree to People Taxi’s{' '}
-    <Link to="/legal#terms" target="_blank" rel="noopener">
-      Terms &amp; Conditions<span className="sr-only"> (opens in a new tab)</span>
-    </Link>{' '}
-    and{' '}
-    <Link to="/legal#privacy" target="_blank" rel="noopener">
-      Privacy &amp; Location Policy<span className="sr-only"> (opens in a new tab)</span>
-    </Link>
-    .
-  </p>
-);
+/** "By continuing you agree to …", with the two policies as links (translated whole: Tamil puts the verb last). */
+export function Agreement({ className = 'login-modal__agree' }: { className?: string }) {
+  const t = useT();
+  return (
+    <p className={className}>
+      {richText(t('By continuing you agree to People Taxi’s {terms} and {privacy}.'), {
+        terms: (
+          <Link key="terms" to="/legal#terms" target="_blank" rel="noopener">
+            {t('Terms & Conditions')}
+            <span className="sr-only"> {t('(opens in a new tab)')}</span>
+          </Link>
+        ),
+        privacy: (
+          <Link key="privacy" to="/legal#privacy" target="_blank" rel="noopener">
+            {t('Privacy & Location Policy')}
+            <span className="sr-only"> {t('(opens in a new tab)')}</span>
+          </Link>
+        ),
+      })}
+    </p>
+  );
+}
 
 export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, loginModalOptions, state } = useAuth();
   const { online } = useOnline();
+  const t = useT();
 
   const [step, setStep] = useState<'phone' | 'otp'>('phone');
   const [mobile, setMobile] = useState('');
@@ -76,8 +87,8 @@ export function LoginModal() {
 
   const sendOtp = async () => {
     if (sending) return;
-    if (mobile.length < 6 || mobile.length > 14) return setError('Enter a valid mobile number.');
-    if (!online) return setError('You’re offline. Connect to the internet to receive your code.');
+    if (mobile.length < 6 || mobile.length > 14) return setError(msg('Enter a valid mobile number.'));
+    if (!online) return setError(msg('You’re offline. Connect to the internet to receive your code.'));
     setError('');
     setSending(true);
     try {
@@ -95,8 +106,8 @@ export function LoginModal() {
 
   const verify = async (code: string) => {
     if (verifying) return;
-    if (code.length !== OTP_LENGTH) return setError('Enter the 6-digit code.');
-    if (!confirmation) return setError('Your code expired. Request a new one.');
+    if (code.length !== OTP_LENGTH) return setError(msg('Enter the 6-digit code.'));
+    if (!confirmation) return setError(msg('Your code expired. Request a new one.'));
     setError('');
     setVerifying(true);
     try {
@@ -118,22 +129,22 @@ export function LoginModal() {
       await registerCustomerProfile({ name, email });
       // Auth listener handles transitioning to ready
     } catch (e) {
-      setError(describeError(e, 'We couldn’t create your profile. Please try again.'));
+      setError(describeError(e, msg('We couldn’t create your profile. Please try again.')));
       setSavingProfile(false);
     }
   };
 
   // If user just verified and needs profile setup
   if (state.status === 'needs-profile') {
-    const nameErr = profileTouched && !isValidName(name) ? 'Enter your full name (2–60 characters).' : '';
-    const emailErr = profileTouched && email.trim() && !isValidEmail(email) ? 'Enter a valid email address.' : '';
+    const nameErr = profileTouched && !isValidName(name) ? t('Enter your full name (2–60 characters).') : '';
+    const emailErr = profileTouched && email.trim() && !isValidEmail(email) ? t('Enter a valid email address.') : '';
     return (
-      <Dialog title="Almost there" onClose={closeLoginModal}>
+      <Dialog title={t('Almost there')} onClose={closeLoginModal}>
         <div className="login-modal">
           <div className="login-modal__head">
             <img className="login-modal__art" src="/art/profile-setup.webp" alt="" width={80} height={80} />
             <p className="login-modal__sub">
-              Tell us who’s travelling. Your number {formatPhone(state.user.phoneNumber ?? '')} is verified.
+              {t('Tell us who’s travelling. Your number {phone} is verified.', { phone: formatPhone(state.user.phoneNumber ?? '') })}
             </p>
           </div>
           <form
@@ -144,17 +155,17 @@ export function LoginModal() {
             }}
           >
             <TextField
-              label="Full name"
+              label={t('Full name')}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Priya Raman"
+              placeholder={t('e.g. Priya Raman')}
               autoComplete="name"
               error={nameErr}
             />
             <TextField
               label={
                 <>
-                  Email <small>(optional)</small>
+                  {t('Email')} <small>{t('(optional)')}</small>
                 </>
               }
               type="email"
@@ -162,14 +173,14 @@ export function LoginModal() {
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
               autoComplete="email"
-              hint="Booking confirmations and receipts are sent here."
+              hint={t('Booking confirmations and receipts are sent here.')}
               error={emailErr}
             />
-            {error ? <Notice tone="error">{error}</Notice> : null}
+            {error ? <Notice tone="error">{t(error)}</Notice> : null}
             <Button type="submit" size="lg" block loading={savingProfile} disabled={!name.trim()}>
-              {savingProfile ? 'Saving…' : 'Save and continue booking'}
+              {savingProfile ? t('Saving…') : t('Save and continue booking')}
             </Button>
-            {agreement}
+            <Agreement />
           </form>
         </div>
       </Dialog>
@@ -179,14 +190,14 @@ export function LoginModal() {
   // If account is on hold
   if (state.status === 'on-hold') {
     return (
-      <Dialog title="Account on hold" onClose={closeLoginModal}>
+      <Dialog title={t('Account on hold')} onClose={closeLoginModal}>
         <div className="login-modal">
           <Notice tone="warning">
-            Your account is currently on hold. Please call customer support for assistance.
+            {t('Your account is currently on hold. Please call customer support for assistance.')}
           </Notice>
           <div className="login-modal__actions" style={{ marginTop: '16px' }}>
             <a className="btn btn--primary btn--lg btn--block" href={`tel:${SUPPORT_PHONE}`}>
-              <Icon name="phone" /> Call {SUPPORT_PHONE_DISPLAY}
+              <Icon name="phone" /> {t('Call {phone}', { phone: SUPPORT_PHONE_DISPLAY })}
             </a>
           </div>
         </div>
@@ -194,7 +205,7 @@ export function LoginModal() {
     );
   }
 
-  const dialogTitle = loginModalOptions?.title || (step === 'phone' ? 'Sign in to book' : 'Enter the code');
+  const dialogTitle = t(loginModalOptions?.title || (step === 'phone' ? msg('Sign in to book') : msg('Enter the code')));
 
   return (
     <Dialog title={dialogTitle} onClose={closeLoginModal}>
@@ -204,7 +215,7 @@ export function LoginModal() {
             <div className="login-modal__head">
               <img className="login-modal__art" src="/art/welcome.webp" alt="" width={80} height={80} />
               <p className="login-modal__sub">
-                {loginModalOptions?.subtitle || 'Enter your mobile number to sign in or create your People Taxi account.'}
+                {t(loginModalOptions?.subtitle || msg('Enter your mobile number to sign in or create your People Taxi account.'))}
               </p>
             </div>
             <form
@@ -216,14 +227,14 @@ export function LoginModal() {
             >
               <div className="phone-entry">
                 <CountryCodeSelect id="modal-country-code" value={countryCode} onChange={(code) => { setCountryCode(code); setError(''); }} />
-                <TextField label="Mobile number" value={mobile} onChange={(e) => { setMobile(e.target.value.replace(/\D/g, '').slice(0, 14)); setError(''); }} inputMode="numeric" autoComplete="tel-national" placeholder="Mobile number" />
+                <TextField label={t('Mobile number')} value={mobile} onChange={(e) => { setMobile(e.target.value.replace(/\D/g, '').slice(0, 14)); setError(''); }} inputMode="numeric" autoComplete="tel-national" placeholder={t('Mobile number')} />
               </div>
-              <p className="phone-entry__hint">We’ll text you a one-time verification code.</p>
-              {error ? <Notice tone="error">{error}</Notice> : null}
+              <p className="phone-entry__hint">{t('We’ll text you a one-time verification code.')}</p>
+              {error ? <Notice tone="error">{t(error)}</Notice> : null}
               <Button type="submit" size="lg" block loading={sending} disabled={mobile.length < 6}>
-                {sending ? 'Sending code…' : 'Continue'}
+                {sending ? t('Sending code…') : t('Continue')}
               </Button>
-              {agreement}
+              <Agreement />
             </form>
           </>
         ) : (
@@ -231,7 +242,7 @@ export function LoginModal() {
             <div className="login-modal__head">
               <img className="login-modal__art" src="/art/phone-verification.webp" alt="" width={80} height={80} />
               <p className="login-modal__sub">
-                We sent a 6-digit code to {countryCode} {mobile}.
+                {t('We sent a 6-digit code to {phone}.', { phone: `${countryCode} ${mobile}` })}
               </p>
             </div>
             <form
@@ -252,9 +263,9 @@ export function LoginModal() {
                 disabled={verifying}
                 invalid={!!error}
               />
-              {error ? <Notice tone="error">{error}</Notice> : null}
+              {error ? <Notice tone="error">{t(error)}</Notice> : null}
               <Button type="submit" size="lg" block loading={verifying} disabled={otp.length !== OTP_LENGTH}>
-                {verifying ? 'Verifying…' : 'Verify and continue'}
+                {verifying ? t('Verifying…') : t('Verify and continue')}
               </Button>
               <div className="login-modal__links">
                 <button
@@ -266,7 +277,7 @@ export function LoginModal() {
                     setError('');
                   }}
                 >
-                  Change number
+                  {t('Change number')}
                 </button>
                 <button
                   type="button"
@@ -274,7 +285,7 @@ export function LoginModal() {
                   disabled={cooldown > 0 || sending}
                   onClick={() => void sendOtp()}
                 >
-                  {cooldown > 0 ? `Resend code in ${cooldown}s` : sending ? 'Sending…' : 'Resend code'}
+                  {cooldown > 0 ? t('Resend code in {n}s', { n: cooldown }) : sending ? t('Sending…') : t('Resend code')}
                 </button>
               </div>
             </form>

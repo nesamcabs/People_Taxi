@@ -5,15 +5,16 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { useBooking } from '@/state/Booking';
 import { parseService, serviceHref, serviceOfTrip, type ServiceId } from '@/lib/services';
 import { navIconSrc } from './BrandIcon';
+import { msg } from '@/i18n';
 
 export type BarId = 'pickup' | 'rental' | 'outstation' | 'multicity' | 'airport';
 
 export const SERVICE_BAR: readonly { id: BarId; label: string; full: string; to: string; image: string; size: number; wide?: boolean }[] = [
-  { id: 'pickup', label: 'Local', full: 'Local Pickup & Drop', to: '/local-rentals?mode=pickup', image: navIconSrc('local'), size: 44, wide: true },
-  { id: 'rental', label: 'Rental', full: 'Hourly Rental', to: '/local-rentals?mode=hourly', image: navIconSrc('rental'), size: 44, wide: true },
-  { id: 'outstation', label: 'Outstation', full: 'Outstation', to: serviceHref('outstation'), image: navIconSrc('outstation'), size: 46 },
-  { id: 'multicity', label: 'Multicity', full: 'Multicity', to: serviceHref('multicity'), image: navIconSrc('multicity'), size: 44 },
-  { id: 'airport', label: 'Airport', full: 'Airport Taxi', to: serviceHref('airport'), image: navIconSrc('airport'), size: 44 },
+  { id: 'pickup', label: msg('Local'), full: msg('Local Pickup & Drop'), to: '/local-rentals?mode=pickup', image: navIconSrc('local'), size: 44, wide: true },
+  { id: 'rental', label: msg('Rental'), full: msg('Hourly Rental'), to: '/local-rentals?mode=hourly', image: navIconSrc('rental'), size: 44, wide: true },
+  { id: 'outstation', label: msg('Outstation'), full: msg('Outstation'), to: serviceHref('outstation'), image: navIconSrc('outstation'), size: 46 },
+  { id: 'multicity', label: msg('Multicity'), full: msg('Multicity'), to: serviceHref('multicity'), image: navIconSrc('multicity'), size: 44 },
+  { id: 'airport', label: msg('Airport'), full: msg('Airport Taxi'), to: serviceHref('airport'), image: navIconSrc('airport'), size: 44 },
 ];
 
 /** The service the rider is on, read from the page and its URL (so it survives a resize or a rotation), or null. */

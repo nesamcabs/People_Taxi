@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import type { FareLine } from '@core/types';
 import { formatINR } from '@core/utils/format';
+import { translate } from '@/i18n';
 import './additionalCharges.css';
 
 // The "Additional charges" card of the fare breakup: what is payable separately and not in the total.
@@ -90,11 +91,11 @@ export function AdditionalCharges({ lines, policy, footnote }: { lines: FareLine
   // The carrier / luggage charge is not shown in this card.
   const chips = lines.filter((l) => !tiles.includes(l) && l.key !== 'carrier');
   return (
-    <section className="addl" aria-label="Extra Charges">
+    <section className="addl" aria-label={translate('Extra Charges')}>
       <span className="addl__bar" aria-hidden="true" />
       <header className="addl__head">
-        <h3 className="addl__title">Extra Charges</h3>
-        <p className="addl__sub">Not included in your fare · Pay only if it applies</p>
+        <h3 className="addl__title">{translate('Extra Charges')}</h3>
+        <p className="addl__sub">{translate('Not included in your fare · Pay only if it applies')}</p>
       </header>
 
       {tiles.length ? (
@@ -104,7 +105,7 @@ export function AdditionalCharges({ lines, policy, footnote }: { lines: FareLine
             return (
               <div key={l.key} className="addl__tile">
                 <span className="addl__tile-icon">{iconFor(l.key)}</span>
-                <span className="addl__tile-label">{l.label}</span>
+                <span className="addl__tile-label">{translate(l.label)}</span>
                 <strong className="addl__tile-value num">
                   {t.value}
                   {t.unit ? <small>{t.unit}</small> : null}
@@ -127,14 +128,14 @@ export function AdditionalCharges({ lines, policy, footnote }: { lines: FareLine
               // is the row's tooltip. Only a detail that is not a plain rate is written under the name.
               const actuals = l.amount === null && (!l.detail || /at actuals/i.test(l.detail));
               const rate = l.amount === null && !actuals && l.detail ? splitRate(l.detail) : null;
-              const charge = l.amount !== null ? money(l.amount) : actuals ? 'As per receipt' : rate ? rate.value : '';
+              const charge = l.amount !== null ? money(l.amount) : actuals ? translate('As per receipt') : rate ? rate.value : '';
               const note = l.amount === null && !actuals && !rate ? l.detail ?? '' : '';
               return (
                 <li key={l.key} className="addl__chip" title={rate?.rest || undefined}>
                   <span className="addl__chip-icon">{iconFor(l.key)}</span>
                   <span className="addl__chip-text">
-                    <span>{l.label.replace(/\s*\/\s*permit/i, '')}</span>
-                    {note ? <small>{note}</small> : null}
+                    <span>{translate(l.label.replace(/\s*\/\s*permit/i, ''))}</span>
+                    {note ? <small>{translate(note)}</small> : null}
                   </span>
                   {charge ? <span className={`addl__chip-tag num ${actuals ? 'is-receipt' : 'is-amount'}`}>{charge}</span> : null}
                 </li>

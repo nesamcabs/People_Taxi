@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { playSuccessChime } from '@/lib/confirmChime';
+import { useT } from '@/i18n';
 import './bookingConfirmed.css';
 
 // The full-screen "Booking confirmed" moment, shown right after a booking is made. A calm midnight backdrop with soft
@@ -37,6 +38,7 @@ export function BookingConfirmedOverlay({
 }) {
   const primary = useRef<HTMLButtonElement>(null);
   const uid = useId().replace(/:/g, '');
+  const t = useT();
 
   useEffect(() => {
     primary.current?.focus({ preventScroll: true });
@@ -129,15 +131,15 @@ export function BookingConfirmedOverlay({
         </div>
 
         <h2 id={`${uid}-title`} className="bcx__title">
-          {title}
+          {t(title)}
         </h2>
-        <p className="bcx__msg">{message}</p>
+        <p className="bcx__msg">{t(message)}</p>
 
         {/* Frosted ticket */}
         <div className="bcx__card">
           {code ? (
             <div className="bcx__id">
-              <small>Booking ID</small>
+              <small>{t('Booking ID')}</small>
               <strong className="num">{code}</strong>
             </div>
           ) : null}
@@ -145,12 +147,12 @@ export function BookingConfirmedOverlay({
             <>
               <div className="bcx__trip">
                 <span>
-                  <small>From</small>
+                  <small>{t('From')}</small>
                   <b>{trip.from}</b>
                 </span>
                 <i className="bcx__trip-line" aria-hidden="true" />
                 <span className="bcx__trip-to">
-                  <small>To</small>
+                  <small>{t('To')}</small>
                   <b>{trip.to}</b>
                 </span>
               </div>
@@ -167,10 +169,10 @@ export function BookingConfirmedOverlay({
 
       <div className="bcx__actions">
         <button ref={primary} type="button" className="bcx__btn bcx__btn--primary" onClick={onPrimary}>
-          {primaryLabel}
+          {t(primaryLabel)}
         </button>
         <button type="button" className="bcx__btn bcx__btn--ghost" onClick={onClose}>
-          {secondaryLabel}
+          {t(secondaryLabel)}
         </button>
       </div>
     </div>,

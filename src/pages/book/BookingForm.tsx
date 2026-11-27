@@ -29,6 +29,7 @@ import { AIRPORTS, QUICK_CITIES, isAirportPlace } from './content';
 import { MulticityForm } from './MulticityForm';
 import { FindCabLabel } from './FindCabLabel';
 import { SERVICE_BAR, isBarActive, useActiveService } from '@/components/serviceBar';
+import { dateLocale, msg, translate, useLanguage, useT } from '@/i18n';
 
 type Field = 'pickup' | 'drop' | 'stops' | 'hours' | 'date' | 'time' | 'retDate' | 'retTime' | 'form';
 type Errors = Partial<Record<Field, string>>;
@@ -61,7 +62,7 @@ const dayHint = (iso: string): string => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-  return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'long' });
+  return diff === 0 ? translate('Today') : diff === 1 ? translate('Tomorrow') : d.toLocaleDateString(dateLocale(), { weekday: 'long' });
 };
 
 /** No recent-place suggestions in the booking form (see `recent` below). */
@@ -85,6 +86,8 @@ export function BookingForm({
   onOutstationTrip: (t: 'One Way' | 'Round Trip') => void;
 }) {
   const navigate = useNavigate();
+  const t = useT();
+  useLanguage(); // dayHint() and the schedule texts read the language directly: re-render when it changes
   const { draft, update } = useBooking();
   const { state: auth, openLoginModal } = useAuth();
   const { savedPlaces } = useCustomerData();
@@ -198,14 +201,14 @@ export function BookingForm({
   const pickerConfig = (f: 'pickup' | 'drop'): PickerConfig => {
     const airportOnly = service === 'airport' && f === airportField;
     return {
-      title: f === 'pickup' ? (service === 'rental' ? 'Choose your pickup location' : 'Pickup location') : 'Drop location',
+      title: t(f === 'pickup' ? (service === 'rental' ? 'Choose your pickup location' : 'Pickup location') : 'Drop location'),
       allowCurrent: !airportOnly,
       popular: airportOnly ? AIRPORTS : QUICK_CITIES,
-      popularLabel: airportOnly ? 'Airports' : service === 'rental' && f === 'pickup' ? 'Your city' : 'Popular locations',
+      popularLabel: t(airportOnly ? 'Airports' : service === 'rental' && f === 'pickup' ? 'Your city' : 'Popular locations'),
       near: f === 'drop' ? (pickup ?? position) : position,
       pinMode: airportOnly ? undefined : f,
-      ...(airportOnly ? { resultFilter: isAirportPlace, subtitle: 'Search for an airport.', placeholder: 'Search airport', emptyText: 'No airports found. Try the airport or city name.' } : {}),
-      check: airportOnly ? (p) => (isAirportPlace(p) ? '' : 'Choose an airport for this transfer.') : service === 'airport' ? (p) => (isAirportPlace(p) ? 'The other end of an airport transfer should be your city address, not an airport.' : '') : undefined,
+      ...(airportOnly ? { resultFilter: isAirportPlace, subtitle: t('Search for an airport.'), placeholder: t('Search airport'), emptyText: t('No airports found. Try the airport or city name.') } : {}),
+      check: airportOnly ? (p) => (isAirportPlace(p) ? '' : t('Choose an airport for this transfer.')) : service === 'airport' ? (p) => (isAirportPlace(p) ? t('The other end of an airport transfer should be your city address, not an airport.') : '') : undefined,
     };
   };
 
@@ -225,31 +228,31 @@ export function BookingForm({
   // ── Validation ──────────────────────────────────────────────────────────
   const validate = (): Errors => {
     const e: Errors = {};
-    if (!online) e.form = 'You’re offline. Reconnect to see fares.';
+    if (!online) e.form = msg('You’re offline. Reconnect to see fares.');
     else if (currentOff) e.form = `${currentKey} is currently unavailable. Please choose another service.`;
-    if (!pickup) e.pickup = service === 'airport' && airportField === 'pickup' ? 'Choose the airport.' : 'Choose your pickup location.';
-    else if (!isValidLatLng(pickup)) e.pickup = 'We couldn’t read this pickup’s position. Please choose it again.';
-    if (service !== 'rental' && !drop) e.drop = service === 'airport' && airportField === 'drop' ? 'Choose the airport.' : 'Choose your drop location.';
-    else if (service !== 'rental' && drop && !isValidLatLng(drop)) e.drop = 'We couldn’t read this drop’s position. Please choose it again.';
-    if (isRound && draft.stops.some((st) => !isValidLatLng(st))) e.stops = 'A stop’s position couldn’t be read. Please choose it again.';
+    if (!pickup) e.pickup = service === 'airport' && airportField === 'pickup' ? msg('Choose the airport.') : msg('Choose your pickup location.');
+    else if (!isValidLatLng(pickup)) e.pickup = msg('We couldn’t read this pickup’s position. Please choose it again.');
+    if (service !== 'rental' && !drop) e.drop = service === 'airport' && airportField === 'drop' ? msg('Choose the airport.') : msg('Choose your drop location.');
+    else if (service !== 'rental' && drop && !isValidLatLng(drop)) e.drop = msg('We couldn’t read this drop’s position. Please choose it again.');
+    if (isRound && draft.stops.some((st) => !isValidLatLng(st))) e.stops = msg('A stop’s position couldn’t be read. Please choose it again.');
     // Distance rules only run on real coordinates.
     const pickupOk = !!pickup && isValidLatLng(pickup);
     const dropOk = !!drop && isValidLatLng(drop);
-    if (service === 'rental' && !draft.rentalHours) e.hours = 'Select the rental hours.';
-    if (service === 'pickup' && pickupOk && dropOk && haversineKm(pickup, drop) > 40) e.drop = 'Pickup & Drop is for trips inside one city. For a longer trip choose Outstation.';
+    if (service === 'rental' && !draft.rentalHours) e.hours = msg('Select the rental hours.');
+    if (service === 'pickup' && pickupOk && dropOk && haversineKm(pickup, drop) > 40) e.drop = msg('Pickup & Drop is for trips inside one city. For a longer trip choose Outstation.');
     if (service === 'airport') {
       const ap = airportField === 'pickup' ? pickup : drop;
-      if (ap && !isAirportPlace(ap)) e[airportField] = 'Choose an airport for this transfer.';
+      if (ap && !isAirportPlace(ap)) e[airportField] = msg('Choose an airport for this transfer.');
     }
-    if (pickupOk && dropOk && service !== 'rental' && !(service === 'outstation' && tripType === 'Round Trip') && haversineKm(pickup, drop) < 0.2) e.drop = 'Pickup and drop are too close together.';
+    if (pickupOk && dropOk && service !== 'rental' && !(service === 'outstation' && tripType === 'Round Trip') && haversineKm(pickup, drop) < 0.2) e.drop = msg('Pickup and drop are too close together.');
     if (tripType === 'Round Trip' && service === 'outstation') {
       const points = [pickup, ...draft.stops, drop].filter((p): p is GeoPlace => p !== null && isValidLatLng(p));
-      if (points.some((p, index) => index > 0 && haversineKm(points[index - 1]!, p) < 0.2)) e.stops = 'Consecutive itinerary locations cannot be the same.';
+      if (points.some((p, index) => index > 0 && haversineKm(points[index - 1]!, p) < 0.2)) e.stops = msg('Consecutive itinerary locations cannot be the same.');
     }
     if (isRound && (!days || days < 1 || days > RT_MAX_DAYS)) e.retDate = `Choose 1 to ${RT_MAX_DAYS} days.`;
     const at = combineDateTime(date, time);
-    if (!date) e.date = 'Choose a pickup date.';
-    else if (!time) e.time = 'Choose a pickup time.';
+    if (!date) e.date = msg('Choose a pickup date.');
+    else if (!time) e.time = msg('Choose a pickup time.');
     else {
       const p = scheduleProblem(at);
       if (p) e.time = p;
@@ -282,19 +285,19 @@ export function BookingForm({
       saveDraft({ ...draft, multicity: false });
       setPendingReturn('/book/ride');
       openLoginModal({
-        title: 'Sign in to compare fares',
-        subtitle: 'Verify your mobile number to continue with your saved trip.',
+        title: msg('Sign in to compare fares'),
+        subtitle: msg('Verify your mobile number to continue with your saved trip.'),
       });
       return;
     }
     navigate('/book/ride');
   };
 
-  const title = service === 'outstation' ? `${outstationTrip} Outstation` : SERVICE_TITLE[service];
+  const title = service === 'outstation' ? t(outstationTrip === 'Round Trip' ? 'Round Trip Outstation' : 'One Way Outstation') : t(SERVICE_TITLE[service]);
   const fieldErr = (f: Field) =>
     errors[f] ? (
       <p className="bf-error" id={`bf-${f}-err`} role="alert">
-        {errors[f]}
+        {t(errors[f]!)}
       </p>
     ) : null;
 
@@ -327,7 +330,7 @@ export function BookingForm({
     );
   };
 
-  const stopConfig = (title: string): PickerConfig => ({ title, allowCurrent: true, popular: QUICK_CITIES, popularLabel: 'Popular locations', near: pickup ?? position, pinMode: 'drop' });
+  const stopConfig = (title: string): PickerConfig => ({ title, allowCurrent: true, popular: QUICK_CITIES, popularLabel: t('Popular locations'), near: pickup ?? position, pinMode: 'drop' });
   const putStop = (index: number | 'new', place: GeoPlace) => {
     update((d) => ({ stops: index === 'new' ? [...d.stops, place] : d.stops.map((stop, n) => (n === index ? place : stop)) }));
     setErrors((e) => ({ ...e, stops: '', form: '' }));
@@ -339,10 +342,10 @@ export function BookingForm({
     return (
       <div className="bf-field bf-stop-field" key={index === 'new' ? 'new-stop' : `${stop?.id}-${index}`} data-pf-anchor>
         <div className="bf-field__main">
-          <label className="bf-label" id={`${id}-label`} htmlFor={`${id}-input`}>Stop {n}</label>
-          <PlaceField inputId={`${id}-input`} inputClassName="bf-trigger" value={stop} config={{ ...stopConfig(`Stop ${n}`), placeholder: 'Add an itinerary stop' }} saved={savedPlaces} recent={recent} onSelect={(place) => putStop(index, place)} />
+          <label className="bf-label" id={`${id}-label`} htmlFor={`${id}-input`}>{t('Stop {n}', { n })}</label>
+          <PlaceField inputId={`${id}-input`} inputClassName="bf-trigger" value={stop} config={{ ...stopConfig(t('Stop {n}', { n })), placeholder: t('Add an itinerary stop') }} saved={savedPlaces} recent={recent} onSelect={(place) => putStop(index, place)} />
         </div>
-        <button type="button" className="bf-stop-remove" aria-label={`Delete stop ${n}`} title={`Delete stop ${n}`} onClick={() => (index === 'new' ? setAddingStop(false) : update((d) => ({ stops: d.stops.filter((_, i) => i !== index) })))}><Icon name="trash" size={17} /></button>
+        <button type="button" className="bf-stop-remove" aria-label={t('Delete stop {n}', { n })} title={t('Delete stop {n}', { n })} onClick={() => (index === 'new' ? setAddingStop(false) : update((d) => ({ stops: d.stops.filter((_, i) => i !== index) })))}><Icon name="trash" size={17} /></button>
       </div>
     );
   };
@@ -352,12 +355,12 @@ export function BookingForm({
     <section className="bf" id="book-console" aria-labelledby="bf-title">
       <div className="bf-head">
         <h2 id="bf-title">{title}</h2>
-        <p>{service === 'multicity' ? 'Plan multi-stop itineraries with transparent upfront package quotes.' : 'Verified drivers. Upfront fares. Pay at drop.'}</p>
+        <p>{service === 'multicity' ? t('Plan multi-stop itineraries with transparent upfront package quotes.') : t('Verified drivers. Upfront fares. Pay at drop.')}</p>
       </div>
 
       {/* Tablets and desktops (900px and wider; phones use the bottom bar instead, so only one selector shows): the same
           five services as the phone bottom bar, in its order, with its illustrated icons, routes and selected state. */}
-      <nav className="bf-services bf-services--five" aria-label="Services">
+      <nav className="bf-services bf-services--five" aria-label={t('Services')}>
         {SERVICE_BAR.map((s) => {
           const active = isBarActive(s.id, activeService);
           const key = keyOf(s.id);
@@ -367,16 +370,16 @@ export function BookingForm({
               <span className="bf-service__icon">
                 <img src={s.image} alt="" width={s.size} height={s.size} draggable={false} />
               </span>
-              <span>{s.label}</span>
-              {off ? <small className="bf-service__off">{UNAVAILABLE_TEXT}</small> : null}
+              <span>{t(s.label)}</span>
+              {off ? <small className="bf-service__off">{t(UNAVAILABLE_TEXT)}</small> : null}
             </>
           );
           return off ? (
-            <span key={s.id} className="bf-service is-off" aria-disabled="true" title={`${s.full}: ${UNAVAILABLE_TEXT}`}>
+            <span key={s.id} className="bf-service is-off" aria-disabled="true" title={`${t(s.full)}: ${t(UNAVAILABLE_TEXT)}`}>
               {face}
             </span>
           ) : (
-            <Link key={s.id} to={s.to} className={`bf-service ${active ? 'is-active' : ''}`} aria-label={s.full} aria-current={active ? 'page' : undefined} title={s.full}>
+            <Link key={s.id} to={s.to} className={`bf-service ${active ? 'is-active' : ''}`} aria-label={t(s.full)} aria-current={active ? 'page' : undefined} title={t(s.full)}>
               {face}
             </Link>
           );
@@ -401,8 +404,8 @@ export function BookingForm({
             setErrors({});
           }}
           items={[
-            { id: 'One Way', label: 'One Way', disabled: avail.off('One Way'), note: UNAVAILABLE_TEXT },
-            { id: 'Round Trip', label: 'Round Trip', disabled: avail.off('Round Trip'), note: UNAVAILABLE_TEXT },
+            { id: 'One Way', label: msg('One Way'), disabled: avail.off('One Way'), note: UNAVAILABLE_TEXT },
+            { id: 'Round Trip', label: msg('Round Trip'), disabled: avail.off('Round Trip'), note: UNAVAILABLE_TEXT },
           ]}
         />
       ) : service === 'airport' ? (
@@ -411,8 +414,8 @@ export function BookingForm({
           active={direction}
           onChange={(v) => changeDirection(v as AirportDirection)}
           items={[
-            { id: 'to', label: 'To airport' },
-            { id: 'from', label: 'From airport' },
+            { id: 'to', label: msg('To airport') },
+            { id: 'from', label: msg('From airport') },
           ]}
         />
       ) : null}
@@ -431,15 +434,15 @@ export function BookingForm({
         >
           <div className={`bf-route ${service === 'rental' ? 'bf-route--single' : ''} ${service === 'outstation' && outstationTrip === 'Round Trip' ? 'bf-route--round' : ''}`}>
             <div className="bf-route__cell">
-              {locationField('pickup', service === 'rental' ? 'Pickup location' : service === 'airport' && direction === 'from' ? 'Pickup airport' : 'Pickup location')}
+              {locationField('pickup', t(service === 'airport' && direction === 'from' ? 'Pickup airport' : 'Pickup location'))}
               {fieldErr('pickup')}
             </div>
             {(service === 'outstation' && outstationTrip !== 'Round Trip') || service === 'local' || service === 'pickup' ? (
               <button
                 type="button"
                 className="bf-swap"
-                aria-label="Swap pickup and drop"
-                title="Swap route"
+                aria-label={t('Swap pickup and drop')}
+                title={t('Swap route')}
                 disabled={!pickup && !drop}
                 onClick={() => {
                   update((d) => ({ pickup: d.drop, drop: d.pickup, stops: d.tripType === 'Round Trip' ? [...d.stops].reverse() : d.stops }));
@@ -451,12 +454,12 @@ export function BookingForm({
             ) : null}
             {service === 'outstation' && outstationTrip === 'Round Trip' ? <>{draft.stops.map(stopField)}{addingStop ? stopRow(null, 'new') : null}
                 <div className="bf-route__tools">
-                  {draft.stops.length < 8 && !addingStop ? <button type="button" className="bf-round-stop-add" onClick={() => setAddingStop(true)}><Icon name="plus" size={16} /> Add stop</button> : null}
+                  {draft.stops.length < 8 && !addingStop ? <button type="button" className="bf-round-stop-add" onClick={() => setAddingStop(true)}><Icon name="plus" size={16} /> {t('Add stop')}</button> : null}
                   <button
                     type="button"
                     className="bf-swap"
-                    aria-label="Swap pickup and drop"
-                    title="Swap route"
+                    aria-label={t('Swap pickup and drop')}
+                    title={t('Swap route')}
                     disabled={!pickup && !drop}
                     onClick={() => {
                       update((d) => ({ pickup: d.drop, drop: d.pickup, stops: d.tripType === 'Round Trip' ? [...d.stops].reverse() : d.stops }));
@@ -469,9 +472,9 @@ export function BookingForm({
                 {fieldErr('stops')}</> : null}
             {service !== 'rental' ? (
               <div className="bf-route__cell">
-                {locationField('drop', service === 'airport' && direction === 'to' ? 'Drop airport' : 'Drop location')}
+                {locationField('drop', t(service === 'airport' && direction === 'to' ? 'Drop airport' : 'Drop location'))}
                 {fieldErr('drop')}
-                {service === 'local' ? <p className="bf-hint">Local Taxi is for a pickup and drop inside the same city.</p> : null}
+                {service === 'local' ? <p className="bf-hint">{t('Local Taxi is for a pickup and drop inside the same city.')}</p> : null}
               </div>
             ) : null}
           </div>
@@ -479,10 +482,10 @@ export function BookingForm({
             <>
           <div className="bf-row bf-row--single">
             <div className="bf-cell">
-              <label className="bf-label bf-label--out" htmlFor="bf-rental-hours">Rental hours</label>
+              <label className="bf-label bf-label--out" htmlFor="bf-rental-hours">{t('Rental hours')}</label>
               <select id="bf-rental-hours" className="input bf-input" value={draft.rentalHours ?? ''} onChange={(e) => update({ rentalHours: e.target.value ? Number(e.target.value) : null })}>
-                <option value="">Select hours</option>
-                {RENTAL_PACKAGE_HOURS.map((h) => <option key={h} value={h}>{h} hours</option>)}
+                <option value="">{t('Select hours')}</option>
+                {RENTAL_PACKAGE_HOURS.map((h) => <option key={h} value={h}>{t('{n} hours', { n: h })}</option>)}
               </select>
               {fieldErr('hours')}
             </div>
@@ -493,7 +496,7 @@ export function BookingForm({
           <div className={isRound ? 'bf-row bf-row--round-schedule' : 'bf-row'}>
             <div className="bf-cell bf-cell--schedule">
               <label className="bf-label bf-label--out" htmlFor="bf-date">
-                Pickup date
+                {t('Pickup date')}
               </label>
               <div className="bf-datewrap">
                 <input
@@ -527,8 +530,8 @@ export function BookingForm({
                 {/* Quick day button: "Tomorrow" (or "Today" when the date is tomorrow). It changes only the date; the
                     calendar opens only from the date box itself. */}
                 {quickDay ? (
-                  <button type="button" className="bf-chip bf-chip--switch" aria-label={`Change the pickup date to ${quickDay.label.toLowerCase()}`} onClick={() => switchDay(quickDay.to)}>
-                    {quickDay.label}
+                  <button type="button" className="bf-chip bf-chip--switch" aria-label={t('Change the pickup date to {day}', { day: t(quickDay.label) })} onClick={() => switchDay(quickDay.to)}>
+                    {t(quickDay.label)}
                   </button>
                 ) : null}
               </div>
@@ -536,7 +539,7 @@ export function BookingForm({
             </div>
             <div className="bf-cell bf-cell--schedule">
               <span className="bf-label bf-label--out" id="bf-time-label">
-                Pickup time
+                {t('Pickup time')}
               </span>
               <button
                 ref={(el) => {
@@ -557,10 +560,10 @@ export function BookingForm({
             {isRound ? (
               <div className="bf-cell bf-round-days">
                 <label className="bf-label bf-label--out" htmlFor="bf-days">
-                  {overnight ? 'Trip days' : 'Days'}{overnight ? <small className="bf-days__tag">Overnight</small> : null}
+                  {overnight ? t('Trip days') : t('Days')}{overnight ? <small className="bf-days__tag">{t('Overnight')}</small> : null}
                 </label>
-                <div className="bf-duration-stepper" role="group" aria-label="Trip duration">
-                  <button type="button" aria-label="Decrease trip days" disabled={days <= minDays} onClick={() => { setAutoOvernight(false); setDays((n) => Math.max(minDays, n - 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>−</button>
+                <div className="bf-duration-stepper" role="group" aria-label={t('Trip duration')}>
+                  <button type="button" aria-label={t('Decrease trip days')} disabled={days <= minDays} onClick={() => { setAutoOvernight(false); setDays((n) => Math.max(minDays, n - 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>−</button>
                 <select
                   id="bf-days"
                   className="bf-days__input"
@@ -574,13 +577,13 @@ export function BookingForm({
                 >
                   {Array.from({ length: RT_MAX_DAYS - minDays + 1 }, (_, i) => i + minDays).map((n) => (
                     <option key={n} value={n}>
-                      {n} {n === 1 ? 'day' : 'days'}
+                      {n === 1 ? t('1 day') : t('{n} days', { n })}
                     </option>
                   ))}
                 </select>
-                  <button type="button" aria-label="Increase trip days" disabled={days >= RT_MAX_DAYS} onClick={() => { setAutoOvernight(false); setDays((n) => Math.min(RT_MAX_DAYS, n + 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>+</button>
+                  <button type="button" aria-label={t('Increase trip days')} disabled={days >= RT_MAX_DAYS} onClick={() => { setAutoOvernight(false); setDays((n) => Math.min(RT_MAX_DAYS, n + 1)); setErrors((x) => ({ ...x, retDate: '' })); }}>+</button>
                 </div>
-                <span className="bf-days__end">{date ? `${days === 1 ? 'Same day' : `Last day ${dayHint(addDaysISO(date, days - 1))}`}` : 'Pick a date'}</span>
+                <span className="bf-days__end">{date ? (days === 1 ? t('Same day') : t('Last day {day}', { day: dayHint(addDaysISO(date, days - 1)) })) : t('Pick a date')}</span>
                 {fieldErr('retDate')}
               </div>
             ) : null}
@@ -589,18 +592,18 @@ export function BookingForm({
 
           {errors.form ? (
             <p className="bf-error bf-error--form" role="alert">
-              {errors.form}
+              {t(errors.form)}
             </p>
           ) : null}
           <Button type="submit" size="lg" block className={`bf-submit ${service === 'local' ? '' : 'bf-submit--findcab'}`}>
-            {service === 'local' ? 'See fares' : <FindCabLabel />}
+            {service === 'local' ? t('See fares') : <FindCabLabel />}
           </Button>
         </form>
       )}
 
       {timeFor ? (
         <TimePicker
-          title="Pickup time"
+          title={t('Pickup time')}
           date={date}
           value={time}
           validate="pickup"

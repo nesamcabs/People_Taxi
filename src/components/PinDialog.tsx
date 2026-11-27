@@ -8,6 +8,7 @@ import { Icon } from './Icon';
 import { RouteMap } from './RouteMap';
 import { useDeviceLocation } from '@/lib/hooks';
 import { LOCATION_HELP } from '@/lib/schedule';
+import { msg, useT } from '@/i18n';
 
 /** Within this distance of the field's selection the map still "is" that place (map projection rounding, not a move). */
 const SAME_SPOT_KM = 0.01;
@@ -33,6 +34,7 @@ export function PinDialog({
 }) {
   // Taken once when the dialog opens, so a later change elsewhere never moves this pin.
   const [start] = useState<GeoPlace | null>(() => (initial && isValidLatLng(initial) ? initial : null));
+  const t = useT();
   // With no place chosen yet the map starts on the rider's real location (asks once); with one, GPS is never needed.
   // The map's locate button still finds the device on request.
   const { position, locate, locating, error: locError, permission } = useDeviceLocation(false, !start);
@@ -73,13 +75,13 @@ export function PinDialog({
           const resolved: GeoPlace = { ...p, lat: center.lat, lng: center.lng };
           setPlace(resolved);
           setBusy(false);
-          if (isCoordinateOnly(resolved)) setProblem('We couldn’t find the address of this spot. You can confirm the pinned point, or move the map slightly to try again.');
+          if (isCoordinateOnly(resolved)) setProblem(msg('We couldn’t find the address of this spot. You can confirm the pinned point, or move the map slightly to try again.'));
         })
         .catch(() => {
           if (controller.signal.aborted) return;
           setPlace(coordinatePlace(center));
           setBusy(false);
-          setProblem('We couldn’t find the address of this spot. You can confirm the pinned point, or move the map slightly to try again.');
+          setProblem(msg('We couldn’t find the address of this spot. You can confirm the pinned point, or move the map slightly to try again.'));
         });
     }, 450);
     return () => {
@@ -105,39 +107,39 @@ export function PinDialog({
       variant="page"
       className={`pin-sheet ${closing ? 'is-closing' : ''}`}
       title={title}
-      subtitle="Move the map so the pin sits on the exact spot."
+      subtitle={t('Move the map so the pin sits on the exact spot.')}
       onClose={close}
       footer={
         <>
           <Button variant="secondary" icon="arrow-left" onClick={close}>
-            Back
+            {t('Back')}
           </Button>
           <Button disabled={!place || busy} onClick={confirm}>
-            Confirm location
+            {t('Confirm location')}
           </Button>
         </>
       }
     >
-      <RouteMap className="pinmap" label="Choose a place on the map" pinMode={mode} pinStart={start} userLocation={position} onCenterChange={onCenterChange} onLocate={locate} />
+      <RouteMap className="pinmap" label={t('Choose a place on the map')} pinMode={mode} pinStart={start} userLocation={position} onCenterChange={onCenterChange} onLocate={locate} />
       {locating ? (
         <p className="pin-note muted" role="status">
-          Finding your location…
+          {t('Finding your location…')}
         </p>
       ) : locNote && !start ? (
         <p className="pin-note muted" role="status">
-          {locNote}
+          {t(locNote)}
         </p>
       ) : null}
       {problem ? (
         <p className="field__error pin-note" role="alert">
-          {problem}
+          {t(problem)}
         </p>
       ) : null}
       <div className="pin-card" aria-live="polite">
         <Icon name="map-pin" size={20} />
         <div>
-          <strong>{place?.name ?? 'Move the map…'}</strong>
-          <small className="muted">{busy ? 'Finding address…' : place && place.address !== place.name ? place.address : ''}</small>
+          <strong>{place ? t(place.name) : t('Move the map…')}</strong>
+          <small className="muted">{busy ? t('Finding address…') : place && place.address !== place.name ? place.address : ''}</small>
         </div>
       </div>
     </Dialog>

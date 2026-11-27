@@ -10,6 +10,7 @@ import { Icon } from '@/components/Icon';
 import { hasGoogleMapsWebKey, loadGoogleMaps, onGoogleMapsFailure } from '@/lib/googleMaps';
 import { useDeviceLocation } from '@/lib/hooks';
 import { QUICK_CITIES } from './content';
+import { useT } from '@/i18n';
 import './heroRentalMap.css';
 
 const TILE_URL = (import.meta.env.VITE_MAP_TILE_URL as string | undefined) || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -527,9 +528,10 @@ export function HeroRentalMap({
     haversineKm(pickup, drop) > CITY_LIMIT_KM;
 
   const hudStyle = { '--hero-right-inset': `${rightInset}px` } as CSSProperties;
+  const t = useT();
 
   return (
-    <div className="hero-map" ref={rootRef} style={hudStyle} aria-label="Interactive pickup and drop map">
+    <div className="hero-map" ref={rootRef} style={hudStyle} aria-label={t('Interactive pickup and drop map')}>
       {useLeaflet ? (
         <LeafletHeroCanvas
           mode={mode}
@@ -560,7 +562,7 @@ export function HeroRentalMap({
       <div className="hero-map__hud">
         <div className="hero-map__top">
           {mode === 'pickup' ? (
-            <div className="hero-map__seg" role="group" aria-label="Choose which location to pin on the map">
+            <div className="hero-map__seg" role="group" aria-label={t('Choose which location to pin on the map')}>
               <button
                 type="button"
                 className={`hero-map__segbtn ${pinTarget === 'pickup' ? 'is-active' : ''}`}
@@ -568,7 +570,7 @@ export function HeroRentalMap({
                 onClick={() => onPinTargetChange('pickup')}
               >
                 <span className="hero-map__dot" aria-hidden="true" />
-                <span>Pin pickup</span>
+                <span>{t('Pin pickup')}</span>
               </button>
               <button
                 type="button"
@@ -577,23 +579,23 @@ export function HeroRentalMap({
                 onClick={() => onPinTargetChange('drop')}
               >
                 <span className="hero-map__dot hero-map__dot--drop" aria-hidden="true" />
-                <span>Pin drop</span>
+                <span>{t('Pin drop')}</span>
               </button>
             </div>
           ) : (
             <div className="hero-map__pill">
               <span className="hero-map__dot" aria-hidden="true" />
-              <span>Click map or drag pin to pick location</span>
+              <span>{t('Click map or drag pin to pick location')}</span>
             </div>
           )}
 
           {resolving ? (
             <span className="hero-map__status" role="status">
-              Finding address…
+              {t('Finding address…')}
             </span>
           ) : farApart ? (
             <span className="hero-map__status hero-map__status--warn" role="alert">
-              Pickup &amp; Drop must be within {CITY_LIMIT_KM} km
+              {t('Pickup & Drop must be within {km} km', { km: CITY_LIMIT_KM })}
             </span>
           ) : null}
         </div>
@@ -604,14 +606,14 @@ export function HeroRentalMap({
             className={`hero-map__locate ${locating ? 'is-busy' : ''}`}
             onClick={() => void useMyLocation()}
             disabled={locating}
-            aria-label="Use my current location"
-            title="Pin my current location"
+            aria-label={t('Use my current location')}
+            title={t('Pin my current location')}
           >
             <Icon name="navigation" size={16} />
-            <span>{locating ? 'Locating…' : 'Use GPS'}</span>
+            <span>{t(locating ? 'Locating…' : 'Use GPS')}</span>
           </button>
 
-          <div className="hero-map__cities" role="group" aria-label="Jump to city">
+          <div className="hero-map__cities" role="group" aria-label={t('Jump to city')}>
             {QUICK_CITIES.map((city) => {
               const active = (pinTarget === 'drop' ? drop?.id : pickup?.id) === city.id;
               return (

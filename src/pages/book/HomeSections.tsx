@@ -9,11 +9,16 @@ import { useBooking } from '@/state/Booking';
 import { ASSURANCE, CORRIDORS, DESTINATIONS, FAQS, FEATURES, IMG, MORE_CORRIDORS, SERVICES, STEPS, type Corridor, type Destination, type Service } from './content';
 import { findRouteBySlug } from '../routes/routesData';
 import { categoryName, categoryPhoto, isLocalOnlyCategory } from '@/lib/categories';
+import { msg, useT, type Translate } from '@/i18n';
+
+/** "3 hr 10 min" with the units in the current language. */
+const duration = (t: Translate, s: string) => s.replace(/(\d+) hr/, (_, h) => t('{h} hr', { h })).replace(/(\d+) min/, (_, m) => t('{m} min', { m }));
 
 function SectionHead({ eyebrow, title, text, action, id }: { eyebrow: string; title: string; text?: string; action?: React.ReactNode; id?: string }) {
+  const t = useT();
   return (
     <header className="sec-head">
-      <h2 id={id}>{title}</h2>
+      <h2 id={id}>{t(title)}</h2>
       {action}
     </header>
   );
@@ -32,15 +37,16 @@ const SERVICE_PAGE: Record<string, string> = {
 };
 
 export function TrustStrip() {
+  const t = useT();
   return (
-    <section className="band band--strip" aria-label="Why riders choose People Taxi">
+    <section className="band band--strip" aria-label={t('Why riders choose People Taxi')}>
       <ul className="wrap strip">
         {FEATURES.map((f) => (
           <li key={f.title} className="strip__item">
-            <img src={IMG(f.image)} alt={f.title} width={84} height={84} loading="lazy" />
+            <img src={IMG(f.image)} alt={t(f.title)} width={84} height={84} loading="lazy" />
             <div>
-              <h3>{f.title}</h3>
-              <p>{f.text}</p>
+              <h3>{t(f.title)}</h3>
+              <p>{t(f.text)}</p>
             </div>
           </li>
         ))}
@@ -50,13 +56,14 @@ export function TrustStrip() {
 }
 
 export function ServicesSection({ onPick }: { onPick: (s: Service) => void }) {
+  const t = useT();
   return (
     <section className="band" aria-labelledby="sec-services" id="sec-services-band">
       <div className="wrap">
         <SectionHead
           eyebrow="Ways to travel"
           id="sec-services"
-          title="A ride for every kind of journey"
+          title={msg('A ride for every kind of journey')}
           text="Choose a starting point and we’ll set up your trip. You’ll see the fare for every vehicle before you book."
         />
         <ul className="services" id="services">
@@ -66,11 +73,11 @@ export function ServicesSection({ onPick }: { onPick: (s: Service) => void }) {
               <li key={s.id} id={s.id} className="svc">
                 <button type="button" className="service" onClick={() => onPick(s)}>
                   <span className="service__media">
-                    <img src={IMG(s.image)} alt={`People Taxi - ${s.title}`} width={724} height={543} loading="lazy" />
+                    <img src={IMG(s.image)} alt={`People Taxi - ${t(s.title)}`} width={724} height={543} loading="lazy" />
                   </span>
                   <span className="service__body">
-                    <strong>{s.title}</strong>
-                    <span>{s.text}</span>
+                    <strong>{t(s.title)}</strong>
+                    <span>{t(s.text)}</span>
                   </span>
                   <span className="service__go" aria-hidden="true">
                     <Icon name="arrow-right" size={20} />
@@ -78,7 +85,7 @@ export function ServicesSection({ onPick }: { onPick: (s: Service) => void }) {
                 </button>
                 {serviceSlug ? (
                   <Link to={`/services/${serviceSlug}`} className="service__more">
-                    Service details &amp; tariff <Icon name="arrow-right" size={14} />
+                    {t('Service details & tariff')} <Icon name="arrow-right" size={14} />
                   </Link>
                 ) : null}
               </li>
@@ -87,8 +94,8 @@ export function ServicesSection({ onPick }: { onPick: (s: Service) => void }) {
           <li className="services__call">
             <a className="service service--call" href={`tel:${SUPPORT_PHONE}`}>
               <span className="service__body">
-                <strong>Multi-day tours, weddings, corporate fleets</strong>
-                <span>Tell our team what you need and we’ll arrange it.</span>
+                <strong>{t('Multi-day tours, weddings, corporate fleets')}</strong>
+                <span>{t('Tell our team what you need and we’ll arrange it.')}</span>
               </span>
               <span className="service__phone">
                 <Icon name="phone" size={22} />
@@ -103,19 +110,20 @@ export function ServicesSection({ onPick }: { onPick: (s: Service) => void }) {
 }
 
 export function RoutesSection({ onRoute }: { onRoute: (c: Corridor) => void }) {
+  const t = useT();
   return (
     <section className="band band--paper" aria-labelledby="sec-routes">
       <div className="wrap">
         <SectionHead
           eyebrow="Popular routes"
           id="sec-routes"
-          title="Favourite drives across the south"
+          title={msg('Favourite drives across the south')}
           text="Pick a route to fill in your trip, then choose the day and time. Distances and times are approximate; your exact fare is shown before you book."
         />
         <ul className="routes" id="routes">
           {CORRIDORS.map((c) => (
             <li key={c.id} id={c.id}>
-              <button type="button" className="route-card" onClick={() => onRoute(c)} aria-label={`Plan ${c.origin} to ${c.destination}, about ${c.km}`}>
+              <button type="button" className="route-card" onClick={() => onRoute(c)} aria-label={t('Plan {from} to {to}, about {km}', { from: c.origin, to: c.destination, km: c.km })}>
                 {c.image ? <img src={IMG(c.image)} alt={`${c.origin} to ${c.destination} outstation drop taxi route`} width={768} height={512} loading="lazy" /> : null}
                 <span className="route-card__shade" aria-hidden="true" />
                 <span className="route-card__body">
@@ -129,22 +137,22 @@ export function RoutesSection({ onRoute }: { onRoute: (c: Corridor) => void }) {
                       <Icon name="route" size={16} /> {c.km}
                     </span>
                     <span>
-                      <Icon name="clock" size={16} /> ~{c.duration}
+                      <Icon name="clock" size={16} /> ~{duration(t, c.duration)}
                     </span>
                   </span>
                 </span>
                 <span className="route-card__cta">
-                  Plan this trip <Icon name="arrow-right" size={18} />
+                  {t('Plan this trip')} <Icon name="arrow-right" size={18} />
                 </span>
               </button>
               <Link to={routeHref(c.id)} className="route-guide">
-                Route guide &amp; tariff <Icon name="arrow-right" size={14} />
+                {t('Route guide & tariff')} <Icon name="arrow-right" size={14} />
               </Link>
             </li>
           ))}
         </ul>
-        <div className="more-routes" role="group" aria-label="More routes">
-          <span className="more-routes__label">More routes</span>
+        <div className="more-routes" role="group" aria-label={t('More routes')}>
+          <span className="more-routes__label">{t('More routes')}</span>
           {MORE_CORRIDORS.map((c) => (
             <Link key={c.id} to={routeHref(c.id)} className="chip">
               {c.origin} <Icon name="arrow-right" size={15} /> {c.destination}
@@ -158,10 +166,11 @@ export function RoutesSection({ onRoute }: { onRoute: (c: Corridor) => void }) {
 }
 
 export function DestinationsSection({ onPick }: { onPick: (d: Destination) => void }) {
+  const t = useT();
   return (
     <section className="band" aria-labelledby="sec-destinations" id="sec-destinations-band">
       <div className="wrap">
-        <SectionHead eyebrow="Destinations" id="sec-destinations" title="Where will you go next?" text="Tap a destination to set it as your drop and pick up from there." />
+        <SectionHead eyebrow="Destinations" id="sec-destinations" title={msg('Where will you go next?')} text="Tap a destination to set it as your drop and pick up from there." />
         <ul className="destinations" id="destinations">
           {DESTINATIONS.map((d) => (
             <li key={d.id} id={`destination-${d.id}`}>
@@ -170,7 +179,7 @@ export function DestinationsSection({ onPick }: { onPick: (d: Destination) => vo
                 <span className="destination__shade" aria-hidden="true" />
                 <span className="destination__body">
                   <strong>{d.name}</strong>
-                  <small>{d.tagline}</small>
+                  <small>{t(d.tagline)}</small>
                 </span>
               </button>
             </li>
@@ -195,17 +204,18 @@ const FALLBACK_FLEET = [
 export function FleetSection({ onPick }: { onPick: () => void }) {
   const { categories } = useBooking();
   const live = categories.filter((c) => !isLocalOnlyCategory(c)).slice(0, 8);
+  const t = useT();
   return (
     <section className="band band--paper" aria-labelledby="sec-fleet">
       <div className="wrap">
         <SectionHead
           eyebrow="Our fleet"
           id="sec-fleet-title"
-          title="The right vehicle for your group"
+          title={msg('The right vehicle for your group')}
           text="From a quick drop to a full-group tour. Fares for each vehicle are shown once you enter your trip."
           action={
             <button type="button" className="btn btn--primary" onClick={onPick}>
-              Get fares <Icon name="arrow-right" size={18} />
+              {t('Get fares')} <Icon name="arrow-right" size={18} />
             </button>
           }
         />
@@ -218,7 +228,7 @@ export function FleetSection({ onPick }: { onPick: () => void }) {
                 <div className="vehicle__body">
                   <strong>{categoryName(c)}</strong>
                   <span className="vehicle__seats">
-                    <Icon name="passengers" size={16} /> {c.seats} seats
+                    <Icon name="passengers" size={16} /> {t('{n} seats', { n: c.seats })}
                   </span>
                 </div>
               </li>
@@ -227,7 +237,7 @@ export function FleetSection({ onPick }: { onPick: () => void }) {
               <li key={v.art} id={`vehicle-${v.art}`} className="vehicle">
                 <img src={`/vehicles/${v.art}.webp`} alt={`People Taxi ${v.name} rental`} width={320} height={210} loading="lazy" />
                 <div className="vehicle__body">
-                  <strong>{v.name}</strong>
+                  <strong>{t(v.name)}</strong>
                 </div>
               </li>
             ))}
@@ -237,6 +247,7 @@ export function FleetSection({ onPick }: { onPick: () => void }) {
 }
 
 export function HowSection() {
+  const t = useT();
   return (
     <section className="band band--dark" aria-labelledby="sec-how" id="sec-how-band">
       <div className="wrap how">
@@ -244,16 +255,16 @@ export function HowSection() {
           <img src={IMG('photography/about-fleet')} alt="People Taxi verified drivers and premium vehicle fleet" width={1448} height={1086} loading="lazy" />
         </div>
         <div className="how__body">
-          <h2 id="sec-how">Booked in minutes. Handled with care.</h2>
+          <h2 id="sec-how">{t('Booked in minutes. Handled with care.')}</h2>
           <ol className="how__steps">
             {STEPS.map((s, i) => (
               <li key={s.title}>
                 <span className="how__num">{i + 1}</span>
                 <div className="how__card">
-                  <img src={IMG(s.image)} alt={s.title} width={96} height={96} loading="lazy" />
+                  <img src={IMG(s.image)} alt={t(s.title)} width={96} height={96} loading="lazy" />
                   <div>
-                    <h3>{s.title}</h3>
-                    <p>{s.text}</p>
+                    <h3>{t(s.title)}</h3>
+                    <p>{t(s.text)}</p>
                   </div>
                 </div>
               </li>
@@ -266,6 +277,7 @@ export function HowSection() {
 }
 
 export function AssuranceSection() {
+  const t = useT();
   return (
     <section className="band" aria-labelledby="sec-safe" id="sec-safe-band">
       <div className="wrap assure">
@@ -275,8 +287,8 @@ export function AssuranceSection() {
           <img className="assure__c" src={IMG('photography/trust-support')} alt="People Taxi 24/7 customer care team support" width={724} height={543} loading="lazy" />
         </div>
         <div className="assure__body">
-          <h2 id="sec-safe">Built for long journeys and peace of mind</h2>
-          <p className="sec-head__text">From the moment your driver is assigned to the receipt in your inbox, every step is visible to you.</p>
+          <h2 id="sec-safe">{t('Built for long journeys and peace of mind')}</h2>
+          <p className="sec-head__text">{t('From the moment your driver is assigned to the receipt in your inbox, every step is visible to you.')}</p>
           <ul className="assure__list">
             {ASSURANCE.map((a) => (
               <li key={a.title}>
@@ -284,8 +296,8 @@ export function AssuranceSection() {
                   <Icon name={a.icon} size={24} />
                 </span>
                 <div>
-                  <h3>{a.title}</h3>
-                  <p>{a.text}</p>
+                  <h3>{t(a.title)}</h3>
+                  <p>{t(a.text)}</p>
                 </div>
               </li>
             ))}
@@ -298,23 +310,24 @@ export function AssuranceSection() {
 
 export function Banners() {
   const freeHours = Math.round(SCHEDULED_FREE_CANCEL_BEFORE_MS / 3600000);
+  const t = useT();
   return (
-    <section className="band band--paper" aria-label="Offers and help">
+    <section className="band band--paper" aria-label={t('Offers and help')}>
       <div className="wrap banners">
         <Link className="banner banner--offer" to="/offers" style={{ backgroundImage: `url(${IMG('backgrounds/offer-background')})` }}>
-          <strong>Promo codes and festival savings</strong>
-          <span>See what’s live and apply a code at checkout.</span>
+          <strong>{t('Promo codes and festival savings')}</strong>
+          <span>{t('See what’s live and apply a code at checkout.')}</span>
           <span className="banner__cta">
-            View offers <Icon name="arrow-right" size={18} />
+            {t('View offers')} <Icon name="arrow-right" size={18} />
           </span>
         </Link>
         <a className="banner banner--call" href={`tel:${SUPPORT_PHONE}`} style={{ backgroundImage: `url(${IMG('backgrounds/app-promotion-background')})` }}>
-          <strong>Family trip, pilgrimage or group tour?</strong>
+          <strong>{t('Family trip, pilgrimage or group tour?')}</strong>
           <span>
-            Call us on {SUPPORT_PHONE_DISPLAY}. Cancel free until {freeHours} hour before pickup, then a {formatINR(SCHEDULED_CANCELLATION_FEE)} fee applies.
+            {t('Call us on {phone}. Cancel free until {n} hour before pickup, then a {fee} fee applies.', { phone: SUPPORT_PHONE_DISPLAY, n: freeHours, fee: formatINR(SCHEDULED_CANCELLATION_FEE) })}
           </span>
           <span className="banner__cta">
-            <Icon name="phone" size={18} /> Call People Taxi
+            <Icon name="phone" size={18} /> {t('Call People Taxi')}
           </span>
         </a>
       </div>
@@ -323,26 +336,27 @@ export function Banners() {
 }
 
 export function FaqSection() {
+  const t = useT();
   return (
     <section className="band" aria-labelledby="sec-faq" id="sec-faq-band">
       <div className="wrap faq-band">
         <div className="faq-band__intro">
-          <h2 id="sec-faq">Questions, answered</h2>
-          <p className="sec-head__text">Still unsure about something? Our team is a call away.</p>
+          <h2 id="sec-faq">{t('Questions, answered')}</h2>
+          <p className="sec-head__text">{t('Still unsure about something? Our team is a call away.')}</p>
           <Link className="btn btn--secondary" to="/support">
-            <Icon name="support" size={18} /> Help &amp; support
+            <Icon name="support" size={18} /> {t('Help & support')}
           </Link>
         </div>
         <div className="faq" id="faq">
           {FAQS.map((f) => (
             <details key={f.q} className="faq__item">
               <summary>
-                <span>{f.q}</span>
+                <span>{t(f.q)}</span>
                 <span className="faq__icon">
                   <Icon name="add" size={18} />
                 </span>
               </summary>
-              <p>{f.a}</p>
+              <p>{t(f.a)}</p>
             </details>
           ))}
         </div>

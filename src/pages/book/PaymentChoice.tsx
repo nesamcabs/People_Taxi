@@ -4,6 +4,7 @@
 import type { ReactElement } from 'react';
 import { choiceText, type PayChoice, type PayChoiceId } from '@core/services/paymentService';
 import { formatINR } from '@core/utils/format';
+import { useT } from '@/i18n';
 import './paymentChoice.css';
 
 const svg = { width: 24, height: 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 1.7, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false } as const;
@@ -24,15 +25,16 @@ function ShieldIcon() {
 const ICONS: Record<PayChoiceId, () => ReactElement> = { later: CalendarIcon, part: CoinsIcon, full: CardIcon };
 
 export function PaymentChoice({ choices, value, onChange, total, disabled }: { choices: PayChoice[]; value: PayChoiceId; onChange: (id: PayChoiceId) => void; total: number; disabled?: boolean }) {
+  const tr = useT();
   return (
     <section className="pc" aria-labelledby="pc-title">
       <header className="pc__head">
         <span className="pc__headicon" aria-hidden="true"><CardIcon /></span>
         <div className="pc__headtext">
-          <h2 id="pc-title">Payment method</h2>
-          <p>Select your preferred mode of settlement.</p>
+          <h2 id="pc-title">{tr('Payment method')}</h2>
+          <p>{tr('Select your preferred mode of settlement.')}</p>
         </div>
-        <span className="pc__secure"><ShieldIcon />Secure</span>
+        <span className="pc__secure"><ShieldIcon />{tr('Secure')}</span>
       </header>
       <div className="pc__list" role="radiogroup" aria-labelledby="pc-title">
         {choices.map((c) => {
@@ -45,14 +47,14 @@ export function PaymentChoice({ choices, value, onChange, total, disabled }: { c
               <span className="pc__dot" aria-hidden="true" />
               <span className="pc__icon" aria-hidden="true"><Icon /></span>
               <span className="pc__text">
-                <strong>{t.title}{c.recommended ? <em className="pc__badge"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="m12 2.8 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17l-5.6 3 1.1-6.2L3 9.4l6.2-.9z" /></svg>Recommended</em> : null}</strong>
-                <small>{t.subtitle}</small>
+                <strong>{c.id === 'part' ? tr('Pay {n}% Now', { n: c.percent }) : tr(t.title)}{c.recommended ? <em className="pc__badge"><svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path fill="currentColor" d="m12 2.8 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17l-5.6 3 1.1-6.2L3 9.4l6.2-.9z" /></svg>{tr('Recommended')}</em> : null}</strong>
+                <small>{tr(t.subtitle)}</small>
               </span>
               {c.id === 'later' ? (
-                <span className="pc__pill" aria-label={`Pay ${formatINR(0)} now`}>{formatINR(0)}</span>
+                <span className="pc__pill" aria-label={tr('Pay {amount} now', { amount: formatINR(0) })}>{formatINR(0)}</span>
               ) : (
                 <span className="pc__amt">
-                  <small>{t.label}</small>
+                  <small>{tr(t.label)}</small>
                   <strong className="num">{formatINR(t.amount)}</strong>
                 </span>
               )}

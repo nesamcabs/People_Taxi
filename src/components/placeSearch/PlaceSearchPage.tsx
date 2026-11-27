@@ -7,6 +7,7 @@ import { reverseGeocode } from '@core/services/geoService';
 import { isValidLatLng } from '@core/utils/geo';
 import { useDeviceLocation } from '@/lib/hooks';
 import { LOCATION_HELP } from '@/lib/schedule';
+import { msg, useT } from '@/i18n';
 import { Icon } from '../Icon';
 import type { PickerConfig } from '../LocationPicker';
 import { PinDialog } from '../PinDialog';
@@ -57,6 +58,7 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
   const listId = `${uid}-list`;
   const inputRef = useRef<HTMLInputElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const t = useT();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(-1);
   const [reject, setReject] = useState('');
@@ -136,7 +138,7 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
       choose({ ...found, type: 'current' });
     } catch {
       if (mine !== intent.current) return;
-      setMessage('We couldn’t read your address. Please search for it instead.');
+      setMessage(msg('We couldn’t read your address. Please search for it instead.'));
     } finally {
       setBusy(false);
     }
@@ -164,8 +166,8 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
 
   const shortcuts: Shortcut[] = [];
   const finding = busy || locating;
-  if (config.allowCurrent) shortcuts.push({ id: 'current', title: finding ? 'Finding you…' : 'My location', subtitle: 'Use device GPS', busy: finding, onClick: () => void useCurrent() });
-  if (config.pinMode) shortcuts.push({ id: 'map', title: 'Choose on map', subtitle: 'Drop an exact pin', onClick: openMap });
+  if (config.allowCurrent) shortcuts.push({ id: 'current', title: finding ? msg('Finding you…') : msg('My location'), subtitle: msg('Use device GPS'), busy: finding, onClick: () => void useCurrent() });
+  if (config.pinMode) shortcuts.push({ id: 'map', title: msg('Choose on map'), subtitle: msg('Drop an exact pin'), onClick: openMap });
 
   const locNote = locTried && !finding ? (locError ? LOCATION_HELP[locError.kind] : permission === 'denied' || permission === 'blocked' ? LOCATION_HELP.blocked : '') : '';
   const compact = area.height < 520;
@@ -212,10 +214,10 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
         <header className="ps-bar">
           <div className="ps-bar__title">
             <h2 id={titleId}>{config.title}</h2>
-            <p>{config.subtitle ?? 'Search a city, area or landmark'}</p>
+            <p>{config.subtitle ?? t('Search a city, area or landmark')}</p>
           </div>
           <div className="ps-bar__row">
-            <button type="button" className="ps-back" aria-label="Back to booking" onClick={onClose}>
+            <button type="button" className="ps-back" aria-label={t('Back to booking')} onClick={onClose}>
               <PlaceIcon kind="back" size={22} />
             </button>
             <div className="ps-search" data-no-reveal>
@@ -232,7 +234,7 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
                 aria-activedescendant={active >= 0 ? `${uid}-opt-${active}` : undefined}
                 aria-label={config.title}
                 value={query}
-                placeholder={config.placeholder ?? 'City, area or landmark'}
+                placeholder={config.placeholder ?? t('City, area or landmark')}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="none"
@@ -249,7 +251,7 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
                 <button
                   type="button"
                   className="ps-search__clear"
-                  aria-label="Clear"
+                  aria-label={t('Clear')}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => {
                     setQuery('');
@@ -266,7 +268,7 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
           ref={bodyRef}
           id={listId}
           role="listbox"
-          aria-label="Suggestions"
+          aria-label={t('Suggestions')}
           className="ps-body"
           // Tapping a suggestion keeps the keyboard where it is, so the list does not jump under the finger.
           onMouseDown={(e) => e.preventDefault()}
@@ -285,12 +287,12 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
               <>
                 {reject ? (
                   <p className="ps-note ps-note--error" role="alert">
-                    <Icon name="warning" size={16} /> {reject}
+                    <Icon name="warning" size={16} /> {t(reject)}
                   </p>
                 ) : null}
                 {message || locNote ? (
                   <p className="ps-note" role="status">
-                    <Icon name="info" size={16} /> {message || locNote}
+                    <Icon name="info" size={16} /> {t(message || locNote)}
                   </p>
                 ) : null}
               </>

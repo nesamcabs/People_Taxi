@@ -2,6 +2,7 @@
 // The server prices every package (5-hour, 8-hour, Full-Day, Next-Day, Morning Return) for every vehicle; the rider picks a
 // package, and from then on every screen reads that package's fare as if it were the vehicle's only fare.
 import type { HillStationInfo, ServerCategoryQuote, ServerQuoteResponse, ServerTimePackage } from '../services/quoteService';
+import { dateLocale } from '@/i18n';
 
 const IST_OFFSET_MS = 19_800_000;
 const DAY_MS = 86_400_000;
@@ -9,7 +10,7 @@ const DAY_MS = 86_400_000;
 export const istMinutesOf = (d: Date): number => Math.floor(((((d.getTime() + IST_OFFSET_MS) % DAY_MS) + DAY_MS) % DAY_MS) / 60_000);
 
 /** "17 Nov" — the way the guide writes a package's return date. */
-export const packageDay = (d: Date): string => `${d.getDate()} ${d.toLocaleDateString('en-IN', { month: 'short' })}`;
+export const packageDay = (d: Date): string => `${d.getDate()} ${d.toLocaleDateString(dateLocale(), { month: 'short' })}`;
 /** "11:45 PM" / "9:00 AM" — no leading zero, upper-case meridiem. */
 export const packageClock = (d: Date): string => d.toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
 

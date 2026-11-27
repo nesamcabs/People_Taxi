@@ -48,6 +48,7 @@ import './styles/bookform-premium.css';
 import './styles/responsive-shell.css';
 import './styles/ride-corp.css';
 import './styles/drawer-corp.css';
+import './styles/lang-ta.css';
 import { keepHomeBehindEveryScreen } from './lib/homeNav';
 import { installStaleVersionReload, installVersionCheck } from '@/shared/components/RouteErrorBoundary';
 import { prefetchWhenIdle, registerDeviceCache } from '@/lib/deviceCache';

@@ -9,6 +9,7 @@ import { Button, Notice, TextField } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { EmailVerify } from '@/components/EmailVerify';
 import { useToasts } from '@/state/Toasts';
+import { msg, useT } from '@/i18n';
 
 interface FormProps {
   /** Called after a successful save or removal. */
@@ -21,6 +22,7 @@ interface FormProps {
 export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
   const { profile } = useCustomerData();
   const { push } = useToasts();
+  const t = useT();
   const [name, setName] = useState(profile?.name || '');
   const [email, setEmail] = useState(profile?.email || '');
   const [busy, setBusy] = useState(false);
@@ -30,8 +32,8 @@ export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
 
   const dirty = name.trim() !== profile.name || email.trim().toLowerCase() !== profile.email;
   const errors = {
-    name: !isValidName(name) ? 'Enter your full name (letters and spaces, 2–60 characters).' : '',
-    email: email.trim() && !isValidEmail(email) ? 'Enter a valid email address, or leave it blank.' : '',
+    name: !isValidName(name) ? t('Enter your full name (letters and spaces, 2–60 characters).') : '',
+    email: email.trim() && !isValidEmail(email) ? t('Enter a valid email address, or leave it blank.') : '',
   };
 
   const save = async () => {
@@ -41,10 +43,10 @@ export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
     setError('');
     try {
       await updateCustomerProfile(profile.uid, { name, email: email.toLowerCase() });
-      push({ title: 'Profile updated', tone: 'success', duration: 3000 });
+      push({ title: msg('Profile updated'), tone: 'success', duration: 3000 });
       onDone();
     } catch (e) {
-      setError(describeError(e, 'We couldn’t save your changes.'));
+      setError(describeError(e, msg('We couldn’t save your changes.')));
       setBusy(false);
     }
   };
@@ -60,16 +62,16 @@ export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
     >
       <div className="profile-form__locked">
         <span className="profile-form__locked-text">
-          <small>Mobile number</small>
+          <small>{t('Mobile number')}</small>
           <strong className="num">{formatPhone(profile.phone)}</strong>
         </span>
         <Icon name="lock" size={16} />
       </div>
-      <TextField label="Full name" value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" error={touched ? errors.name : ''} />
+      <TextField label={t('Full name')} value={name} onChange={(e) => setName(e.target.value)} autoComplete="name" error={touched ? errors.name : ''} />
       <TextField
         label={
           <>
-            Email <small>(optional)</small>
+            {t('Email')} <small>{t('(optional)')}</small>
           </>
         }
         type="email"
@@ -77,17 +79,17 @@ export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
         onChange={(e) => setEmail(e.target.value)}
         autoComplete="email"
         placeholder="you@example.com"
-        hint="Booking confirmations and receipts are sent here."
+        hint={t('Booking confirmations and receipts are sent here.')}
         error={touched ? errors.email : ''}
       />
       {/* Verification is offered for the saved address, not one still being typed. */}
       {profile.email && email.trim().toLowerCase() === profile.email ? <EmailVerify key={profile.email} email={profile.email} /> : null}
-      {error ? <Notice tone="error">{error}</Notice> : null}
+      {error ? <Notice tone="error">{t(error)}</Notice> : null}
       <Button type="submit" block loading={busy} disabled={!dirty}>
-        Save
+        {t('Save')}
       </Button>
       <Button variant="ghost" block onClick={onCancel} disabled={busy}>
-        Cancel
+        {t('Cancel')}
       </Button>
     </form>
   );
@@ -97,6 +99,7 @@ export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
 export function EmergencyContactForm({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) {
   const { profile } = useCustomerData();
   const { push } = useToasts();
+  const t = useT();
   const current = profile ? localMobile(profile.emergencyContact) : '';
   const [number, setNumber] = useState(current);
   const [busy, setBusy] = useState<'' | 'save' | 'remove'>('');
@@ -105,9 +108,9 @@ export function EmergencyContactForm({ onDone, onCancel }: { onDone: () => void;
   if (!profile) return null;
 
   const invalid = !isValidIndianMobile(number)
-    ? 'Enter a 10-digit mobile number.'
+    ? t('Enter a 10-digit mobile number.')
     : number === localMobile(profile.phone)
-      ? 'Use someone else’s number, not your own.'
+      ? t('Use someone else’s number, not your own.')
       : '';
 
   const run = async (kind: 'save' | 'remove') => {
@@ -117,10 +120,10 @@ export function EmergencyContactForm({ onDone, onCancel }: { onDone: () => void;
     setError('');
     try {
       await updateCustomerProfile(profile.uid, { emergencyContact: kind === 'save' ? `+91 ${number}` : '' });
-      push({ title: kind === 'save' ? 'Emergency contact saved' : 'Emergency contact removed', tone: 'success', duration: 3000 });
+      push({ title: kind === 'save' ? msg('Emergency contact saved') : msg('Emergency contact removed'), tone: 'success', duration: 3000 });
       onDone();
     } catch (e) {
-      setError(describeError(e, 'We couldn’t update the number. Please try again.'));
+      setError(describeError(e, msg('We couldn’t update the number. Please try again.')));
       setBusy('');
     }
   };
@@ -135,30 +138,30 @@ export function EmergencyContactForm({ onDone, onCancel }: { onDone: () => void;
       }}
     >
       <p className="simple-form__lead">
-        <Icon name="emergency" size={18} /> Someone we can call if something goes wrong on a trip.
+        <Icon name="emergency" size={18} /> {t('Someone we can call if something goes wrong on a trip.')}
       </p>
       <TextField
-        label="Mobile number"
+        label={t('Mobile number')}
         prefix="+91"
         value={number}
         onChange={(e) => setNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
         inputMode="numeric"
         autoComplete="off"
-        placeholder="10-digit number"
+        placeholder={t('10-digit number')}
         error={touched ? invalid : ''}
       />
-      {error ? <Notice tone="error">{error}</Notice> : null}
+      {error ? <Notice tone="error">{t(error)}</Notice> : null}
       <Button type="submit" block loading={busy === 'save'} disabled={!!busy || number === current}>
-        Save
+        {t('Save')}
       </Button>
       {current ? (
         <Button variant="secondary" block loading={busy === 'remove'} disabled={!!busy} onClick={() => void run('remove')}>
-          Remove contact
+          {t('Remove contact')}
         </Button>
       ) : null}
       {onCancel ? (
         <Button variant="ghost" block onClick={onCancel} disabled={!!busy}>
-          Cancel
+          {t('Cancel')}
         </Button>
       ) : null}
     </form>

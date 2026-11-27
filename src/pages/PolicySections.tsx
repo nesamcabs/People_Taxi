@@ -3,6 +3,7 @@
 // text always matches what the app charges.
 import { Fragment, useEffect, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useT } from '@/i18n';
 import {
   COMPANY_LEGAL_NAME,
   FREE_CANCEL_AFTER_ASSIGN_MS,
@@ -54,6 +55,7 @@ const INSTANT_GRACE = `${FREE_CANCEL_AFTER_ASSIGN_MS / 60000} minutes`;
  * is public, so it opens in any state).
  */
 export function PolicyLinks({ ids, lead, newTab = false, className = '' }: { ids: PolicyId[]; lead?: string; newTab?: boolean; className?: string }) {
+  const t = useT();
   return (
     <p className={`policy-links small muted ${className}`}>
       {lead ? `${lead} ` : null}
@@ -61,8 +63,8 @@ export function PolicyLinks({ ids, lead, newTab = false, className = '' }: { ids
         <Fragment key={id}>
           {i ? ' · ' : null}
           <Link to={`/legal#${id}`} {...(newTab ? { target: '_blank', rel: 'noopener' } : {})}>
-            {POLICY_TITLES[id]}
-            {newTab ? <span className="sr-only"> (opens in a new tab)</span> : null}
+            {t(POLICY_TITLES[id])}
+            {newTab ? <span className="sr-only"> {t('(opens in a new tab)')}</span> : null}
           </Link>
         </Fragment>
       ))}

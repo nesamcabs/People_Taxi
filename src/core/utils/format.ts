@@ -1,4 +1,6 @@
 // Formatting + validation helpers.
+// Dates and durations follow the app language (@/i18n); fares, distances, phone numbers and clock times keep one format.
+import { dateLocale, translate } from '@/i18n';
 
 export function formatINR(amount: number): string {
   return `₹${Math.round(amount).toLocaleString('en-IN')}`;
@@ -12,14 +14,14 @@ export function formatDistance(km: number): string {
 export function formatDuration(min: number): string {
   if (!Number.isFinite(min)) return '—';
   const m = Math.max(1, Math.round(min));
-  if (m < 60) return `${m} min`;
+  if (m < 60) return translate('{m} min', { m });
   const h = Math.floor(m / 60);
   const r = m % 60;
-  return r ? `${h} hr ${r} min` : `${h} hr`;
+  return r ? translate('{h} hr {m} min', { h, m: r }) : translate('{h} hr', { h });
 }
 
 export function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return d.toLocaleDateString(dateLocale(), { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
 /** "06:30 PM" in the device's zone (the same zone the pickers use). Built from parts so every JS engine prints the same text. */
@@ -34,11 +36,11 @@ export function formatDateTime(d: Date | null): string {
 }
 
 export function timeAgo(d: Date | null, now = Date.now()): string {
-  if (!d) return 'unknown';
+  if (!d) return translate('unknown');
   const s = Math.max(0, Math.round((now - d.getTime()) / 1000));
-  if (s < 45) return 'just now';
-  if (s < 3600) return `${Math.round(s / 60)} min ago`;
-  if (s < 86400) return `${Math.round(s / 3600)} hr ago`;
+  if (s < 45) return translate('just now');
+  if (s < 3600) return translate('{n} min ago', { n: Math.round(s / 60) });
+  if (s < 86400) return translate('{n} hr ago', { n: Math.round(s / 3600) });
   return formatDate(d);
 }
 

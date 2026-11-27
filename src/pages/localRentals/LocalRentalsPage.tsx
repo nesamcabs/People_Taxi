@@ -1,5 +1,6 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { dateLocale, msg, translate, useT } from '@/i18n';
 // Local Rentals: a full-screen map and a sheet that rises from the bottom, one question at a time (Ola / Uber style).
 //   Hourly Rental   → pickup on the map, then the hours, Ride now or Schedule, and the cabs with their fares.
 //   Pickup & Drop   → pickup on the map, drop on the map, then Ride now or Schedule, and the cabs with their fares.
@@ -22,7 +23,7 @@ import { TimePicker, formatTime12 } from '@/components/TimePicker';
 import { useBooking, useBookingQuote } from '@/state/Booking';
 import { useAuth } from '@/state/Auth';
 import { useCustomerData } from '@/state/customer';
-import { categoryName, categoryPhoto, tripCategoryName } from '@/lib/categories';
+import { categoryName, categoryPhoto, isLocalOnlyCategory, localOnlyTrip, tripCategoryName } from '@/lib/categories';
 import { quoteForFuel, quoteMatchesFuel } from '@/lib/fuelQuote';
 import { primeChime } from '@/lib/confirmChime';
 import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
@@ -191,7 +192,7 @@ function LeafletPinMap({ picking, target, pins, sheetH, onPick, me, road, pulse 
     programmatic.current = false;
   }, [pins.map((p) => `${p.kind}:${p.place.lat},${p.place.lng},${p.place.name}`).join('|'), picking, sheetH, roadKeyOf(road)]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={host} className="lr__map lr__map--google" role="application" aria-label="Map. Drag it to place the pin on your location." />;
+  return <div ref={host} className="lr__map lr__map--google" role="application" aria-label={translate('Map. Drag it to place the pin on your location.')} />;
 }
 
 // ── Google Maps (the map the sites use everywhere else) ─────────────────────────────────────────────────────────────────────
@@ -334,7 +335,7 @@ function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me, road,
     }
   }, [pins.map((p) => `${p.kind}:${p.place.lat},${p.place.lng},${p.place.name}`).join('|'), picking, ready, window.innerWidth >= 900 ? sheetH : 0, roadKeyOf(road)]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={host} className="lr__map lr__map--google" role="application" aria-label="Map. Drag it to place the pin on your location." />;
+  return <div ref={host} className="lr__map lr__map--google" role="application" aria-label={translate('Map. Drag it to place the pin on your location.')} />;
 }
 
 /** Google Maps with the sites' key. If Google cannot load, or rejects the key, the same page keeps working on the open map. */
@@ -358,7 +359,8 @@ export function LocalRentalsPage() {
 }
 
 function LocalRentalsSheet() {
-  useSeo({ title: 'Local Rentals', noindex: true });
+  const t = useT();
+  useSeo({ title: t('Local Rentals'), noindex: true });
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const { draft, update, reset, route, categories, categoryStatus, rideNowLead } = useBooking();
@@ -595,10 +597,10 @@ function LocalRentalsSheet() {
   const secure = typeof window === 'undefined' || window.isSecureContext !== false;
   const askLocation = !position && !locating;
   const locationNote = !askLocation ? ''
-    : !secure ? 'Location only works on a secure (https) connection. Open the site over https, or search for your pickup.'
+    : !secure ? msg('Location only works on a secure (https) connection. Open the site over https, or search for your pickup.')
     : locationError ? LOCATION_HELP[locationError.kind]
     : permission === 'denied' || permission === 'blocked' ? LOCATION_HELP.blocked
-    : 'Allow location access so we can set your pickup where you are.';
+    : msg('Allow location access so we can set your pickup where you are.');
 
   // ── When: day, time, hours ──
   const lastDay = toDateInput(latestPickup());
@@ -648,7 +650,8 @@ function LocalRentalsSheet() {
   }, [rideId, stage, mode, pickup?.lat, pickup?.lng, pickup?.name, drop?.lat, drop?.lng, drop?.name, hours, scheduleKey, rideNowLead]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cab types the office turned off here are not shown. Each cab shows the server's fare (Diesel rate card), or why it has none.
-  const cabs = useMemo(() => categories.filter((c) => !q.hidden.has(c.id)), [categories, q.hidden]);
+  const localTrip = localOnlyTrip({ tripType: draft.tripType, multicity: false, distanceKm: route?.distanceKm });
+  const cabs = useMemo(() => categories.filter((c) => !q.hidden.has(c.id) && (!isLocalOnlyCategory(c) || localTrip)), [categories, q.hidden, localTrip]);
   const fareOf = (id: string) => quoteForFuel(q.entries.get(id), 'diesel');
   // Keep a cab selected: the first one with a fare, until the rider taps another.
   useEffect(() => {
@@ -672,13 +675,13 @@ function LocalRentalsSheet() {
   // Book in one tap: no separate vehicle and review steps. Pay the driver at the end of the trip; WhatsApp updates go to the mobile number.
   const book = async () => {
     setError('');
-    if (!online) return setError('You’re offline. Reconnect to book.');
-    if (!pickup) return setError('Choose your pickup location.');
-    if (mode === 'pickup' && !drop) return setError('Choose your drop location.');
-    if (needsHours) return setError('Select how many hours you need the car.');
+    if (!online) return setError(msg('You’re offline. Reconnect to book.'));
+    if (!pickup) return setError(msg('Choose your pickup location.'));
+    if (mode === 'pickup' && !drop) return setError(msg('Choose your drop location.'));
+    if (needsHours) return setError(msg('Select how many hours you need the car.'));
     if (when === 'later') {
-      if (!date) return setError('Choose a pickup date.');
-      if (!time) return setError('Choose a pickup time.');
+      if (!date) return setError(msg('Choose a pickup date.'));
+      if (!time) return setError(msg('Choose a pickup time.'));
       const problem = scheduleProblem(picked);
       if (problem) {
         if (date === firstDay) { setTime(firstTime); return setError(`That time has passed. Pickup moved to the earliest time, ${formatTime12(firstTime)}. Tap again to continue.`); }
@@ -689,10 +692,10 @@ function LocalRentalsSheet() {
       // Phone sign-in can remount the page: keep the trip, and come back to this sheet (it reopens on the cabs).
       saveDraft(draft);
       setPendingReturn(`/local-rentals?mode=${mode === 'hourly' ? 'hourly' : 'pickup'}`);
-      openLoginModal({ title: 'Sign in to book your cab', subtitle: 'Verify your mobile number to book this ride.' });
+      openLoginModal({ title: msg('Sign in to book your cab'), subtitle: msg('Verify your mobile number to book this ride.') });
       return;
     }
-    if (!canBook || !cab || !bookFare || !draft.pickup || !draft.drop || !draft.scheduledAt) return setError(q.quoteLoading ? 'Getting the latest fares… Tap again in a moment.' : 'Choose a cab to book.');
+    if (!canBook || !cab || !bookFare || !draft.pickup || !draft.drop || !draft.scheduledAt) return setError(q.quoteLoading ? msg('Getting the latest fares… Tap again in a moment.') : msg('Choose a cab to book.'));
     if (bookingRef.current) return;
     bookingRef.current = true;
     setBooking(true);
@@ -733,7 +736,7 @@ function LocalRentalsSheet() {
         setParams({ mode: mode === 'hourly' ? 'hourly' : 'pickup', ride: res.id }, { replace: true });
       } else {
         // Scheduled: confirmed, and on to My bookings.
-        push({ title: 'Ride scheduled', message: draft.scheduledAt ? `Pickup ${draft.scheduledAt.toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}. We’ll share your driver’s details before pickup.` : 'Your booking is confirmed.', tone: 'success' });
+        push({ title: msg('Ride scheduled'), message: draft.scheduledAt ? t('Pickup {when}. We’ll share your driver’s details before pickup.', { when: draft.scheduledAt.toLocaleString(dateLocale(), { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) }) : msg('Your booking is confirmed.'), tone: 'success' });
         navigate('/trips', { replace: true });
       }
     } catch (e: unknown) {
@@ -744,11 +747,11 @@ function LocalRentalsSheet() {
           setError(`The fare for this ride is now ${formatINR(err.fare.total)}. Tap Book again to confirm.`);
         } else {
           q.retryQuote();
-          setError('The fare for this trip has just updated. Check the new amount and tap Book again.');
+          setError(msg('The fare for this trip has just updated. Check the new amount and tap Book again.'));
         }
         return;
       }
-      setError(describeError(e, 'We couldn’t book your cab. Please check your connection and try again.'));
+      setError(describeError(e, msg('We couldn’t book your cab. Please check your connection and try again.')));
     } finally {
       bookingRef.current = false;
       setBooking(false);
@@ -789,7 +792,7 @@ function LocalRentalsSheet() {
   const addrLine = place && place.address && place.address !== place.name ? place.address : '';
   const pickerFor = picker ? (
     <LocationPicker
-      config={{ title: picker === 'pickup' ? 'Pickup location' : 'Drop location', allowCurrent: true, popular: QUICK_CITIES, popularLabel: 'Popular locations', near: picker === 'drop' ? pickup : position ? { lat: position.lat, lng: position.lng } : null, pinMode: picker }}
+      config={{ title: t(picker === 'pickup' ? 'Pickup location' : 'Drop location'), allowCurrent: true, popular: QUICK_CITIES, popularLabel: t('Popular locations'), near: picker === 'drop' ? pickup : position ? { lat: position.lat, lng: position.lng } : null, pinMode: picker }}
       saved={[]}
       recent={[]}
       onClose={() => setPicker(null)}
@@ -799,11 +802,11 @@ function LocalRentalsSheet() {
   const scheduleFields = (
     <>
       <label className="lr-field lr-field--schedule">
-        <span>Pickup Date</span>
+        <span>{t('Pickup Date')}</span>
         <input type="date" className="lr-date" value={date} min={firstDay} max={lastDay} onChange={(e) => { if (e.target.value) pickDate(e.target.value); }} />
       </label>
       <label className="lr-field lr-field--schedule">
-        <span>Pickup Time</span>
+        <span>{t('Pickup Time')}</span>
         <div className="lr-select">
           <select
             value={time}
@@ -814,10 +817,10 @@ function LocalRentalsSheet() {
               setError('');
             }}
           >
-            <option value="">Select</option>
+            <option value="">{t('Select')}</option>
             {time && !timeOptions.includes(time) ? <option value={time}>{formatTime12(time)}</option> : null}
             {timeOptions.map((t) => <option key={t} value={t}>{formatTime12(t)}</option>)}
-            <option value="__other">Other time…</option>
+            <option value="__other">{t('Other time…')}</option>
           </select>
         </div>
       </label>
@@ -827,14 +830,14 @@ function LocalRentalsSheet() {
   const pickWhen = (w: 'now' | 'later') => { setWhen(w); setError(''); };
   const whenBlock = (
     <>
-      <div className="lr-when" role="radiogroup" aria-label="When do you need the cab?">
+      <div className="lr-when" role="radiogroup" aria-label={t('When do you need the cab?')}>
         <button type="button" role="radio" aria-checked={when === 'now'} className={`lr-when__opt ${when === 'now' ? 'is-on' : ''}`} onClick={() => pickWhen('now')}>
           <span className="lr-when__icon" aria-hidden="true"><Icon name="clock" size={18} /></span>
-          <span className="lr-when__text"><strong>Ride now</strong></span>
+          <span className="lr-when__text"><strong>{t('Ride now')}</strong></span>
         </button>
         <button type="button" role="radio" aria-checked={when === 'later'} className={`lr-when__opt ${when === 'later' ? 'is-on' : ''}`} onClick={() => pickWhen('later')}>
           <span className="lr-when__icon" aria-hidden="true"><Icon name="calendar" size={18} /></span>
-          <span className="lr-when__text"><strong>Schedule</strong></span>
+          <span className="lr-when__text"><strong>{t('Schedule')}</strong></span>
         </button>
       </div>
       {when === 'later' ? <div className="lr-pair lr-pair--two">{scheduleFields}</div> : null}
@@ -851,21 +854,21 @@ function LocalRentalsSheet() {
   // The boarding OTP only once a driver has accepted, and until the ride starts.
   const rideShowOtp = !!rideDriver && (ridePhase === 'driver_assigned' || ridePhase === 'driver_en_route' || ridePhase === 'driver_arrived');
   const rideDriverPhone = rideDriver ? localMobile(rideDriver.phone) : '';
-  const rideFirst = rideDriver?.name.split(' ')[0] || 'Your driver';
+  const rideFirst = rideDriver?.name.split(' ')[0] || t('Your driver');
   const rideCab = ride ? tripCategoryName(categories, ride) : cab ? categoryName(cab) : '';
   // Bike, auto or cab: the finding screen speaks of what was actually chosen.
   const kind = rideKind(ride ? ride.categoryName : cab?.name, rideCab);
-  const findingLine = forKind(
+  const findingLine = t(forKind(
     ride?.status === 'Pending' || !ride ? 'Matching you with a cab nearby'
     : ridePhase === 'partner_confirmed' ? 'A cab is on the way to accept your ride'
     : 'Finding the nearest driver',
     kind,
-  );
+  ));
   const driverLine =
-    ridePhase === 'driver_assigned' ? `${rideFirst} accepted your ride`
-    : ridePhase === 'driver_en_route' ? `${rideFirst} is on the way`
-    : ridePhase === 'driver_arrived' ? `${rideFirst} has arrived at your pickup`
-    : 'Your ride is on';
+    ridePhase === 'driver_assigned' ? t('{name} accepted your ride', { name: rideFirst })
+    : ridePhase === 'driver_en_route' ? t('{name} is on the way', { name: rideFirst })
+    : ridePhase === 'driver_arrived' ? t('{name} has arrived at your pickup', { name: rideFirst })
+    : t('Your ride is on');
   // Done with this ride on the sheet: back to booking (the ride itself stays in My bookings).
   const endRide = () => {
     setCancelOpen(false);
@@ -875,7 +878,7 @@ function LocalRentalsSheet() {
   };
 
   const rideSheet = rideId ? (
-    <section key="ride" className="lr-sheet lr-sheet--ride" aria-label="Your ride" aria-live="polite">
+    <section key="ride" className="lr-sheet lr-sheet--ride" aria-label={t('Your ride')} aria-live="polite">
       <span className="lr-grip" aria-hidden="true" />
       {rideFinding ? (
         <div className="lr-ride lr-finding">
@@ -885,36 +888,36 @@ function LocalRentalsSheet() {
               <RideKindIcon kind={kind} />
             </span>
             <span className="lr-finding__title">
-              <strong>{forKind('Finding your cab', kind)}<span className="lr-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></strong>
+              <strong>{t(forKind('Finding your cab', kind))}<span className="lr-dots" aria-hidden="true"><i>.</i><i>.</i><i>.</i></span></strong>
               <small>{findingLine}</small>
             </span>
           </div>
-          <ol className="lr-finding__steps" aria-label="Ride request progress">
-            <li className="is-done">Requested</li>
-            <li className={rideFound ? 'is-done' : 'is-now'} aria-current={rideFound ? undefined : 'step'}>{forKind(rideFound ? 'Cab found' : 'Finding cab', kind)}</li>
-            <li className={rideFound ? 'is-now' : undefined} aria-current={rideFound ? 'step' : undefined}>Driver assigned</li>
+          <ol className="lr-finding__steps" aria-label={t('Ride request progress')}>
+            <li className="is-done">{t('Requested')}</li>
+            <li className={rideFound ? 'is-done' : 'is-now'} aria-current={rideFound ? undefined : 'step'}>{t(forKind(rideFound ? 'Cab found' : 'Finding cab', kind))}</li>
+            <li className={rideFound ? 'is-now' : undefined} aria-current={rideFound ? 'step' : undefined}>{t('Driver assigned')}</li>
           </ol>
           <div className="lr-finding__route">
             <p className="lr-finding__stops">
               <span className="lr-finding__stop">
                 <span className="lr-dot lr-dot--from" aria-hidden="true" />
-                <span className="truncate">{rideFrom?.name ?? 'Pickup'}</span>
+                <span className="truncate">{rideFrom?.name ?? t('Pickup')}</span>
               </span>
               <span className="lr-finding__stop">
                 {rideTo ? <span className="lr-dot lr-dot--to" aria-hidden="true" /> : <span className="lr-finding__hours" aria-hidden="true"><Icon name="clock" size={13} /></span>}
-                <span className="truncate"><span className="sr-only">{rideTo ? 'to ' : ''}</span>{rideTo ? rideTo.name : 'Hourly rental'}</span>
+                <span className="truncate"><span className="sr-only">{rideTo ? `${t('to')} ` : ''}</span>{rideTo ? rideTo.name : t('Hourly rental')}</span>
               </span>
             </p>
-            {rideCab ? <span className="lr-finding__cab"><small>{kind === 'cab' ? 'Cab' : 'Vehicle'}</small><b>{rideCab}</b></span> : null}
+            {rideCab ? <span className="lr-finding__cab"><small>{t(kind === 'cab' ? 'Cab' : 'Vehicle')}</small><b>{rideCab}</b></span> : null}
           </div>
           {rideCanCancel ? (
             <div className="lr-finding__foot">
               <span className={`lr-finding__fee${rideCancelFee > 0 ? ' is-fee' : ''}`}>
                 <Icon name={rideCancelFee > 0 ? 'info' : 'shield-check'} size={14} />
-                {rideCancelFee > 0 ? `${formatINR(rideCancelFee)} cancellation fee` : 'Free cancellation'}
+                {rideCancelFee > 0 ? t('{amount} cancellation fee', { amount: formatINR(rideCancelFee) }) : t('Free cancellation')}
               </span>
               <button type="button" className="lr-finding__cancel" onClick={() => setCancelOpen(true)}>
-                <Icon name="close" size={14} /> Cancel ride
+                <Icon name="close" size={14} /> {t('Cancel ride')}
               </button>
             </div>
           ) : null}
@@ -934,7 +937,7 @@ function LocalRentalsSheet() {
           </div>
           {rideShowOtp ? (
             <div className="lr-ride__otp">
-              <span><strong>Ride OTP</strong><small>{ridePhase === 'driver_arrived' ? 'Share it now to start your ride' : 'Share with your driver after you board'}</small></span>
+              <span><strong>{t('Ride OTP')}</strong><small>{t(ridePhase === 'driver_arrived' ? 'Share it now to start your ride' : 'Share with your driver after you board')}</small></span>
               <span className="lr-ride__code num" aria-label={`Ride OTP ${rideOtp ? rideOtp.split('').join(' ') : 'not available yet'}`}>{rideOtp ?? '····'}</span>
             </div>
           ) : null}
@@ -942,22 +945,22 @@ function LocalRentalsSheet() {
             {rideDriverPhone && ridePhase !== 'in_trip' ? (
               <a className="btn btn--primary btn--sm" href={`tel:+91${rideDriverPhone}`}><Icon name="phone" /> Call {rideFirst}</a>
             ) : null}
-            <button type="button" className="btn btn--secondary btn--sm" onClick={() => navigate(`/ride/${rideId}`)}>Ride details</button>
+            <button type="button" className="btn btn--secondary btn--sm" onClick={() => navigate(`/ride/${rideId}`)}>{t('Ride details')}</button>
           </div>
-          {rideCanCancel ? <button type="button" className="lr-ride__cancel" onClick={() => setCancelOpen(true)}>Cancel ride</button> : null}
+          {rideCanCancel ? <button type="button" className="lr-ride__cancel" onClick={() => setCancelOpen(true)}>{t('Cancel ride')}</button> : null}
         </div>
       ) : rideClosed ? (
         <div className="lr-ride lr-ride--end">
-          <strong>{rideGone ? 'This ride is no longer available' : ride?.status === 'Rejected' ? 'Ride not accepted' : 'Ride cancelled'}</strong>
-          <small>{ride && ride.cancellationFee > 0 ? `A cancellation fee of ${formatINR(ride.cancellationFee)} applies.` : 'No charge for this ride.'}</small>
-          <button type="button" className="lr-cta" onClick={endRide}>Book a ride</button>
+          <strong>{t(rideGone ? 'This ride is no longer available' : ride?.status === 'Rejected' ? 'Ride not accepted' : 'Ride cancelled')}</strong>
+          <small>{ride && ride.cancellationFee > 0 ? t('A cancellation fee of {amount} applies.', { amount: formatINR(ride.cancellationFee) }) : t('No charge for this ride.')}</small>
+          <button type="button" className="lr-cta" onClick={endRide}>{t('Book a ride')}</button>
         </div>
       ) : ridePhase === 'completed' ? (
         <div className="lr-ride lr-ride--end">
-          <strong>You’ve arrived</strong>
-          <small>Thanks for riding with People Taxi.</small>
-          <button type="button" className="lr-cta" onClick={() => navigate(`/ride/${rideId}`)}>Rate your ride</button>
-          <button type="button" className="lr-ride__cancel lr-ride__cancel--plain" onClick={endRide}>Book another ride</button>
+          <strong>{t('You’ve arrived')}</strong>
+          <small>{t('Thanks for riding with People Taxi.')}</small>
+          <button type="button" className="lr-cta" onClick={() => navigate(`/ride/${rideId}`)}>{t('Rate your ride')}</button>
+          <button type="button" className="lr-ride__cancel lr-ride__cancel--plain" onClick={endRide}>{t('Book another ride')}</button>
         </div>
       ) : null}
     </section>
@@ -965,15 +968,15 @@ function LocalRentalsSheet() {
 
   // Ola / Uber style cab list: tap a cab, then Book. Fares are the server's; a cab it cannot price says why.
   const cabList = (
-    <section className="lr-cabs" aria-label="Choose your ride">
+    <section className="lr-cabs" aria-label={t('Choose your ride')}>
       {needsHours ? (
-        <p className="lr-cabs__note">Select the rental duration to see cabs and fares.</p>
+        <p className="lr-cabs__note">{t('Select the rental duration to see cabs and fares.')}</p>
       ) : needsTime ? (
-        <p className="lr-cabs__note">Pick a pickup date and time to see cabs and fares.</p>
+        <p className="lr-cabs__note">{t('Pick a pickup date and time to see cabs and fares.')}</p>
       ) : q.quoteError ? (
         <div className="lr-cabs__note lr-cabs__note--warn" role="alert">
           <span>{q.quoteError}</span>
-          <button type="button" className="lr-link" onClick={q.retryQuote}>Try again</button>
+          <button type="button" className="lr-link" onClick={q.retryQuote}>{t('Try again')}</button>
         </div>
       ) : categoryStatus === 'loading' && !cabs.length ? (
         <div className="lr-cabs__list" aria-busy="true">
@@ -982,9 +985,9 @@ function LocalRentalsSheet() {
           <span className="skeleton lr-cab-skel" />
         </div>
       ) : !cabs.length ? (
-        <p className="lr-cabs__note">No cabs are available here right now. Please try again shortly.</p>
+        <p className="lr-cabs__note">{t('No cabs are available here right now. Please try again shortly.')}</p>
       ) : (
-        <div className="lr-cabs__list" role="radiogroup" aria-label="Cabs">
+        <div className="lr-cabs__list" role="radiogroup" aria-label={t('Cabs')}>
           {cabs.map((c) => {
             const fq = fareOf(c.id);
             const na = q.unavailable.get(c.id);
@@ -1017,7 +1020,7 @@ function LocalRentalsSheet() {
                     ) : na ? (
                       <small className="lr-cab__na">{na}</small>
                     ) : (
-                      <span className="skeleton lr-cab__skel" aria-label="Loading fare" />
+                      <span className="skeleton lr-cab__skel" aria-label={t('Loading fare')} />
                     )}
                   </span>
                 </button>
@@ -1030,19 +1033,19 @@ function LocalRentalsSheet() {
   );
 
   return (
-    <div className="lr" style={style} role="dialog" aria-label="Local Rentals">
+    <div className="lr" style={style} role="dialog" aria-label={t('Local Rentals')}>
       <PinMap picking={picking} target={target} pins={pins} sheetH={sheetH} onPick={onPick} me={position ? { lat: position.lat, lng: position.lng } : null} road={road} pulse={pulse} />
 
       <header className="lr-top">
         <div className="lr-top__row">
-          <button type="button" className="lr-round" aria-label="Back" onClick={back}><Icon name="arrow-left" size={22} /></button>
-          <nav className="lr-svc" aria-label="Services">
+          <button type="button" className="lr-round" aria-label={t('Back')} onClick={back}><Icon name="arrow-left" size={22} /></button>
+          <nav className="lr-svc" aria-label={t('Services')}>
             {SERVICES.filter((x) => x.id !== 'local' && x.id !== 'pickup').map((x) => {
               const here = x.id === 'rental';
               return (
                 <button key={x.id} type="button" className={here ? 'is-active' : ''} aria-current={here ? 'page' : undefined} onClick={() => { if (!here) navigate(serviceHref(x.id)); }}>
                   <Icon name={x.icon} size={20} />
-                  <span>{here ? 'Local Rentals' : x.label}</span>
+                  <span>{t(here ? 'Local Rentals' : x.label)}</span>
                 </button>
               );
             })}
@@ -1055,10 +1058,10 @@ function LocalRentalsSheet() {
           <div className="lr-find">
             <button type="button" className="lr-search" onClick={() => setPicker(stage === 'drop' ? 'drop' : 'pickup')}>
               <Icon name="search" size={18} />
-              <span className={place ? '' : 'is-empty'}>{place ? place.name : stage === 'drop' ? 'Search a drop location' : 'Search a place or city'}</span>
+              <span className={place ? '' : 'is-empty'}>{place ? place.name : t(stage === 'drop' ? 'Search a drop location' : 'Search a place or city')}</span>
             </button>
             {stage === 'pickup' ? (
-              <div className="lr-cities" role="group" aria-label="Districts and cities" ref={dragToScroll}>
+              <div className="lr-cities" role="group" aria-label={t('Districts and cities')} ref={dragToScroll}>
                 {cityChips.map((c) => (
                   <button key={c.id} type="button" className={`lr-chip ${place?.id === c.id ? 'is-on' : ''}`} onClick={() => chooseCity(c)}>{c.name}</button>
                 ))}
@@ -1073,18 +1076,18 @@ function LocalRentalsSheet() {
         </>
       ) : null}
 
-      <button type="button" className={`lr-locate ${locating ? 'is-busy' : ''} ${position ? 'is-on' : ''}`} aria-label="Detect my current location" title="Detect my current location" onClick={() => void useMyLocation()} disabled={locating}>
+      <button type="button" className={`lr-locate ${locating ? 'is-busy' : ''} ${position ? 'is-on' : ''}`} aria-label={t('Detect my current location')} title={t('Detect my current location')} onClick={() => void useMyLocation()} disabled={locating}>
         <Icon name="navigation" size={20} />
       </button>
 
       <div className="lr-dock" ref={dock}>
         {rideSheet ?? (stage !== 'when' ? (
-          <section key={stage} className="lr-sheet" aria-label={stage === 'drop' ? 'Set drop location' : 'Set pickup location'}>
-            {approx && !locating ? <p className="lr-hint" role="status">{approx}</p> : null}
-            {locating ? <p className="lr-hint" role="status">Finding your current location…</p> : askLocation ? (
+          <section key={stage} className="lr-sheet" aria-label={t(stage === 'drop' ? 'Set drop location' : 'Set pickup location')}>
+            {approx && !locating ? <p className="lr-hint" role="status">{t(approx)}</p> : null}
+            {locating ? <p className="lr-hint" role="status">{t('Finding your current location…')}</p> : askLocation ? (
               <div className={`lr-perm ${locationError || permission === 'denied' || permission === 'blocked' ? 'is-warn' : ''}`} role={locationError ? 'alert' : 'status'}>
-                <p>{locationNote}</p>
-                {secure ? <button type="button" onClick={() => void useMyLocation()}>{permission === 'prompt' && !locationError ? 'Allow location' : 'Try again'}</button> : null}
+                <p>{t(locationNote)}</p>
+                {secure ? <button type="button" onClick={() => void useMyLocation()}>{t(permission === 'prompt' && !locationError ? 'Allow location' : 'Try again')}</button> : null}
               </div>
             ) : null}
             <div className="lr-row">
@@ -1092,40 +1095,40 @@ function LocalRentalsSheet() {
               <span className={`lr-dot lr-dot--${stage === 'drop' ? 'to' : 'from'}`} aria-hidden="true" />
               <div>
                 {resolving ? (
-                  <strong className="is-empty">Finding this place…</strong>
+                  <strong className="is-empty">{t('Finding this place…')}</strong>
                 ) : place ? (
                   <>
                     <strong>{place.name}</strong>
                     {addrLine ? <small>{addrLine}</small> : null}
                   </>
                 ) : (
-                  <strong className="is-empty">Move the map to place the pin</strong>
+                  <strong className="is-empty">{t('Move the map to place the pin')}</strong>
                 )}
               </div>
             </div>
             <button type="button" className="lr-cta" disabled={!place || resolving} onClick={confirmStage}>
-              {resolving ? 'Finding address…' : stage === 'drop' ? 'Confirm drop' : 'Confirm pickup'}
+              {t(resolving ? 'Finding address…' : stage === 'drop' ? 'Confirm drop' : 'Confirm pickup')}
             </button>
             </div>
             {farApart ? <p className="lr-hint" role="status">This drop is outside the city ({Math.round(haversineKm(pickup!, cand!))} km away).</p> : null}
-            {stage === 'drop' ? <button type="button" className="lr-link" onClick={() => enter('pickup')}>Change pickup</button> : null}
+            {stage === 'drop' ? <button type="button" className="lr-link" onClick={() => enter('pickup')}>{t('Change pickup')}</button> : null}
           </section>
         ) : (
-          <section key="when" className={`lr-sheet lr-sheet--tall ${peek ? 'is-peek' : ''}`} aria-label="Plan your trip">
-            <button type="button" className="lr-gripbtn" aria-label={peek ? 'Show the trip details' : 'Show more of the map'} aria-expanded={!peek} onClick={() => setPeek((p) => !p)} />
+          <section key="when" className={`lr-sheet lr-sheet--tall ${peek ? 'is-peek' : ''}`} aria-label={t('Plan your trip')}>
+            <button type="button" className="lr-gripbtn" aria-label={t(peek ? 'Show the trip details' : 'Show more of the map')} aria-expanded={!peek} onClick={() => setPeek((p) => !p)} />
 
             <div className="lr-body">
             <div className="lr-trip">
               <button type="button" onClick={() => enter('pickup')}>
                 <span className="lr-dot lr-dot--from" aria-hidden="true" />
-                <span><small className="sr-only">Pickup</small><strong>{pickup?.name ?? 'Choose pickup'}</strong></span>
-                <em>Edit</em>
+                <span><small className="sr-only">{t('Pickup')}</small><strong>{pickup?.name ?? t('Choose pickup')}</strong></span>
+                <em>{t('Edit')}</em>
               </button>
               {mode === 'pickup' ? (
                 <button type="button" onClick={() => enter('drop')}>
                   <span className="lr-dot lr-dot--to" aria-hidden="true" />
-                  <span><small className="sr-only">Drop</small><strong>{drop?.name ?? 'Choose drop'}</strong></span>
-                  <em>Edit</em>
+                  <span><small className="sr-only">{t('Drop')}</small><strong>{drop?.name ?? t('Choose drop')}</strong></span>
+                  <em>{t('Edit')}</em>
                 </button>
               ) : null}
             </div>
@@ -1134,9 +1137,9 @@ function LocalRentalsSheet() {
               <div className="lr-hourly-plan">
                 <div className="lr-dur">
                   <div className="lr-dur__head">
-                    <span className="lr-dur__label" id="lr-dur-label">Rental duration</span>
+                    <span className="lr-dur__label" id="lr-dur-label">{t('Rental duration')}</span>
                     <span className={`lr-dur__pick${hours ? '' : ' is-empty'}`}>
-                      {hours ? `${hours} ${hours === 1 ? 'hour' : 'hours'}` : 'Choose hours'}
+                      {hours ? (hours === 1 ? t('1 hour') : t('{n} hours', { n: hours })) : t('Choose hours')}
                     </span>
                   </div>
                   <div
@@ -1169,14 +1172,14 @@ function LocalRentalsSheet() {
                           type="button"
                           role="radio"
                           aria-checked={on}
-                          aria-label={`${h} ${h === 1 ? 'hour' : 'hours'}`}
+                          aria-label={h === 1 ? t('1 hour') : t('{n} hours', { n: h })}
                           tabIndex={on || (hours == null && i === 0) ? 0 : -1}
                           data-hours={h}
                           className={`lr-dur__opt${on ? ' is-on' : ''}`}
                           onClick={() => { setHours(h); setError(''); }}
                         >
                           <strong>{h}</strong>
-                          <small>{h === 1 ? 'hr' : 'hrs'}</small>
+                          <small>{t(h === 1 ? 'hr' : 'hrs')}</small>
                         </button>
                       );
                     })}
@@ -1193,10 +1196,10 @@ function LocalRentalsSheet() {
             {cabList}
             </div>
             <div className="lr-foot">
-              {error ? <p className="lr-warn" role="alert">{error}</p> : null}
-              {!online ? <p className="lr-warn" role="alert">You’re offline. Reconnect to book.</p> : null}
+              {error ? <p className="lr-warn" role="alert">{t(error)}</p> : null}
+              {!online ? <p className="lr-warn" role="alert">{t('You’re offline. Reconnect to book.')}</p> : null}
               <button type="button" className="lr-cta" onClick={() => void book()} disabled={booking} aria-busy={booking || undefined}>
-                {booking ? 'Booking…' : when === 'now' ? 'Book ride' : 'Schedule ride'}
+                {t(booking ? 'Booking…' : when === 'now' ? 'Book ride' : 'Schedule ride')}
               </button>
             </div>
           </section>
@@ -1206,7 +1209,7 @@ function LocalRentalsSheet() {
       {cancelOpen && ride ? <CancelDialog trip={ride} onClose={() => setCancelOpen(false)} /> : null}
       {fareFor && fareOf(fareFor) ? (
         <FareDialog
-          title={`${categoryName(cabs.find((c) => c.id === fareFor) ?? { name: 'Cab' })} · Fare breakdown`}
+          title={`${categoryName(cabs.find((c) => c.id === fareFor) ?? { name: 'Cab' })} · ${t('Fare breakdown')}`}
           fare={fareOf(fareFor)!.breakup ?? breakupFromFare(fareOf(fareFor)!.fare)}
           onClose={() => setFareFor(null)}
         />
@@ -1224,7 +1227,7 @@ function LocalRentalsSheet() {
 
       {pickerFor}
       {timeOpen ? (
-        <TimePicker title="Pickup time" date={date} value={time} validate="pickup" onClose={() => setTimeOpen(false)} onConfirm={(t) => { scheduleTouched.current = true; setTime(t); setError(''); setTimeOpen(false); }} />
+        <TimePicker title={t('Pickup time')} date={date} value={time} validate="pickup" onClose={() => setTimeOpen(false)} onConfirm={(t) => { scheduleTouched.current = true; setTime(t); setError(''); setTimeOpen(false); }} />
       ) : null}
     </div>
   );

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { useCustomerData } from '@core/context/CustomerData';
+import { translate } from '@/i18n';
 
 /** The ride in progress, the next booking, or a trip waiting for a rating: one small chip in the middle of the header.
  *  The label has a long and a short form, and a route that is wider than the chip slowly scrolls so all of it can be read. */
@@ -29,14 +30,14 @@ export function RideBanner() {
   if (!trip) return null;
   const live = !!liveRide;
   const ongoing = trip.status === 'Ongoing';
-  const longLabel = live ? (ongoing ? 'Trip in progress' : 'Upcoming booking') : 'How was your journey?';
-  const shortLabel = live ? (ongoing ? 'On trip' : 'Upcoming') : 'Rate trip';
+  const longLabel = translate(live ? (ongoing ? 'Trip in progress' : 'Upcoming booking') : 'How was your journey?');
+  const shortLabel = translate(live ? (ongoing ? 'On trip' : 'Upcoming') : 'Rate trip');
   return (
     <Link
       className={`ride-chip ${live ? '' : 'ride-chip--soft'} ${ongoing ? 'ride-chip--ongoing' : ''}`}
       to={`/ride/${trip.id}`}
       title={`${longLabel} · ${route}`}
-      aria-label={`${longLabel}: ${route}. ${live ? 'View booking' : 'Rate trip'}`}
+      aria-label={`${longLabel}: ${route}. ${translate(live ? 'View booking' : 'Rate trip')}`}
     >
       <span className="ride-chip__text">
         <strong>

@@ -37,28 +37,29 @@ import { tripCategoryName } from '@/lib/categories';
 import '@/pages/book/done.css';
 import { RideKindIcon } from '@/components/RideKindIcon';
 import { forKind, rideKind } from '@/lib/rideKind';
+import { msg, useT } from '@/i18n';
 import './findCab.css';
 
 const PHASE_TITLE: Record<TripRecord['phase'], string> = {
-  awaiting_review: 'Booking under review',
-  arranging: 'Booking approved',
-  partner_confirmed: 'Allocation in progress',
-  driver_assigned: 'Driver and cab assigned',
-  driver_en_route: 'Driver on the way',
-  driver_arrived: 'Your driver has arrived',
-  in_trip: 'On your way',
-  completed: 'Trip completed',
-  cancelled: 'Ride cancelled',
+  awaiting_review: msg('Booking under review'),
+  arranging: msg('Booking approved'),
+  partner_confirmed: msg('Allocation in progress'),
+  driver_assigned: msg('Driver and cab assigned'),
+  driver_en_route: msg('Driver on the way'),
+  driver_arrived: msg('Your driver has arrived'),
+  in_trip: msg('On your way'),
+  completed: msg('Trip completed'),
+  cancelled: msg('Ride cancelled'),
 };
 
 function titleOf(t: TripRecord): string {
   if (t.status === 'Pending') return 'Booking under review';
-  if (t.status === 'Rejected') return 'Booking not accepted';
+  if (t.status === 'Rejected') return msg('Booking not accepted');
   return PHASE_TITLE[t.phase];
 }
 
 /** The four stages shown on the progress line. */
-const STAGES = ['Booked', 'Approved', 'Driver', 'Journey'] as const;
+const STAGES = [msg('Booked'), msg('Approved'), msg('Driver'), msg('Journey')] as const;
 /** How many stages are behind the booking. */
 function stagesDone(t: TripRecord): number {
   if (t.status === 'Pending' || t.phase === 'awaiting_review') return 1;
@@ -77,24 +78,27 @@ function isRideNow(t: TripRecord): boolean {
   return isLocalTrip(t) && !!t.scheduledAt && !!t.createdAt && t.scheduledAt.getTime() - t.createdAt.getTime() <= 45 * 60 * 1000;
 }
 const FIND_COPY: Partial<Record<TripRecord['phase'], { title: string; note: (pickup: string) => string }>> = {
-  awaiting_review: { title: 'Finding your cab…', note: (p) => `We’ve got your ride request from ${p}. Hang on while we find a cab near you.` },
-  arranging: { title: 'Finding a driver near you…', note: (p) => `Your ride is confirmed. We’re finding the nearest driver to ${p}.` },
-  partner_confirmed: { title: 'Almost there…', note: () => 'A cab has been found. Your driver will be assigned in a moment.' },
+  awaiting_review: { title: msg('Finding your cab…'), note: (p) => `We’ve got your ride request from ${p}. Hang on while we find a cab near you.` },
+  arranging: { title: msg('Finding a driver near you…'), note: (p) => `Your ride is confirmed. We’re finding the nearest driver to ${p}.` },
+  partner_confirmed: { title: msg('Almost there…'), note: () => msg('A cab has been found. Your driver will be assigned in a moment.') },
 };
 
 /** One line about what happens now; never repeats what is already on the page. */
 function stageNote(t: TripRecord, now: number): string {
   if (t.status === 'Pending' || t.phase === 'awaiting_review') return `Our team is reviewing your booking. ${driverNote(t, now)}`;
-  if (t.phase === 'driver_assigned') return 'Your driver and cab are confirmed for your pickup.';
-  if (t.phase === 'driver_en_route') return 'Your driver is on the way.';
-  if (t.phase === 'driver_arrived') return 'Your driver is at the pickup point.';
-  if (t.phase === 'in_trip') return 'Your trip is underway.';
+  if (t.phase === 'driver_assigned') return msg('Your driver and cab are confirmed for your pickup.');
+  if (t.phase === 'driver_en_route') return msg('Your driver is on the way.');
+  if (t.phase === 'driver_arrived') return msg('Your driver is at the pickup point.');
+  if (t.phase === 'in_trip') return msg('Your trip is underway.');
   return driverNote(t, now);
 }
 
 export function RidePage() {
   const { id = '' } = useParams();
   const navigate = useNavigate();
+  const t = useT();
+  /** A message made of whole sentences (some built elsewhere with values in them), translated one sentence at a time. */
+  const ts = (s: string) => s.split(/(?<=[.!?])\s+/).map((x) => t(x)).join(' ');
   const { profile } = useCustomerData();
   const { startFrom, categories } = useBooking();
   const { push } = useToasts();
@@ -116,7 +120,7 @@ export function RidePage() {
   const [printing, setPrinting] = useState('');
   const [tripRoute, setTripRoute] = useState<{ key: string; info: RouteInfo } | null>(null);
 
-  useSeo({ title: trip ? titleOf(trip) : 'Your ride', noindex: true });
+  useSeo({ title: t(trip ? titleOf(trip) : 'Your ride'), noindex: true });
 
   // Leaving this page (back, minimise) stops it re-opening automatically.
   useEffect(() => {
@@ -147,7 +151,7 @@ export function RidePage() {
           setTrip(null);
         }
       },
-      (e) => setLoadError(describeError(e, 'We couldn’t load this ride.')),
+      (e) => setLoadError(describeError(e, msg('We couldn’t load this ride.'))),
     );
   }, [id, subKey]);
 
@@ -232,15 +236,15 @@ export function RidePage() {
                 setSubKey((k) => k + 1);
               }}
             >
-              Try again
+              {t('Try again')}
             </Button>
           }
         >
-          {loadError}
+          {t(loadError)}
         </Notice>
         <p className="page__after">
           <Link className="btn btn--secondary" to="/trips">
-            Back to my trips
+            {t('Back to my trips')}
           </Link>
         </p>
       </div>
@@ -250,17 +254,17 @@ export function RidePage() {
     return (
       <div className="page">
         <Notice tone="warning">
-          This ride is no longer available. If you just requested it, our servers did not accept the request and nothing was charged — please try again, or contact support if it keeps happening.
+          {t('This ride is no longer available. If you just requested it, our servers did not accept the request and nothing was charged — please try again, or contact support if it keeps happening.')}
         </Notice>
         <p className="page__after">
           <Link className="btn btn--primary" to="/book">
-            Back to booking
+            {t('Back to booking')}
           </Link>
         </p>
       </div>
     );
   }
-  if (!trip) return <PageLoader label={pending ? 'Sending your ride request…' : 'Loading your ride…'} />;
+  if (!trip) return <PageLoader label={t(pending ? 'Sending your ride request…' : 'Loading your ride…')} />;
 
   const phase = trip.phase;
   const canCancel = cancellationQuote(trip).allowed;
@@ -272,11 +276,11 @@ export function RidePage() {
   const finished = phase === 'completed' || phase === 'cancelled';
   const due = amountDue(trip);
   const mapPickup = phase === 'in_trip' ? null : trip.pickup;
-  const streamingNote = tracking && driverLoc && !driverFresh ? `Driver location last updated ${timeAgo(driverLoc.updatedAt, now)}.` : '';
+  const streamingNote = tracking && driverLoc && !driverFresh ? t('Driver location last updated {ago}.', { ago: timeAgo(driverLoc.updatedAt, now) }) : '';
 
   const doShare = async () => {
     const r = await shareText(`People Taxi ride ${trip.bookingId}`, buildTripShareText(trip, sharePoint));
-    if (r === 'copied') push({ title: 'Trip details copied', message: 'Paste them into a message to share.', tone: 'success' });
+    if (r === 'copied') push({ title: msg('Trip details copied'), message: msg('Paste them into a message to share.'), tone: 'success' });
   };
   const bookAgain = () => {
     if (isValidLatLng(trip.pickup) && isValidLatLng(trip.drop)) startFrom(trip.pickup, trip.drop);
@@ -286,15 +290,15 @@ export function RidePage() {
     try {
       printReceipt(trip, profile?.name || 'Customer');
     } catch {
-      setPrinting('We couldn’t open the print dialog. Please try again.');
+      setPrinting(msg('We couldn’t open the print dialog. Please try again.'));
     }
   };
 
   const hero =
     phase === 'driver_en_route' && tracking
-      ? { big: minutesAway != null ? `${minutesAway} min` : '—', small: 'until your driver arrives' }
+      ? { big: minutesAway != null ? t('{m} min', { m: minutesAway }) : '—', small: t('until your driver arrives') }
       : phase === 'in_trip'
-        ? { big: minutesAway != null ? formatDuration(minutesAway) : '—', small: `until you reach ${trip.drop.name}` }
+        ? { big: minutesAway != null ? formatDuration(minutesAway) : '—', small: t('until you reach {place}', { place: trip.drop.name }) }
         : null;
 
   // The driver's leg is drawn over the whole trip, which stays quietly underneath.
@@ -315,8 +319,10 @@ export function RidePage() {
   const scheduledFor = trip.scheduledAt ? `${formatDate(trip.scheduledAt)}, ${formatTime(trip.scheduledAt)}` : '';
 
   const kind = rideKind(trip.categoryName, tripCategoryName(categories, trip));
+  /** "cab" becomes "auto" / "bike" for those rides, then the line is translated. */
+  const fk = (s: string) => t(forKind(s, kind));
   const findCard = waiting ? (
-    <section className={`find-cab ${rideNow ? '' : 'find-cab--scheduled'}`} aria-live="polite" aria-label={rideNow ? forKind('Finding your cab', kind) : 'Ride scheduled'}>
+    <section className={`find-cab ${rideNow ? '' : 'find-cab--scheduled'}`} aria-live="polite" aria-label={rideNow ? fk('Finding your cab') : t('Ride scheduled')}>
       {rideNow ? (
         <div className="find-cab__radar" aria-hidden="true">
           <span className="find-cab__ring" />
@@ -327,30 +333,30 @@ export function RidePage() {
       ) : (
         <span className="find-cab__cal" aria-hidden="true"><Icon name="calendar" size={24} /></span>
       )}
-      <h2>{pending ? 'Sending your ride request…' : rideNow ? forKind(findCopy?.title ?? 'Finding your cab…', kind) : 'Ride scheduled'}</h2>
+      <h2>{pending ? t('Sending your ride request…') : rideNow ? fk(findCopy?.title ?? 'Finding your cab…') : t('Ride scheduled')}</h2>
       <p>
         {rideNow
-          ? forKind(findCopy ? findCopy.note(trip.pickup.name) : 'Hang on while we find a cab near you.', kind)
-          : `Pickup ${scheduledFor} from ${trip.pickup.name}. Your driver’s details will appear here once a driver accepts.`}
+          ? fk(findCopy ? findCopy.note(trip.pickup.name) : 'Hang on while we find a cab near you.')
+          : t('Pickup {when} from {place}. Your driver’s details will appear here once a driver accepts.', { when: scheduledFor, place: trip.pickup.name })}
       </p>
       <ol className="find-cab__steps">
-        <li className="is-done">{rideNow ? 'Ride requested' : 'Ride booked'}</li>
-        <li className={trip.status === 'Pending' ? 'is-now' : 'is-done'}>{rideNow ? forKind('Finding a cab', kind) : 'Confirming'}</li>
-        <li className={trip.status === 'Pending' ? '' : 'is-now'}>Driver accepts</li>
+        <li className="is-done">{t(rideNow ? 'Ride requested' : 'Ride booked')}</li>
+        <li className={trip.status === 'Pending' ? 'is-now' : 'is-done'}>{rideNow ? fk('Finding a cab') : t('Confirming')}</li>
+        <li className={trip.status === 'Pending' ? '' : 'is-now'}>{t('Driver accepts')}</li>
       </ol>
       {canCancel ? (
         <Button variant="secondary" size="sm" onClick={() => setShowCancel(true)}>
-          Cancel ride
+          {t('Cancel ride')}
         </Button>
       ) : null}
     </section>
   ) : null;
 
   const mapCard = hasMap ? (
-    <section className="rcard rcard--map" aria-label="Route map">
+    <section className="rcard rcard--map" aria-label={t('Route map')}>
       <div className="rmap">
         <RouteMap
-          label="Ride map"
+          label={t('Ride map')}
           pickup={mapPickup}
           drop={trip.drop}
           driver={driverLoc ? { lat: driverLoc.lat, lng: driverLoc.lng, label: trip.driver?.name, stale: !driverFresh } : null}
@@ -365,11 +371,11 @@ export function RidePage() {
 
   const details = (
     <details className="rd-more">
-      <summary>Addresses{trip.notes ? ' and instructions' : ''}</summary>
+      <summary>{t(trip.notes ? 'Addresses and instructions' : 'Addresses')}</summary>
       <div>
         <RoutePoints pickup={trip.pickup.name} drop={trip.drop.name} pickupAddress={trip.pickup.address} dropAddress={trip.drop.address} />
         <TripItinerary trip={trip} />
-        {trip.notes ? <p className="rd-note">Special instructions: {trip.notes}</p> : null}
+        {trip.notes ? <p className="rd-note">{t('Special instructions:')} {trip.notes}</p> : null}
       </div>
     </details>
   );
@@ -380,7 +386,7 @@ export function RidePage() {
       <>
         {trip.paymentMethod === 'UPI' && upiLink(trip) ? (
           <a className="btn btn--secondary" href={upiLink(trip)!}>
-            Open UPI app
+            {t('Open UPI app')}
           </a>
         ) : null}
         <PayOnline trip={trip} />
@@ -393,24 +399,24 @@ export function RidePage() {
         <div className="pay-box pay-box--paid">
           <Icon name="success" size={24} />
           <div>
-            <strong>Paid {formatINR(trip.paid?.totalPaid || payableAmount(trip))}</strong>
-            <small>via {trip.paymentMethod}. Thank you!</small>
+            <strong>{t('Paid {amount}', { amount: formatINR(trip.paid?.totalPaid || payableAmount(trip)) })}</strong>
+            <small>{t('via {method}. Thank you!', { method: t(trip.paymentMethod) })}</small>
           </div>
         </div>
       ) : (
         <>
         <div className="pay-box">
           <div>
-            <small className="eyebrow">{trip.paymentMethod === 'UPI' ? 'Pay by UPI' : 'Pay your driver in cash'}</small>
+            <small className="eyebrow">{t(trip.paymentMethod === 'UPI' ? 'Pay by UPI' : 'Pay your driver in cash')}</small>
             <strong className="num pay-box__amount">{formatINR(due)}</strong>
             <small>
-              {trip.paid && trip.paid.totalPaid > 0 ? `Balance after ${formatINR(trip.paid.totalPaid)} paid. ` : ''}
-              {phase === 'completed' ? 'Your driver confirms the payment once collected.' : 'Collected by your driver at the end of the trip. Tolls and parking, if any, are added at actuals.'}
+              {trip.paid && trip.paid.totalPaid > 0 ? `${t('Balance after {amount} paid.', { amount: formatINR(trip.paid.totalPaid) })} ` : ''}
+              {t(phase === 'completed' ? 'Your driver confirms the payment once collected.' : 'Collected by your driver at the end of the trip. Tolls and parking, if any, are added at actuals.')}
             </small>
           </div>
           {trip.paymentMethod === 'UPI' && upiLink(trip) ? (
             <a className="btn btn--secondary btn--sm" href={upiLink(trip)!}>
-              Open UPI app
+              {t('Open UPI app')}
             </a>
           ) : null}
         </div>
@@ -422,37 +428,37 @@ export function RidePage() {
   const fareCard = (
     <section className="rcard" aria-labelledby="fare-h">
       <header>
-        <h2 id="fare-h">{phase === 'completed' ? 'Invoice and payment' : 'Fare summary'}</h2>
+        <h2 id="fare-h">{t(phase === 'completed' ? 'Invoice and payment' : 'Fare summary')}</h2>
         {phase === 'completed' ? (
           <Button size="sm" variant="secondary" icon="download" onClick={doPrint}>
-            Save or print
+            {t('Save or print')}
           </Button>
         ) : null}
       </header>
       {phase !== 'completed' ? (
         <p className="fare-total">
-          <span>{closed ? 'Booking fare' : 'Total payable'}</span>
+          <span>{t(closed ? 'Booking fare' : 'Total payable')}</span>
           <strong className="num">{formatINR(total)}</strong>
         </p>
       ) : null}
       <dl className="facts">
         <div>
-          <dt>Settlement mode</dt>
-          <dd>{trip.paymentMethod}</dd>
+          <dt>{t('Settlement mode')}</dt>
+          <dd>{t(trip.paymentMethod)}</dd>
         </div>
         <div>
-          <dt>Payment status</dt>
-          <dd>{paymentState}</dd>
+          <dt>{t('Payment status')}</dt>
+          <dd>{t(paymentState)}</dd>
         </div>
       </dl>
       {moneyBox}
       {phase === 'completed' ? (
         <>
-          {printing ? <Notice tone="error">{printing}</Notice> : null}
+          {printing ? <Notice tone="error">{t(printing)}</Notice> : null}
           <FareBreakdown lines={tripFareLines(trip)} total={total} tolls={trip.tollCharges} policies={['payment', 'refund']} />
           {trip.paid && trip.paid.totalPaid > 0 ? (
             <p className="muted small">
-              Paid so far {formatINR(trip.paid.totalPaid)} · Balance {formatINR(trip.paid.balanceDue)}
+              {t('Paid so far {paid} · Balance {due}', { paid: formatINR(trip.paid.totalPaid), due: formatINR(trip.paid.balanceDue) })}
             </p>
           ) : null}
         </>
@@ -463,11 +469,11 @@ export function RidePage() {
   const actions = (
     <section className="rcard rcard--actions" aria-labelledby="actions-h">
       <header>
-        <h2 id="actions-h">Assistance</h2>
+        <h2 id="actions-h">{t('Assistance')}</h2>
       </header>
       {finished ? (
         <Button size="lg" block onClick={bookAgain}>
-          {phase === 'completed' ? 'Rebook this journey' : 'Book another journey'}
+          {t(phase === 'completed' ? 'Rebook this journey' : 'Book another journey')}
         </Button>
       ) : null}
       {/* One list: icon, label, arrow; Call support shows the number. Cancel sits apart, under the list, in red. */}
@@ -476,7 +482,7 @@ export function RidePage() {
           <li>
             <button type="button" className="assist__row" onClick={() => void doShare()}>
               <span className="assist__icon" aria-hidden="true"><Icon name="share" size={17} /></span>
-              <span className="assist__label">Share itinerary</span>
+              <span className="assist__label">{t('Share itinerary')}</span>
               <Icon name="chevron-right" size={16} />
             </button>
           </li>
@@ -484,14 +490,14 @@ export function RidePage() {
         <li>
           <Link className="assist__row" to={`/support?booking=${encodeURIComponent(trip.bookingId)}`}>
             <span className="assist__icon" aria-hidden="true"><Icon name="support" size={17} /></span>
-            <span className="assist__label">Get support</span>
+            <span className="assist__label">{t('Get support')}</span>
             <Icon name="chevron-right" size={16} />
           </Link>
         </li>
         <li>
           <a className="assist__row" href={`tel:${SUPPORT_PHONE}`}>
             <span className="assist__icon" aria-hidden="true"><Icon name="phone" size={17} /></span>
-            <span className="assist__label">Call support</span>
+            <span className="assist__label">{t('Call support')}</span>
             <span className="assist__value num">{SUPPORT_PHONE_DISPLAY}</span>
             <Icon name="chevron-right" size={16} />
           </a>
@@ -500,7 +506,7 @@ export function RidePage() {
           <li>
             <button type="button" className="assist__row is-danger" onClick={() => setShowSafety(true)}>
               <span className="assist__icon" aria-hidden="true"><Icon name="emergency" size={17} /></span>
-              <span className="assist__label">Safety centre · SOS</span>
+              <span className="assist__label">{t('Safety centre · SOS')}</span>
               <Icon name="chevron-right" size={16} />
             </button>
           </li>
@@ -508,7 +514,7 @@ export function RidePage() {
       </ul>
       {canCancel ? (
         <button type="button" className="assist__cancel" onClick={() => setShowCancel(true)}>
-          <Icon name="cancellation" size={16} /> Cancel booking
+          <Icon name="cancellation" size={16} /> {t('Cancel booking')}
         </button>
       ) : null}
     </section>
@@ -521,19 +527,19 @@ export function RidePage() {
     const withDriver = !!trip.driver && (phase === 'driver_assigned' || phase === 'driver_en_route' || phase === 'driver_arrived' || phase === 'in_trip');
     // The boarding OTP only once a driver has accepted the ride, and until the ride starts.
     const showOtp = !!trip.driver && (phase === 'driver_assigned' || phase === 'driver_en_route' || phase === 'driver_arrived');
-    const firstName = trip.driver?.name.split(' ')[0] || 'Your driver';
+    const firstName = trip.driver?.name.split(' ')[0] || t('Your driver');
     const driverLine =
-      phase === 'driver_assigned' ? `${firstName} accepted your ride`
-      : phase === 'driver_en_route' ? (minutesAway != null ? `${firstName} is ${minutesAway} min away` : `${firstName} is on the way`)
-      : phase === 'driver_arrived' ? `${firstName} has arrived at your pickup`
-      : minutesAway != null ? `${formatDuration(minutesAway)} to ${trip.drop.name}` : 'On your way';
+      phase === 'driver_assigned' ? t('{name} accepted your ride', { name: firstName })
+      : phase === 'driver_en_route' ? (minutesAway != null ? t('{name} is {m} min away', { name: firstName, m: minutesAway }) : t('{name} is on the way', { name: firstName }))
+      : phase === 'driver_arrived' ? t('{name} has arrived at your pickup', { name: firstName })
+      : minutesAway != null ? t('{time} to {place}', { time: formatDuration(minutesAway), place: trip.drop.name }) : t('On your way');
 
     return (
       <div className="page ride ride--corp ride--local">
         <header className={`ride-head${headStuck ? ' is-stuck' : ''}`} ref={headRef}>
           <div className="ride-head__bar">
-            <IconButton icon="arrow-left" label="Back" outline onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/trips'))} />
-            <h1>Your ride</h1>
+            <IconButton icon="arrow-left" label={t('Back')} outline onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/trips'))} />
+            <h1>{t('Your ride')}</h1>
             <span className="ride-head__spacer" aria-hidden="true" />
           </div>
         </header>
@@ -542,7 +548,7 @@ export function RidePage() {
           {findCard}
 
           {withDriver && trip.driver ? (
-            <section className="lride-card lride-driver" aria-label="Your driver">
+            <section className="lride-card lride-driver" aria-label={t('Your driver')}>
               <p className={`lride-driver__status ${phase === 'driver_arrived' ? 'is-arrived' : ''}`} role="status">
                 <Icon name={phase === 'in_trip' ? 'navigation' : 'check-circle'} size={18} /> {driverLine}
               </p>
@@ -560,16 +566,16 @@ export function RidePage() {
               {showOtp ? (
                 <div className={`lride-otp ${phase === 'driver_arrived' ? 'is-arrived' : ''}`}>
                   <span>
-                    <strong>Ride OTP</strong>
-                    <small>{phase === 'driver_arrived' ? 'Share it with your driver to start the ride.' : 'Share it with your driver after you board.'}</small>
+                    <strong>{t('Ride OTP')}</strong>
+                    <small>{t(phase === 'driver_arrived' ? 'Share it with your driver to start the ride.' : 'Share it with your driver after you board.')}</small>
                   </span>
-                  <span className="lride-otp__code num" aria-label={`Ride OTP ${otp ? otp.split('').join(' ') : 'not available yet'}`}>{otp ?? '····'}</span>
+                  <span className="lride-otp__code num" aria-label={`${t('Ride OTP')} ${otp ? otp.split('').join(' ') : t('not available yet')}`}>{otp ?? '····'}</span>
                 </div>
               ) : null}
               {driverPhone && phase !== 'in_trip' ? (
                 <div className="lride-driver__actions">
                   <a className="btn btn--primary btn--sm" href={`tel:+91${driverPhone}`}>
-                    <Icon name="phone" /> Call
+                    <Icon name="phone" /> {t('Call')}
                   </a>
                   <a className="btn btn--secondary btn--sm" href={`https://wa.me/91${driverPhone}`} target="_blank" rel="noopener noreferrer">
                     <Icon name="chat" /> WhatsApp
@@ -582,9 +588,9 @@ export function RidePage() {
 
           {phase === 'cancelled' ? (
             <Notice tone={trip.cancellationFee > 0 ? 'warning' : 'info'}>
-              <strong>{trip.status === 'Rejected' ? 'This ride was not accepted' : trip.cancelledBy === 'customer' ? 'You cancelled this ride' : 'This ride was cancelled'}.</strong>{' '}
-              {trip.cancellationFee > 0 ? `A cancellation fee of ${formatINR(trip.cancellationFee)} applies.` : 'No cancellation fee was charged.'}
-              {trip.refund && trip.refund.amount > 0 ? ` Refund ${trip.refund.status.toLowerCase()}: ${formatINR(trip.refund.amount)}.` : ''}
+              <strong>{t(trip.status === 'Rejected' ? 'This ride was not accepted.' : trip.cancelledBy === 'customer' ? 'You cancelled this ride.' : 'This ride was cancelled.')}</strong>{' '}
+              {trip.cancellationFee > 0 ? t('A cancellation fee of {amount} applies.', { amount: formatINR(trip.cancellationFee) }) : t('No cancellation fee was charged.')}
+              {trip.refund && trip.refund.amount > 0 ? ` ${t('Refund {status}: {amount}', { status: t(trip.refund.status.toLowerCase()), amount: formatINR(trip.refund.amount) })}.` : ''}
             </Notice>
           ) : null}
 
@@ -593,7 +599,7 @@ export function RidePage() {
               <section className="lride-card lride-done">
                 <Icon name="check-circle" size={28} />
                 <div>
-                  <h2>You’ve arrived{rental ? '' : ` at ${trip.drop.name}`}</h2>
+                  <h2>{rental ? t('You’ve arrived') : t('You’ve arrived at {place}', { place: trip.drop.name })}</h2>
                   <p className="muted small">{formatDateTime(trip.completedAt)}</p>
                 </div>
               </section>
@@ -602,25 +608,25 @@ export function RidePage() {
           ) : null}
 
           {/* The trip: where, when, which cab, what to pay. */}
-          <section className="lride-card lride-trip" aria-label="Trip details">
+          <section className="lride-card lride-trip" aria-label={t('Trip details')}>
             <div className="lride-trip__head">
-              <span className="lride-trip__tag">{chipLabel}</span>
+              <span className="lride-trip__tag">{t(chipLabel)}</span>
               <span className="lride-trip__ref num">{trip.bookingId}</span>
             </div>
             <ol className="lride-trip__route">
               <li>
                 <i className="lride-dot lride-dot--from" aria-hidden="true" />
-                <span><small>Pickup{scheduledFor ? ` · ${scheduledFor}` : ''}</small><strong>{trip.pickup.name}</strong></span>
+                <span><small>{t('Pickup')}{scheduledFor ? ` · ${scheduledFor}` : ''}</small><strong>{trip.pickup.name}</strong></span>
               </li>
               <li>
                 <i className="lride-dot lride-dot--to" aria-hidden="true" />
-                <span><small>{rental ? 'Hourly rental' : 'Drop'}</small><strong>{rental ? 'Within the city' : trip.drop.name}</strong></span>
+                <span><small>{t(rental ? 'Hourly rental' : 'Drop')}</small><strong>{rental ? t('Within the city') : trip.drop.name}</strong></span>
               </li>
             </ol>
             <dl className="lride-trip__facts">
-              <div><dt>Cab</dt><dd>{tripCategoryName(categories, trip)}</dd></div>
-              <div><dt>Fare</dt><dd className="num">{formatINR(total)}</dd></div>
-              <div><dt>Payment</dt><dd>{closed || isPaid(trip) ? paymentState : trip.paymentMethod === 'UPI' ? 'UPI to driver' : 'Cash to driver'}</dd></div>
+              <div><dt>{t('Cab')}</dt><dd>{tripCategoryName(categories, trip)}</dd></div>
+              <div><dt>{t('Fare')}</dt><dd className="num">{formatINR(total)}</dd></div>
+              <div><dt>{t('Payment')}</dt><dd>{t(closed || isPaid(trip) ? paymentState : trip.paymentMethod === 'UPI' ? 'UPI to driver' : 'Cash to driver')}</dd></div>
             </dl>
           </section>
 
@@ -629,17 +635,17 @@ export function RidePage() {
           {phase === 'completed' ? fareCard : null}
 
           {/* Help, in one quiet row. Cancel sits on the "finding" card while it shows, otherwise as a link under the row. */}
-          <nav className="lride-help" aria-label="Help">
+          <nav className="lride-help" aria-label={t('Help')}>
             {!finished ? (
               <button type="button" onClick={() => void doShare()}>
-                <Icon name="share" size={18} /> <span>Share</span>
+                <Icon name="share" size={18} /> <span>{t('Share')}</span>
               </button>
             ) : null}
             <Link to={`/support?booking=${encodeURIComponent(trip.bookingId)}`}>
-              <Icon name="support" size={18} /> <span>Support</span>
+              <Icon name="support" size={18} /> <span>{t('Support')}</span>
             </Link>
             <a href={`tel:${SUPPORT_PHONE}`}>
-              <Icon name="phone" size={18} /> <span>Call us</span>
+              <Icon name="phone" size={18} /> <span>{t('Call us')}</span>
             </a>
             {tracking ? (
               <button type="button" className="is-danger" onClick={() => setShowSafety(true)}>
@@ -649,12 +655,12 @@ export function RidePage() {
           </nav>
           {canCancel && !waiting ? (
             <button type="button" className="lride-cancel" onClick={() => setShowCancel(true)}>
-              Cancel ride
+              {t('Cancel ride')}
             </button>
           ) : null}
           {finished ? (
             <Button size="lg" block onClick={() => navigate(`/local-rentals?mode=${rental ? 'hourly' : 'pickup'}`)}>
-              {phase === 'completed' ? 'Book another ride' : 'Book a new ride'}
+              {t(phase === 'completed' ? 'Book another ride' : 'Book a new ride')}
             </Button>
           ) : null}
         </div>
@@ -669,8 +675,8 @@ export function RidePage() {
     <div className="page ride ride--corp">
       <header className={`ride-head${headStuck ? ' is-stuck' : ''}`} ref={headRef}>
         <div className="ride-head__bar">
-          <IconButton icon="arrow-left" label="Back" outline onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/trips'))} />
-          <h1>Booking details</h1>
+          <IconButton icon="arrow-left" label={t('Back')} outline onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/trips'))} />
+          <h1>{t('Booking details')}</h1>
           <span className="ride-head__spacer" aria-hidden="true" />
         </div>
       </header>
@@ -679,20 +685,20 @@ export function RidePage() {
         <div className="ride__main">
           {/* The booking at a glance: status, reference, route, and the trip facts on the stub */}
           <div className="dn">
-            <section className={`dn-card${closed ? ' dn-card--bad' : ''}`} aria-label="Booking summary">
+            <section className={`dn-card${closed ? ' dn-card--bad' : ''}`} aria-label={t('Booking summary')}>
               <div className="dn-card__top">
                 <div className="dn-card__head">
                   <img src="/brand/peopletaxi-transparent.webp" alt="People Taxi" width={92} height={30} />
-                  <span className="dn-card__tag">{chipLabel}</span>
+                  <span className="dn-card__tag">{t(chipLabel)}</span>
                 </div>
                 <p className="dn-card__ref">
-                  <small>Booking reference</small>
+                  <small>{t('Booking reference')}</small>
                   <strong className="num">{trip.bookingId}</strong>
-                  {pending ? <small>Sending…</small> : fromCache && !online ? <small>Offline</small> : null}
+                  {pending ? <small>{t('Sending…')}</small> : fromCache && !online ? <small>{t('Offline')}</small> : null}
                 </p>
                 <div className="dn-card__route">
                   <p>
-                    <small>From</small>
+                    <small>{t('From')}</small>
                     <strong>{trip.pickup.name}</strong>
                   </p>
                   <span className="dn-card__line" aria-hidden="true">
@@ -701,46 +707,46 @@ export function RidePage() {
                     </span>
                   </span>
                   <p>
-                    <small>To</small>
-                    <strong>{trip.drop.id === 'place-local-disposal' ? 'Within the city' : trip.drop.name}</strong>
+                    <small>{t('To')}</small>
+                    <strong>{trip.drop.id === 'place-local-disposal' ? t('Within the city') : trip.drop.name}</strong>
                   </p>
                 </div>
               </div>
               <dl className="dn-card__stub">
                 <div>
-                  <dt>Pickup</dt>
+                  <dt>{t('Pickup')}</dt>
                   <dd className="num">{trip.scheduledAt ? `${formatDate(trip.scheduledAt)}, ${formatTime(trip.scheduledAt)}` : '—'}</dd>
                 </div>
                 <div>
-                  <dt>Vehicle</dt>
+                  <dt>{t('Vehicle')}</dt>
                   <dd>{tripCategoryName(categories, trip)}</dd>
                 </div>
                 <div>
-                  <dt>Service</dt>
+                  <dt>{t('Service')}</dt>
                   <dd>
-                    {trip.tripType}
+                    {t(trip.tripType)}
                     {trip.distanceKm ? ` · ${formatDistance(trip.distanceKm)}` : ''}
                   </dd>
                 </div>
                 <div>
-                  <dt>{closed ? 'Booking fare' : 'Total payable'}</dt>
+                  <dt>{t(closed ? 'Booking fare' : 'Total payable')}</dt>
                   <dd className="num">{formatINR(total)}</dd>
-                  <dd className="rd-pay">{closed || isPaid(trip) ? paymentState : trip.paid && trip.paid.totalPaid > 0 ? `Balance ${formatINR(due)}` : `${trip.paymentMethod === 'UPI' ? 'UPI' : 'Cash'} to driver`}</dd>
+                  <dd className="rd-pay">{closed || isPaid(trip) ? t(paymentState) : trip.paid && trip.paid.totalPaid > 0 ? t('Balance {amount}', { amount: formatINR(due) }) : t(trip.paymentMethod === 'UPI' ? 'UPI to driver' : 'Cash to driver')}</dd>
                 </div>
               </dl>
             </section>
 
             {!closed && phase !== 'completed' ? (
-              <section className="rd-status" aria-label="Trip status">
+              <section className="rd-status" aria-label={t('Trip status')}>
                 <ol>
                   {STAGES.map((label, i) => (
                     <li key={label} className={i < stagesDone(trip) ? 'is-done' : i === stagesDone(trip) ? 'is-now' : ''} aria-current={i === stagesDone(trip) ? 'step' : undefined}>
-                      {label}
+                      {t(label)}
                     </li>
                   ))}
                 </ol>
-                <p>{pending ? 'Sending your request…' : stageNote(trip, now)}</p>
-                {!isPaid(trip) ? <small>Tolls and parking, if any, are billed at actuals.</small> : null}
+                <p>{pending ? t('Sending your request…') : ts(stageNote(trip, now))}</p>
+                {!isPaid(trip) ? <small>{t('Tolls and parking, if any, are billed at actuals.')}</small> : null}
               </section>
             ) : null}
           </div>
@@ -750,28 +756,28 @@ export function RidePage() {
             <div className="eta">
               <span className="eta__big num">{hero.big}</span>
               <span className="eta__small">{hero.small}</span>
-              {phase === 'driver_en_route' && straightKm != null && !eta ? <span className="eta__small">Driver is {formatDistance(straightKm)} from your pickup.</span> : null}
+              {phase === 'driver_en_route' && straightKm != null && !eta ? <span className="eta__small">{t('Driver is {km} from your pickup.', { km: formatDistance(straightKm) })}</span> : null}
             </div>
           ) : null}
           {streamingNote ? <p className="muted small">{streamingNote}</p> : null}
-          {tracking && !driverLoc ? <p className="muted small">Live location appears once your driver’s app shares it.</p> : null}
+          {tracking && !driverLoc ? <p className="muted small">{t('Live location appears once your driver’s app shares it.')}</p> : null}
 
           {((phase === 'driver_assigned' || phase === 'driver_en_route' || phase === 'driver_arrived') && trip.driver) || (otp && !closed && phase !== 'completed' && phase !== 'in_trip') ? (
             <div className={`otp-card ${phase === 'driver_arrived' ? 'is-arrived' : ''}`}>
               <div>
-                <strong>{phase === 'driver_arrived' ? 'Share your boarding OTP to start' : 'Boarding OTP'}</strong>
+                <strong>{t(phase === 'driver_arrived' ? 'Share your boarding OTP to start' : 'Boarding OTP')}</strong>
                 <small>
-                  {phase === 'driver_arrived' ? `Meet your driver at ${trip.pickup.name}. Only share the code once you’re in the car.` : 'Share it with your driver only after you board the cab.'}
+                  {phase === 'driver_arrived' ? t('Meet your driver at {place}. Only share the code once you’re in the car.', { place: trip.pickup.name }) : t('Share it with your driver only after you board the cab.')}
                 </small>
               </div>
-              <span className="otp-card__code num" aria-label={`Ride code ${otp ? otp.split('').join(' ') : 'unavailable'}`}>
+              <span className="otp-card__code num" aria-label={`${t('Ride code')} ${otp ? otp.split('').join(' ') : t('unavailable')}`}>
                 {otp ?? '····'}
               </span>
             </div>
           ) : null}
 
           {showDriver && trip.driver ? (
-            <section className="driver-card" aria-label="Your driver">
+            <section className="driver-card" aria-label={t('Your driver')}>
               <Avatar name={trip.driver.name} photoUrl={trip.driver.photoUrl} size={60} />
               <div className="driver-card__text">
                 <strong>{trip.driver.name}</strong>
@@ -784,16 +790,16 @@ export function RidePage() {
               {driverPhone ? (
                 <div className="driver-actions">
                   <a className="btn btn--primary btn--sm" href={`tel:+91${driverPhone}`}>
-                    <Icon name="phone" /> Call {trip.driver.name.split(' ')[0] || 'driver'}
+                    <Icon name="phone" /> {t('Call {name}', { name: trip.driver.name.split(' ')[0] || t('driver') })}
                   </a>
                   <a className="btn btn--secondary btn--sm" href={`https://wa.me/91${driverPhone}`} target="_blank" rel="noopener noreferrer">
                     <Icon name="chat" /> WhatsApp
                   </a>
-                  <p className="muted small driver-actions__note">Calls go to {formatPhone(driverPhone)}.</p>
+                  <p className="muted small driver-actions__note">{t('Calls go to {phone}.', { phone: formatPhone(driverPhone) })}</p>
                 </div>
               ) : (
                 <div className="driver-actions">
-                  <Badge>No phone number on file for this driver</Badge>
+                  <Badge>{t('No phone number on file for this driver')}</Badge>
                 </div>
               )}
             </section>
@@ -803,15 +809,15 @@ export function RidePage() {
           {phase === 'cancelled' ? (
             <Notice tone={trip.cancellationFee > 0 ? 'warning' : 'info'}>
               <strong>
-                {trip.status === 'Rejected' ? 'This booking was not accepted' : trip.cancelledBy === 'customer' ? 'You cancelled this ride' : 'This ride was cancelled'}
+                {t(trip.status === 'Rejected' ? 'This booking was not accepted' : trip.cancelledBy === 'customer' ? 'You cancelled this ride' : 'This ride was cancelled')}
                 {trip.cancelReason ? ` — “${trip.cancelReason}”` : ''}.
               </strong>{' '}
-              {trip.cancellationFee > 0 ? `A cancellation fee of ${formatINR(trip.cancellationFee)} applies per our policy.` : 'No cancellation fee was charged.'}
-              {trip.refund && trip.refund.amount > 0 ? ` Refund ${trip.refund.status.toLowerCase()}: ${formatINR(trip.refund.amount)}.` : ''}
+              {trip.cancellationFee > 0 ? t('A cancellation fee of {amount} applies per our policy.', { amount: formatINR(trip.cancellationFee) }) : t('No cancellation fee was charged.')}
+              {trip.refund && trip.refund.amount > 0 ? ` ${t('Refund {status}: {amount}', { status: t(trip.refund.status.toLowerCase()), amount: formatINR(trip.refund.amount) })}.` : ''}
               {trip.cancellationFee > 0 || (trip.refund && trip.refund.amount > 0) ? (
                 <>
                   {' '}
-                  <Link to="/legal#refund">Refund Policy</Link>
+                  <Link to="/legal#refund">{t('Refund Policy')}</Link>
                 </>
               ) : null}
             </Notice>
@@ -822,7 +828,7 @@ export function RidePage() {
               <section className="done-card">
                 <img src="/art/trip-completed.webp" alt="" width={120} height={120} />
                 <div>
-                  <h2>You’ve arrived at {trip.drop.name}</h2>
+                  <h2>{t('You’ve arrived at {place}', { place: trip.drop.name })}</h2>
                   <p className="muted">{formatDateTime(trip.completedAt)}</p>
                 </div>
               </section>
@@ -834,7 +840,7 @@ export function RidePage() {
           {details}
         </div>
 
-        <aside className="ride__side" aria-label="Fare, payment and actions">
+        <aside className="ride__side" aria-label={t('Fare, payment and actions')}>
           {phase === 'completed' ? fareCard : payNow}
           {actions}
         </aside>

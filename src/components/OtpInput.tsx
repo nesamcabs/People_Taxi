@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useT } from '@/i18n';
 
 export const OTP_LENGTH = 6;
 
@@ -22,6 +23,7 @@ export function OtpInput({
   invalid?: boolean;
 }) {
   const ref = useRef<HTMLInputElement>(null);
+  const t = useT();
 
   // Focus on first show, and again whenever the field comes back from "verifying" or a wrong code, so the person
   // can type straight away without tapping it first.
@@ -43,7 +45,7 @@ export function OtpInput({
       }}
     >
       <label className="sr-only" htmlFor={id}>
-        6-digit verification code
+        {t('6-digit verification code')}
       </label>
       <div className="otp__boxes" aria-hidden="true">
         {Array.from({ length: OTP_LENGTH }, (_, i) => (

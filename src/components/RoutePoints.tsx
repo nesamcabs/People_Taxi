@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { translate } from '@/i18n';
 
 /** Pickup → destination as a connected pair (green dot, dotted line, red square). */
 export function RoutePoints({ pickup, drop, pickupAddress, dropAddress, compact = false, trailing }: {
@@ -14,7 +15,7 @@ export function RoutePoints({ pickup, drop, pickupAddress, dropAddress, compact 
       <li>
         <span className="route-points__mark route-points__mark--pickup" aria-hidden="true" />
         <div className="route-points__text">
-          <span className="route-points__label">Pickup</span>
+          <span className="route-points__label">{translate('Pickup')}</span>
           <strong className={compact ? 'truncate' : ''}>{pickup}</strong>
           {!compact && pickupAddress && pickupAddress !== pickup ? <small>{pickupAddress}</small> : null}
         </div>
@@ -23,7 +24,7 @@ export function RoutePoints({ pickup, drop, pickupAddress, dropAddress, compact 
       <li>
         <span className="route-points__mark route-points__mark--drop" aria-hidden="true" />
         <div className="route-points__text">
-          <span className="route-points__label">Destination</span>
+          <span className="route-points__label">{translate('Destination')}</span>
           <strong className={compact ? 'truncate' : ''}>{drop}</strong>
           {!compact && dropAddress && dropAddress !== drop ? <small>{dropAddress}</small> : null}
         </div>

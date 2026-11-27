@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useCustomerData } from '@core/context/CustomerData';
 import { updateCustomerProfile } from '@core/services/userService';
@@ -13,6 +13,8 @@ import { EmergencyContactForm, PersonalDetailsForm } from '@/components/ProfileF
 import { PhotoError, uploadProfilePhoto } from '@/lib/avatarUpload';
 import { useSeo } from '@/lib/seo';
 import { useAuth } from '@/state/Auth';
+import { msg, useT } from '@/i18n';
+import { LanguageOptions, useLanguageName } from '@/components/LanguageOptions';
 
 /** Rows that have their own artwork (public/icons/ui) show it in place of the line icon. */
 const ROW_ART: Record<string, BrandIconName> = {
@@ -22,16 +24,16 @@ const ROW_ART: Record<string, BrandIconName> = {
 /** Each kind of row keeps its own icon colour, so a list reads at a glance. */
 const TONES: Record<string, string> = {
   'saved-place': 'brand', emergency: 'red', help: 'blue', receipt: 'green', offers: 'gold', 'trip-history': 'brand',
-  support: 'blue', phone: 'green', info: 'gold', document: 'brand', jet: 'blue',
+  support: 'blue', phone: 'green', info: 'gold', document: 'brand', jet: 'blue', language: 'blue',
 };
 
 /** Inside the side drawer, rows show the drawer's own line icons (one neat corporate set) in place of the artwork. */
 const LineIcons = createContext(false);
 
-function Row({ icon, label, hint, value, to, href, onPress, onNavigate, expanded }: { icon: string; label: string; hint?: string; value?: ReactNode; to?: string; href?: string; onPress?: () => void; onNavigate?: () => void; expanded?: boolean }) {
+function Row({ icon, label, hint, value, to, href, onPress, onNavigate, expanded, className = '' }: { icon: string; label: string; hint?: string; value?: ReactNode; to?: string; href?: string; onPress?: () => void; onNavigate?: () => void; expanded?: boolean; className?: string }) {
   const tone = TONES[icon] ?? 'brand';
   const line = useContext(LineIcons);
-  const cls = `setting setting--${tone}`;
+  const cls = `setting setting--${tone} ${className}`.trim();
   const inner = (
     <>
       {line && hasDrawerIcon(icon) ? (
@@ -80,9 +82,27 @@ function Row({ icon, label, hint, value, to, href, onPress, onNavigate, expanded
   return <div className={cls}>{inner}</div>;
 }
 
+/** Settings › Language / மொழி. The row's name stays in both languages, so a rider who cannot read the current one still
+ *  finds it; the two choices open in place under it. */
+function LanguageSetting({ style }: { style?: CSSProperties }) {
+  const t = useT();
+  const name = useLanguageName();
+  const [open, setOpen] = useState(false);
+  return (
+    <section className="group" style={style}>
+      <h2 className="eyebrow">{t('Settings')}</h2>
+      <div className="card card--list">
+        <Row className="setting--lang" icon="language" label="Language / மொழி" hint={t('App language')} value={name} onPress={() => setOpen((o) => !o)} expanded={open} />
+        {open ? <LanguageOptions /> : null}
+      </div>
+    </section>
+  );
+}
+
 /** `drawer`: shown inside the profile side drawer (no page heading or page padding); its edit forms open in place, under the item tapped. */
 export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 'drawer'; onClose?: () => void }) {
-  useSeo(variant === 'page' ? { title: 'My Account', noindex: true } : null);
+  const t = useT();
+  useSeo(variant === 'page' ? { title: t('My Account'), noindex: true } : null);
   const inDrawer = variant === 'drawer';
   const { profile } = useCustomerData();
   const { signOut, openLoginModal } = useAuth();
@@ -104,39 +124,40 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
       <>
         {inDrawer ? (
           /* The drawer's welcome card: the same deep navy as the signed-in account card. */
-          <section className="drawer-welcome" aria-label="Sign in">
-            <span className="drawer-welcome__eyebrow">Welcome to People Taxi</span>
-            <strong className="drawer-welcome__title">Sign in to your account</strong>
-            <p className="drawer-welcome__text">Manage your bookings, payments and saved details in one place.</p>
-            <button type="button" className="drawer-welcome__btn" onClick={() => { onClose?.(); openLoginModal({ title: 'Sign in to account' }); }}>
-              Sign in
+          <section className="drawer-welcome" aria-label={t('Sign in')}>
+            <span className="drawer-welcome__eyebrow">{t('Welcome to People Taxi')}</span>
+            <strong className="drawer-welcome__title">{t('Sign in to your account')}</strong>
+            <p className="drawer-welcome__text">{t('Manage your bookings, payments and saved details in one place.')}</p>
+            <button type="button" className="drawer-welcome__btn" onClick={() => { onClose?.(); openLoginModal({ title: msg('Sign in to account') }); }}>
+              {t('Sign in')}
             </button>
           </section>
         ) : (
         <div className="card card--center">
           <EmptyState
             art="welcome"
-            title="Sign in to your account"
+            title={t('Sign in to your account')}
             action={
-              <Button variant="primary" onClick={() => { onClose?.(); openLoginModal({ title: 'Sign in to account' }); }}>
-                Sign in
+              <Button variant="primary" onClick={() => { onClose?.(); openLoginModal({ title: msg('Sign in to account') }); }}>
+                {t('Sign in')}
               </Button>
             }
           >
-            Manage your bookings, payments and saved details in one place.
+            {t('Manage your bookings, payments and saved details in one place.')}
           </EmptyState>
         </div>
         )}
         {/* Offers and Help are here too, because narrower desktop headers move them into this menu. */}
         <section className="group" style={inDrawer ? undefined : { marginTop: 16 }}>
-          <h2 className="eyebrow">Support &amp; information</h2>
+          <h2 className="eyebrow">{t('Support & information')}</h2>
           <div className="card card--list">
-            <Row icon="offers" label="Offers & promotions" hint="Current fare offers" to="/offers" />
-            <Row icon="support" label="Customer support" hint="24/7 assistance by call or chat" to="/support" />
-            <Row icon="info" label="About People Taxi" hint="Company information" to="/about" />
-            <Row icon="document" label="Terms & policies" hint="Privacy, cancellation and refund policies" to="/legal" />
+            <Row icon="offers" label={t('Offers & promotions')} hint={t('Current fare offers')} to="/offers" />
+            <Row icon="support" label={t('Customer support')} hint={t('24/7 assistance by call or chat')} to="/support" />
+            <Row icon="info" label={t('About People Taxi')} hint={t('Company information')} to="/about" />
+            <Row icon="document" label={t('Terms & policies')} hint={t('Privacy, cancellation and refund policies')} to="/legal" />
           </div>
         </section>
+        <LanguageSetting style={inDrawer ? undefined : { marginTop: 16 }} />
       </>
     );
     return inDrawer ? (
@@ -145,7 +166,7 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
       </LineIcons.Provider>
     ) : (
       <>
-        <PageHead title="Account" />
+        <PageHead title={t('Account')} />
         <div className="page">{signedOut}</div>
       </>
     );
@@ -168,15 +189,15 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
 
   const body = (
     <>
-        {error ? <Notice tone="error">{error}</Notice> : null}
+        {error ? <Notice tone="error">{t(error)}</Notice> : null}
 
         <div className={`account ${inDrawer ? 'account--drawer' : ''}`}>
           <aside className="account__side">
             {/* The profile card: photo, name and number (tap the name to edit, no separate pencil). The editor opens under it and
                 holds the personal details and the emergency contact. */}
-            <section className="profile-card profile-card--combined" aria-label="Your profile">
+            <section className="profile-card profile-card--combined" aria-label={t('Your profile')}>
               <div className="profile-card__head">
-                <button type="button" className="profile-card__photo" onClick={() => file.current?.click()} disabled={progress != null} aria-label="Change profile photo">
+                <button type="button" className="profile-card__photo" onClick={() => file.current?.click()} disabled={progress != null} aria-label={t('Change profile photo')}>
                   <Avatar name={profile.name} photoUrl={profile.photoUrl} size={42} />
                   <span className="profile-card__cam">
                     <Icon name={progress != null ? 'document-upload' : 'camera'} size={12} />
@@ -189,26 +210,26 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
                       <span className="profile-card__info">
                         {inDrawer ? (
                           <span className="profile-card__eyebrow">
-                            My account
+                            {t('My account')}
                             <span className="profile-card__badge">
                               <DrawerIcon name="verified" size={10} strokeWidth={3} />
-                              Verified
+                              {t('Verified')}
                             </span>
                           </span>
                         ) : null}
                         <span className="profile-card__name truncate">{profile.name}</span>
-                        <span className="profile-card__sub truncate">{progress != null ? `Uploading photo… ${progress}%` : formatPhone(profile.phone)}</span>
+                        <span className="profile-card__sub truncate">{progress != null ? t('Uploading photo… {n}%', { n: progress }) : formatPhone(profile.phone)}</span>
                         {profile.email && !inDrawer && progress == null ? <span className="profile-card__sub truncate">{profile.email}</span> : null}
                       </span>
                       <Icon name="chevron-right" size={18} />
                     </>
                   );
                   return inDrawer ? (
-                    <button type="button" className={`profile-card__open ${editing === 'details' ? 'is-open' : ''}`} onClick={() => toggleEdit('details')} aria-label="Edit profile" aria-expanded={editing === 'details'}>
+                    <button type="button" className={`profile-card__open ${editing === 'details' ? 'is-open' : ''}`} onClick={() => toggleEdit('details')} aria-label={t('Edit profile')} aria-expanded={editing === 'details'}>
                       {info}
                     </button>
                   ) : (
-                    <Link className="profile-card__open" to="/account/edit" aria-label="Edit profile">
+                    <Link className="profile-card__open" to="/account/edit" aria-label={t('Edit profile')}>
                       {info}
                     </Link>
                   );
@@ -217,7 +238,7 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
               {inDrawer && editing === 'details' ? (
                 <div className="inline-edit">
                   <PersonalDetailsForm onDone={() => setEditing(null)} onCancel={() => setEditing(null)} />
-                  <h3 className="profile-sub">Emergency contact</h3>
+                  <h3 className="profile-sub">{t('Emergency contact')}</h3>
                   <EmergencyContactForm onDone={() => setEditing(null)} />
                 </div>
               ) : null}
@@ -227,7 +248,7 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
             {inDrawer ? null : (
             <Link className="credit-row" to="/account/payments">
               <Icon name="wallet" size={18} />
-              <span>Refund credits</span>
+              <span>{t('Refund credits')}</span>
               <strong className="num">{formatINR(profile.walletBalance)}</strong>
               <Icon name="chevron-right" size={16} />
             </Link>
@@ -236,32 +257,33 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
 
           <div className="account__groups">
             <section className="group">
-              <h2 className="eyebrow">Bookings &amp; payments</h2>
+              <h2 className="eyebrow">{t('Bookings & payments')}</h2>
               <div className="card card--list">
-                <Row icon="trip-history" label="My bookings" hint="Upcoming and completed trips" to="/trips" />
-                <Row icon="receipt" label="Payments & refunds" hint="Receipts and refund status" to="/account/payments" />
-                <Row icon="offers" label="Offers & promotions" hint="Current fare offers" to="/offers" />
+                <Row icon="trip-history" label={t('My bookings')} hint={t('Upcoming and completed trips')} to="/trips" />
+                <Row icon="receipt" label={t('Payments & refunds')} hint={t('Receipts and refund status')} to="/account/payments" />
+                <Row icon="offers" label={t('Offers & promotions')} hint={t('Current fare offers')} to="/offers" />
               </div>
             </section>
+            <LanguageSetting />
             <section className="group">
-              <h2 className="eyebrow">Support &amp; information</h2>
+              <h2 className="eyebrow">{t('Support & information')}</h2>
               <div className="card card--list">
-                <Row icon="support" label="Customer support" hint="24/7 assistance by call or chat" to="/support" />
-                <Row icon="info" label="About People Taxi" hint="Company information" to="/about" />
-                <Row icon="document" label="Terms & policies" hint="Privacy, cancellation and refund policies" to="/legal" />
+                <Row icon="support" label={t('Customer support')} hint={t('24/7 assistance by call or chat')} to="/support" />
+                <Row icon="info" label={t('About People Taxi')} hint={t('Company information')} to="/about" />
+                <Row icon="document" label={t('Terms & policies')} hint={t('Privacy, cancellation and refund policies')} to="/legal" />
               </div>
             </section>
-            <section className="group" aria-label="Session">
+            <section className="group" aria-label={t('Session')}>
               {inDrawer ? (
                 <button type="button" className="drawer-signout" onClick={() => setConfirm(true)}>
                   <DrawerIcon name="logout" size={18} strokeWidth={2} />
-                  Log out
+                  {t('Log out')}
                 </button>
               ) : (
                 <div className="card card--list">
                   <button type="button" className="setting setting--action" onClick={() => setConfirm(true)}>
                     <span className="setting__icon setting__icon--art"><BrandIcon name="logout" size={34} /></span>
-                    <span className="setting__label">Log out</span>
+                    <span className="setting__label">{t('Log out')}</span>
                   </button>
                 </div>
               )}
@@ -276,25 +298,25 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
     <>
       {inDrawer ? <LineIcons.Provider value>{body}</LineIcons.Provider> : (
         <>
-          <PageHead title="Account" />
+          <PageHead title={t('Account')} />
           <div className="page">{body}</div>
         </>
       )}
 
       {confirm ? (
         <Dialog
-          title="Log out of People Taxi?"
+          title={t('Log out of People Taxi?')}
           onClose={() => setConfirm(false)}
           footer={
             <>
               <Button variant="secondary" onClick={() => setConfirm(false)}>
-                Stay signed in
+                {t('Stay signed in')}
               </Button>
-              <Button onClick={() => void signOut().catch(() => setError('We couldn’t log you out. Please try again.'))}>Log out</Button>
+              <Button onClick={() => void signOut().catch(() => setError('We couldn’t log you out. Please try again.'))}>{t('Log out')}</Button>
             </>
           }
         >
-          <p className="muted">You’ll need to verify your mobile number again to sign back in.</p>
+          <p className="muted">{t('You’ll need to verify your mobile number again to sign back in.')}</p>
         </Dialog>
       ) : null}
     </>

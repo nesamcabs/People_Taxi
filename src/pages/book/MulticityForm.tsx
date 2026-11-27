@@ -23,6 +23,7 @@ import type { PickerConfig } from '@/components/LocationPicker';
 import { PlaceField } from '@/components/PlaceField';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
 import { QUICK_CITIES } from './content';
+import { msg, useT } from '@/i18n';
 
 type StoredMulticityState = MulticityDraft;
 
@@ -60,6 +61,7 @@ export function MulticityForm() {
   const { online } = useOnline();
   const navigate = useNavigate();
   const { draft, update } = useBooking();
+  const t = useT();
 
   const [state, setState] = useState<StoredMulticityState>(() => withDefaultSchedule(loadStoredState()));
   // Until the rider picks a date or time, the default keeps following the clock (always 30 minutes from now).
@@ -155,29 +157,29 @@ export function MulticityForm() {
   const configFor = (pickerTarget: 'pickup' | 'drop' | string): PickerConfig => {
     if (pickerTarget === 'pickup') {
       return {
-        title: 'Choose Pickup Location',
+        title: t('Choose Pickup Location'),
         allowCurrent: true,
         popular: QUICK_CITIES,
-        popularLabel: 'Major Cities',
+        popularLabel: t('Major Cities'),
         pinMode: 'pickup',
       };
     }
     if (pickerTarget === 'drop') {
       return {
-        title: 'Choose Drop Location',
+        title: t('Choose Drop Location'),
         allowCurrent: true,
         popular: QUICK_CITIES,
-        popularLabel: 'Popular Destinations',
+        popularLabel: t('Popular Destinations'),
         pinMode: 'drop',
       };
     }
     const found = state.stops.filter((s) => s.place).findIndex((s) => s.id === pickerTarget);
     const idx = found < 0 ? cities.length : found;
     return {
-      title: `Choose City ${idx + 1}`,
+      title: t('Choose City {n}', { n: idx + 1 }),
       allowCurrent: true,
       popular: QUICK_CITIES,
-      popularLabel: 'Popular Cities',
+      popularLabel: t('Popular Cities'),
       pinMode: 'drop',
     };
   };
@@ -185,15 +187,15 @@ export function MulticityForm() {
   const validate = (): boolean => {
     const err: Record<string, string> = {};
     if (!validMulticityPlace(state.pickup)) {
-      err.pickup = 'Please select a starting pickup location.';
+      err.pickup = msg('Please select a starting pickup location.');
     }
     if (!validMulticityPlace(state.drop)) {
-      err.drop = 'Please select a final destination drop point.';
+      err.drop = msg('Please select a final destination drop point.');
     }
 
     const filledStops = state.stops.filter((s) => s.place !== null);
     if (filledStops.length === 0) {
-      err.stops = 'Add at least one city between pickup and drop.';
+      err.stops = msg('Add at least one city between pickup and drop.');
     }
 
     // Verify consecutive duplicates across the ordered itinerary
@@ -205,18 +207,18 @@ export function MulticityForm() {
       }
     }
 
-    if (!validMulticityDate(state.date)) err.date = 'Select a valid pickup date.';
-    if (!scheduled) err.time = 'Select a valid pickup date and time.';
+    if (!validMulticityDate(state.date)) err.date = msg('Select a valid pickup date.');
+    if (!scheduled) err.time = msg('Select a valid pickup date and time.');
 
     if (scheduled) {
       const prob = scheduleProblem(scheduled);
       if (prob) err.time = prob;
     }
 
-    if (filledStops.some((stop) => !validMulticityPlace(stop.place))) err.stops = 'Choose a valid location for every city.';
+    if (filledStops.some((stop) => !validMulticityPlace(stop.place))) err.stops = msg('Choose a valid location for every city.');
 
     if (!online) {
-      err.form = 'You are currently offline. Please check your internet connection.';
+      err.form = msg('You are currently offline. Please check your internet connection.');
     }
 
     setErrors(err);
@@ -246,8 +248,8 @@ export function MulticityForm() {
       saveDraft(next);
       setPendingReturn('/book/ride');
       openLoginModal({
-        title: 'Sign in to see cabs and fares',
-        subtitle: 'Verify your mobile number to continue with your tour.',
+        title: msg('Sign in to see cabs and fares'),
+        subtitle: msg('Verify your mobile number to continue with your tour.'),
       });
       return;
     }
@@ -258,13 +260,13 @@ export function MulticityForm() {
     <form className="bf-multicity" onSubmit={onSubmit} noValidate>
       <fieldset className="bf-fieldset">
       {/* ── Route & Stops Section ── */}
-      <div className="bf-section" role="group" aria-label="Route and stops">
+      <div className="bf-section" role="group" aria-label={t('Route and stops')}>
         {/* 1. Starting Pickup Point */}
         <div className={`bf-field ${errors.pickup ? 'is-invalid' : ''}`} data-pf-anchor>
           <span className="bf-pin" aria-hidden="true" />
           <div className="bf-field__main">
             <label className="bf-label" id="mc-pickup-label" htmlFor="mc-pickup-input">
-              Pickup location
+              {t('Pickup location')}
             </label>
             <PlaceField inputId="mc-pickup-input" inputClassName="bf-trigger" value={state.pickup} config={configFor('pickup')} saved={savedPlaces} recent={recentPlaces} onSelect={(p) => onPickPlace('pickup', p)} invalid={!!errors.pickup} />
             {state.pickup?.address && state.pickup.address !== state.pickup.name ? (
@@ -272,7 +274,7 @@ export function MulticityForm() {
             ) : null}
           </div>
         </div>
-        {errors.pickup ? <p className="bf-error">{errors.pickup}</p> : null}
+        {errors.pickup ? <p className="bf-error">{t(errors.pickup)}</p> : null}
 
         {/* 2. Cities along the way: only the chosen ones show, then a plain "Add city" button */}
         {cities.map((stop, index) => (
@@ -280,12 +282,12 @@ export function MulticityForm() {
             <span className="bf-pin bf-pin--stop" aria-hidden="true" />
             <div className="bf-field__main">
               <label className="bf-label" id={`mc-city-${index}-label`} htmlFor={`mc-city-${index}-input`}>
-                Stop {index + 1}
+                {t('Stop {n}', { n: index + 1 })}
               </label>
               <PlaceField inputId={`mc-city-${index}-input`} inputClassName="bf-trigger" value={stop.place} config={configFor(stop.id)} saved={savedPlaces} recent={recentPlaces} onSelect={(p) => onPickPlace(stop.id, p)} />
               {stop.place?.address && stop.place.address !== stop.place.name ? <small className="bf-addr">{stop.place.address}</small> : null}
             </div>
-            <button type="button" className="bf-stop-remove" aria-label={`Remove stop ${index + 1}`} onClick={() => removeStop(stop.id)}>
+            <button type="button" className="bf-stop-remove" aria-label={t('Delete stop {n}', { n: index + 1 })} onClick={() => removeStop(stop.id)}>
               <Icon name="trash" size={16} />
             </button>
           </div>
@@ -295,11 +297,11 @@ export function MulticityForm() {
             <span className="bf-pin bf-pin--stop" aria-hidden="true" />
             <div className="bf-field__main">
               <label className="bf-label" htmlFor="mc-city-new-input">
-                Stop {cities.length + 1}
+                {t('Stop {n}', { n: cities.length + 1 })}
               </label>
-              <PlaceField inputId="mc-city-new-input" inputClassName="bf-trigger" value={null} config={{ ...configFor('new'), placeholder: 'Add a city or stop' }} saved={savedPlaces} recent={recentPlaces} onSelect={(p) => onPickPlace('new', p)} />
+              <PlaceField inputId="mc-city-new-input" inputClassName="bf-trigger" value={null} config={{ ...configFor('new'), placeholder: t('Add a city or stop') }} saved={savedPlaces} recent={recentPlaces} onSelect={(p) => onPickPlace('new', p)} />
             </div>
-            <button type="button" className="bf-stop-remove" aria-label="Cancel new stop" onClick={() => setAddingStop(false)}>
+            <button type="button" className="bf-stop-remove" aria-label={t('Cancel new stop')} onClick={() => setAddingStop(false)}>
               <Icon name="trash" size={16} />
             </button>
           </div>
@@ -307,18 +309,18 @@ export function MulticityForm() {
         {cities.length < MAX_CITIES && !addingStop ? (
           <div className="bf-route__tools">
             <button type="button" className={`bf-round-stop-add ${errors.stops ? 'is-invalid' : ''}`} onClick={() => setAddingStop(true)}>
-              <Icon name="plus" size={16} /> Add stop
+              <Icon name="plus" size={16} /> {t('Add stop')}
             </button>
           </div>
         ) : null}
-        {errors.stops ? <p className="bf-error">{errors.stops}</p> : null}
+        {errors.stops ? <p className="bf-error">{t(errors.stops)}</p> : null}
 
         {/* 3. Final Drop Point */}
         <div className={`bf-field ${errors.drop ? 'is-invalid' : ''}`} data-pf-anchor>
           <span className="bf-pin bf-pin--drop" aria-hidden="true" />
           <div className="bf-field__main">
             <label className="bf-label" id="mc-drop-label" htmlFor="mc-drop-input">
-              Drop location
+              {t('Drop location')}
             </label>
             <PlaceField inputId="mc-drop-input" inputClassName="bf-trigger" value={state.drop} config={configFor('drop')} saved={savedPlaces} recent={recentPlaces} onSelect={(p) => onPickPlace('drop', p)} invalid={!!errors.drop} />
             {state.drop?.address && state.drop.address !== state.drop.name ? (
@@ -326,17 +328,17 @@ export function MulticityForm() {
             ) : null}
           </div>
         </div>
-        {errors.drop ? <p className="bf-error">{errors.drop}</p> : null}
-        {errors.itinerary ? <p className="bf-error">{errors.itinerary}</p> : null}
+        {errors.drop ? <p className="bf-error">{t(errors.drop)}</p> : null}
+        {errors.itinerary ? <p className="bf-error">{t(errors.itinerary)}</p> : null}
 
       </div>
 
       {/* ── Schedule Section ── */}
-      <div className="bf-section" role="group" aria-label="Trip schedule">
+      <div className="bf-section" role="group" aria-label={t('Trip schedule')}>
         <div className="bf-row">
           <div className="bf-cell bf-cell--schedule">
             <label className="bf-label bf-label--out" htmlFor="mc-date">
-              Pickup date
+              {t('Pickup date')}
             </label>
             <div className="bf-datewrap">
               <input
@@ -366,17 +368,17 @@ export function MulticityForm() {
               {/* Quick day button: "Tomorrow" (or "Today" when the date is tomorrow). It changes only the date; the
                   calendar opens only from the date box itself. */}
               {quickDay ? (
-                <button type="button" className="bf-chip bf-chip--switch" aria-label={`Change the pickup date to ${quickDay.label.toLowerCase()}`} onClick={() => switchDay(quickDay.to)}>
-                  {quickDay.label}
+                <button type="button" className="bf-chip bf-chip--switch" aria-label={t('Change the pickup date to {day}', { day: t(quickDay.label) })} onClick={() => switchDay(quickDay.to)}>
+                  {t(quickDay.label)}
                 </button>
               ) : null}
             </div>
-            {errors.date ? <p className="bf-error">{errors.date}</p> : null}
+            {errors.date ? <p className="bf-error">{t(errors.date)}</p> : null}
           </div>
 
           <div className="bf-cell bf-cell--schedule">
             <span className="bf-label bf-label--out" id="mc-time-label">
-              Pickup time
+              {t('Pickup time')}
             </span>
             <button
               id="mc-time-btn"
@@ -388,14 +390,14 @@ export function MulticityForm() {
               <span id="mc-time-val">{state.time ? formatTime12(state.time) : ''}</span>
               <ClockIcon size={26} />
             </button>
-            {errors.time ? <p className="bf-error">{errors.time}</p> : null}
+            {errors.time ? <p className="bf-error">{t(errors.time)}</p> : null}
           </div>
         </div>
       </div>
 
       {errors.form ? (
         <p className="bf-error bf-error--form" role="alert">
-          {errors.form}
+          {t(errors.form)}
         </p>
       ) : null}
 
@@ -415,7 +417,7 @@ export function MulticityForm() {
       {/* ── Time Picker Modal ── */}
       {timeFor ? (
         <TimePicker
-          title="Pickup time"
+          title={t('Pickup time')}
           date={state.date}
           value={state.time}
           validate="pickup"

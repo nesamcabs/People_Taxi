@@ -24,12 +24,14 @@ import { PaymentChoice } from './PaymentChoice';
 import { holdBookingConfirmed } from '@/lib/paymentHold';
 import { primeChime } from '@/lib/confirmChime';
 import { DIAL_CODES, splitPhone } from '@/lib/countryCodes';
+import { msg, richText, useT } from '@/i18n';
 import './review.css';
 
 const UNIQUE_DIAL_CODES = [...new Set(DIAL_CODES.map((item) => item.code))].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)));
 
 export function ReviewStep() {
   const navigate = useNavigate();
+  const t = useT();
   const { profile } = useCustomerData();
   const { openLoginModal } = useAuth();
   const { draft, update, reset, route, adjustment } = useBooking();
@@ -121,21 +123,21 @@ export function ReviewStep() {
       <div className="flow-page">
         <div className="wrap flow-page__wrap review-missing">
           <PageHead
-            back={<BackButton to="/book/ride" label="Back to vehicles" />}
-            title="Review & Confirm"
+            back={<BackButton to="/book/ride" label={msg('Back to vehicles')} />}
+            title={t('Review & Confirm')}
           />
           {q.quoteLoading ? (
-            <Notice>Confirming fare with People Taxi server…</Notice>
+            <Notice>{t('Confirming fare with People Taxi server…')}</Notice>
           ) : (
             <Notice
               variant="warning"
               action={
                 <Button size="sm" variant="secondary" onClick={() => navigate('/book/ride')}>
-                  Choose your vehicle
+                  {t('Choose your vehicle')}
                 </Button>
               }
             >
-              Your trip details changed. Please go back and select your vehicle again.
+              {t('Your trip details changed. Please go back and select your vehicle again.')}
             </Notice>
           )}
         </div>
@@ -164,16 +166,16 @@ export function ReviewStep() {
   const airport = tripType === 'Airport Taxi';
 
   const addOnsConfirmed = (!draft.roofCarrier || quote.addOns?.roofCarrier === true) && (!draft.pets || quote.addOns?.pets === true);
-  const nameError = customerName.trim().length < 2 ? 'Enter your name.' : '';
+  const nameError = customerName.trim().length < 2 ? msg('Enter your name.') : '';
   // Sent in the notes only when it differs from the name on the signed-in profile (the server already has that one).
   const bookerNote = customerName.trim().toLowerCase() === (profile?.name ?? '').trim().toLowerCase() ? '' : customerName.trim();
-  const emailError = email.trim() && !isValidEmail(email) ? 'Enter a valid email address or leave it blank.' : '';
-  const contactError = contactNumber.length < 6 || contactNumber.length > 14 ? 'Enter a valid mobile number.' : '';
+  const emailError = email.trim() && !isValidEmail(email) ? msg('Enter a valid email address or leave it blank.') : '';
+  const contactError = contactNumber.length < 6 || contactNumber.length > 14 ? msg('Enter a valid mobile number.') : '';
   const passengerError = forOther
     ? !passengerName.trim()
-      ? 'Enter the passenger’s name.'
+      ? msg('Enter the passenger’s name.')
       : !isValidIndianMobile(passengerMobile.replace(/\s+/g, ''))
-        ? 'Enter the passenger’s 10-digit mobile number.'
+        ? msg('Enter the passenger’s 10-digit mobile number.')
         : ''
     : '';
   const room = notesRoom({
@@ -185,17 +187,17 @@ export function ReviewStep() {
   const morning = tripType === 'Round Trip' && !draft.multicity && q.selectedPackage?.kind === 'morning' ? q.selectedPackage : null;
   const cutoffKey = morning ? `${morning.id}|${morning.endAt}` : '';
   const cutoffAccepted = !morning || cutoffFor === cutoffKey;
-  const termsError = tried && !termsAccepted ? 'Please accept the fare and cancellation terms to confirm.' : '';
-  const cutoffError = tried && !cutoffAccepted ? 'Please accept the 9:00 AM cutoff and the automatic upgrade to confirm.' : '';
+  const termsError = tried && !termsAccepted ? msg('Please accept the fare and cancellation terms to confirm.') : '';
+  const cutoffError = tried && !cutoffAccepted ? msg('Please accept the 9:00 AM cutoff and the automatic upgrade to confirm.') : '';
   const blocker = !online
-    ? 'You’re offline. Reconnect to book.'
+    ? msg('You’re offline. Reconnect to book.')
     : scheduleProblem(scheduledAt) ||
       (!q.authoritative
         ? q.quoteLoading
-          ? 'Confirming fare with People Taxi…'
-          : q.quoteError || 'Fare confirmation required.'
+          ? msg('Confirming fare with People Taxi…')
+          : q.quoteError || msg('Fare confirmation required.')
         : '') ||
-      (!addOnsConfirmed ? 'Confirming carrier and pet charges. Please retry if pricing is unavailable.' : nameError || contactError || emailError || passengerError ? 'Check your contact details below.' : '');
+      (!addOnsConfirmed ? msg('Confirming carrier and pet charges. Please retry if pricing is unavailable.') : nameError || contactError || emailError || passengerError ? msg('Check your contact details below.') : '');
 
   const submit = async () => {
     setTried(true);
@@ -205,8 +207,8 @@ export function ReviewStep() {
     }
     if (!profile) {
       openLoginModal({
-        title: 'Sign in to complete booking',
-        subtitle: 'Enter your mobile number to send your ride request.',
+        title: msg('Sign in to complete booking'),
+        subtitle: msg('Enter your mobile number to send your ride request.'),
       });
       return;
     }
@@ -269,10 +271,10 @@ export function ReviewStep() {
       const err = e as { code?: string; fare?: Fare };
       if (err.code === 'fare-changed' && err.fare) {
         setServerQuote({ key: priceKey, fare: err.fare });
-        setSubmitError('The fare for this route has updated. Review the updated amount and tap Confirm Booking to proceed.');
+        setSubmitError(msg('The fare for this route has updated. Review the updated amount and tap Confirm Booking to proceed.'));
         return;
       }
-      setSubmitError(describeError(e, 'We couldn’t submit your booking request. Please check your connection and try again.'));
+      setSubmitError(describeError(e, msg('We couldn’t submit your booking request. Please check your connection and try again.')));
     } finally {
       holdBookingConfirmed(false);
       submittingRef.current = false;
@@ -287,23 +289,23 @@ export function ReviewStep() {
   return (
     <div className="flow-page flow-page--review cb">
       <div className="cb__wrap">
-        <h1 className="sr-only">Complete your booking</h1>
+        <h1 className="sr-only">{t('Complete your booking')}</h1>
         {tripType === 'Round Trip' && !draft.multicity && q.selectedPackage ? (
           <p className="cb-pkgline" role="note">
-            <strong>{q.selectedPackage.label}</strong> · {q.selectedPackage.includedKm} km included · {q.selectedPackage.days} calendar {q.selectedPackage.days === 1 ? 'day' : 'days'} · Return by {packageDay(new Date(q.selectedPackage.endAt))}, {packageClock(new Date(q.selectedPackage.endAt))} · Extra {formatINR(q.selectedPackage.extraKmRate)}/km
+            <strong>{q.selectedPackage.label}</strong> · {t('{km} km included', { km: q.selectedPackage.includedKm })} · {q.selectedPackage.days === 1 ? t('1 calendar day') : t('{n} calendar days', { n: q.selectedPackage.days })} · {t('Return by {when}', { when: `${packageDay(new Date(q.selectedPackage.endAt))}, ${packageClock(new Date(q.selectedPackage.endAt))}` })} · {t('Extra')} {formatINR(q.selectedPackage.extraKmRate)}/km
           </p>
         ) : null}
 
         {/* What is being booked, as a boarding pass: from → to on top, date, time and cab on the stub */}
-        <section className="cb-pass" aria-label="Booking summary">
+        <section className="cb-pass" aria-label={t('Booking summary')}>
           <div className="cb-pass__top">
             <div className="cb-pass__head">
               <img src="/brand/peopletaxi-transparent.webp" alt="People Taxi" width={76} height={25} />
-              <span>Booking summary</span>
+              <span>{t('Booking summary')}</span>
             </div>
             <div className="cb-pass__route">
               <p>
-                <small>From</small>
+                <small>{t('From')}</small>
                 <strong>{pickup.name}</strong>
               </p>
               <span className="cb-pass__line" aria-hidden="true">
@@ -312,50 +314,50 @@ export function ReviewStep() {
                 </span>
               </span>
               <p>
-                <small>To</small>
-                <strong>{drop.id === 'place-local-disposal' ? 'Within the city' : drop.name}</strong>
+                <small>{t('To')}</small>
+                <strong>{drop.id === 'place-local-disposal' ? t('Within the city') : drop.name}</strong>
               </p>
             </div>
           </div>
           <dl className="cb-pass__stub">
             <div>
-              <dt>Date</dt>
+              <dt>{t('Date')}</dt>
               <dd>{scheduledAt ? formatDate(scheduledAt) : '—'}</dd>
             </div>
             <div>
-              <dt>Time</dt>
+              <dt>{t('Time')}</dt>
               <dd>{scheduledAt ? formatTime(scheduledAt) : '—'}</dd>
             </div>
             <div>
-              <dt>Cab</dt>
+              <dt>{t('Cab')}</dt>
               <dd>{categoryName(category)}</dd>
             </div>
           </dl>
         </section>
 
-        <section className="cb__section" aria-label="Passenger & Contact Details">
-          <h2 className="cb__h2">Passenger information</h2>
+        <section className="cb__section" aria-label={t('Passenger & Contact Details')}>
+          <h2 className="cb__h2">{t('Passenger information')}</h2>
           <div className={`cb-field${nameError && tried ? ' is-invalid' : ''}`}>
-            <label className="cb-field__label" htmlFor="booking-name">Full name</label>
+            <label className="cb-field__label" htmlFor="booking-name">{t('Full name')}</label>
             <input
               id="booking-name"
               className="cb-input"
               type="text"
               autoComplete="name"
               autoCapitalize="words"
-              placeholder="Your full name"
+              placeholder={t('Your full name')}
               maxLength={60}
               value={customerName}
               aria-invalid={!!nameError && tried}
               onChange={(e) => update({ customerName: e.target.value })}
             />
           </div>
-          {tried && nameError ? <p className="cb-error">{nameError}</p> : null}
+          {tried && nameError ? <p className="cb-error">{t(nameError)}</p> : null}
 
           <div className={`cb-field${contactError && tried ? ' is-invalid' : ''}`}>
             <div className="cb-phone">
               <div className="cb-phone__cell cb-phone__cell--code">
-                <label className="cb-field__label" htmlFor="booking-country-code">Code</label>
+                <label className="cb-field__label" htmlFor="booking-country-code">{t('Code')}</label>
                 <div className="cb-phone__code">
                   <select id="booking-country-code" value={contactCode} onChange={(e) => setContactCode(e.target.value)}>
                     {UNIQUE_DIAL_CODES.map((code) => <option key={code} value={code}>{code}</option>)}
@@ -365,14 +367,14 @@ export function ReviewStep() {
               </div>
               <span className="cb-phone__sep" aria-hidden="true" />
               <div className="cb-phone__cell cb-phone__cell--num">
-                <label className="cb-field__label" htmlFor="booking-mobile">Contact number</label>
+                <label className="cb-field__label" htmlFor="booking-mobile">{t('Contact number')}</label>
                 <input
                   id="booking-mobile"
                   className="cb-input"
                   type="tel"
                   inputMode="numeric"
                   autoComplete="tel-national"
-                  placeholder="Mobile number"
+                  placeholder={t('Mobile number')}
                   value={contactNumber}
                   aria-invalid={!!contactError && tried}
                   onChange={(e) => setContactNumber(e.target.value.replace(/\D/g, '').slice(0, 14))}
@@ -380,10 +382,10 @@ export function ReviewStep() {
               </div>
             </div>
           </div>
-          {tried && contactError ? <p className="cb-error">{contactError}</p> : null}
+          {tried && contactError ? <p className="cb-error">{t(contactError)}</p> : null}
 
           <div className={`cb-field${emailError ? ' is-invalid' : ''}`}>
-            <label className="cb-field__label" htmlFor="booking-email">Email address (optional)</label>
+            <label className="cb-field__label" htmlFor="booking-email">{t('Email address (optional)')}</label>
             <input
               id="booking-email"
               className="cb-input"
@@ -395,10 +397,10 @@ export function ReviewStep() {
               onChange={(e) => update({ email: e.target.value })}
             />
           </div>
-          {emailError ? <p className="cb-error">{emailError}</p> : null}
+          {emailError ? <p className="cb-error">{t(emailError)}</p> : null}
 
           <div className="cb-switch-row">
-            <span id="cb-other-label">Booking on behalf of another passenger</span>
+            <span id="cb-other-label">{t('Booking on behalf of another passenger')}</span>
             <button
               type="button"
               role="switch"
@@ -413,24 +415,24 @@ export function ReviewStep() {
 
           {forOther ? (
             <div className="cb-other">
-              <PolicyLinks lead="Add another passenger’s mobile number only with their permission." ids={['privacy']} newTab />
+              <PolicyLinks lead={t('Add another passenger’s mobile number only with their permission.')} ids={['privacy']} newTab />
               <div className={`cb-field${tried && !passengerName.trim() ? ' is-invalid' : ''}`}>
-                <label className="cb-field__label" htmlFor="booking-pax-name">Passenger name</label>
-                <input id="booking-pax-name" className="cb-input" placeholder="Full name" value={passengerName} onChange={(e) => update({ passengerName: e.target.value })} />
+                <label className="cb-field__label" htmlFor="booking-pax-name">{t('Passenger name')}</label>
+                <input id="booking-pax-name" className="cb-input" placeholder={t('Full name')} value={passengerName} onChange={(e) => update({ passengerName: e.target.value })} />
               </div>
               <div className={`cb-field${tried && passengerError ? ' is-invalid' : ''}`}>
-                <label className="cb-field__label" htmlFor="booking-pax-mobile">Passenger 10-digit mobile</label>
+                <label className="cb-field__label" htmlFor="booking-pax-mobile">{t('Passenger 10-digit mobile')}</label>
                 <input id="booking-pax-mobile" className="cb-input" type="tel" inputMode="numeric" placeholder="9876543210" value={passengerMobile} onChange={(e) => update({ passengerMobile: e.target.value })} />
               </div>
-              {tried && passengerError ? <p className="cb-error">{passengerError}</p> : null}
+              {tried && passengerError ? <p className="cb-error">{t(passengerError)}</p> : null}
             </div>
           ) : null}
 
           {airport ? (
             <div className="cb-field">
-              <label className="cb-field__label" htmlFor="booking-flight">Flight number (optional)</label>
-              <input id="booking-flight" className="cb-input" placeholder="e.g. 6E 214" value={flight} onChange={(e) => update({ flight: e.target.value.toUpperCase() })} />
-              <p className="cb-field__hint">Our driver will track flight delays and adjust pickup time automatically.</p>
+              <label className="cb-field__label" htmlFor="booking-flight">{t('Flight number (optional)')}</label>
+              <input id="booking-flight" className="cb-input" placeholder={t('e.g. 6E 214')} value={flight} onChange={(e) => update({ flight: e.target.value.toUpperCase() })} />
+              <p className="cb-field__hint">{t('Our driver will track flight delays and adjust pickup time automatically.')}</p>
             </div>
           ) : null}
         </section>
@@ -440,36 +442,36 @@ export function ReviewStep() {
         {hasCarrier || hasPets ? (
           <>
             <section className="cb__section cb__section--addons" aria-labelledby="cb-addons-head">
-              <h2 id="cb-addons-head" className="cb__h2">Optional services</h2>
+              <h2 id="cb-addons-head" className="cb__h2">{t('Optional services')}</h2>
               {hasCarrier ? (
                 <label className="cb-addon">
                   <input type="checkbox" role="switch" className="cb-mini" checked={draft.roofCarrier} onChange={(e) => update({ roofCarrier: e.target.checked })} />
-                  <span className="cb-addon__name">Roof carrier</span>
+                  <span className="cb-addon__name">{t('Roof carrier')}</span>
                   <span className="cb-addon__price">+{formatINR(carrierCharge)}</span>
                 </label>
               ) : null}
               {hasPets ? (
                 <label className="cb-addon">
                   <input type="checkbox" role="switch" className="cb-mini" checked={draft.pets} onChange={(e) => update({ pets: e.target.checked })} />
-                  <span className="cb-addon__name">Pet travel</span>
+                  <span className="cb-addon__name">{t('Pet travel')}</span>
                   <span className="cb-addon__price">+{formatINR(petCharge)}</span>
                 </label>
               ) : null}
-              <p className="cb__note">Billed once per trip and reflected in your final invoice.</p>
+              <p className="cb__note">{t('Billed once per trip and reflected in your final invoice.')}</p>
             </section>
 
             <hr className="cb__rule" />
           </>
         ) : null}
 
-        <section className="cb__section" aria-label="Payment">
+        <section className="cb__section" aria-label={t('Payment')}>
           <PaymentChoice choices={payChoices} value={payChoice.id} onChange={setPayPick} total={quote.total} disabled={submitting} />
 
           {applied ? (
             <div className="cb-coupon cb-coupon--applied">
               <TicketIcon />
-              <span className="cb-coupon__applied"><strong>{draft.promoCode.toUpperCase()}</strong> applied</span>
-              <button type="button" className="cb-coupon__btn" onClick={() => { update({ promoCode: '' }); setCouponText(''); }}>Remove</button>
+              <span className="cb-coupon__applied">{richText(t('{code} applied'), { code: <strong key="c">{draft.promoCode.toUpperCase()}</strong> })}</span>
+              <button type="button" className="cb-coupon__btn" onClick={() => { update({ promoCode: '' }); setCouponText(''); }}>{t('Remove')}</button>
             </div>
           ) : (
             <form
@@ -482,21 +484,21 @@ export function ReviewStep() {
             >
               <TicketIcon />
               <span className="cb-coupon__sep" aria-hidden="true" />
-              <input className="cb-input cb-coupon__input" placeholder="Promotional code" aria-label="Promotional code" value={couponText} onChange={(e) => setCouponText(e.target.value.toUpperCase())} />
-              <button type="submit" className="cb-coupon__btn" disabled={!couponText.trim()}>Apply</button>
+              <input className="cb-input cb-coupon__input" placeholder={t('Promotional code')} aria-label={t('Promotional code')} value={couponText} onChange={(e) => setCouponText(e.target.value.toUpperCase())} />
+              <button type="submit" className="cb-coupon__btn" disabled={!couponText.trim()}>{t('Apply')}</button>
             </form>
           )}
 
           {draft.fuelType === 'cng' ? (
             <ul className="cb__notes">
-              <li>Fuel type: CNG</li>
+              <li>{t('Fuel type: CNG')}</li>
             </ul>
           ) : null}
 
-          {showBlocker ? <p className="cb-error cb-error--block" role="alert">{blocker}</p> : null}
+          {showBlocker ? <p className="cb-error cb-error--block" role="alert">{t(blocker)}</p> : null}
           {submitError ? (
             <Notice variant="error" icon="warning">
-              {submitError}
+              {t(submitError)}
             </Notice>
           ) : null}
         </section>
@@ -508,34 +510,33 @@ export function ReviewStep() {
             <label className="cb-terms__row">
               <input type="checkbox" className="cb-tick" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
               <span className="cb-terms__text">
-                I agree to the fare, additional charges and{' '}
-                <Link to="/legal#terms" target="_blank" rel="noopener">cancellation policy<span className="sr-only"> (opens in a new tab)</span></Link>
+                {richText(t('I agree to the fare, additional charges and {policy}'), { policy: <Link key="p" to="/legal#terms" target="_blank" rel="noopener">{t('cancellation policy')}<span className="sr-only"> {t('(opens in a new tab)')}</span></Link> })}
               </span>
             </label>
-            {termsError ? <p className="cb-error" role="alert">{termsError}</p> : null}
+            {termsError ? <p className="cb-error" role="alert">{t(termsError)}</p> : null}
             {morning ? (
               <label className="cb-terms__row cb-terms__row--cutoff">
                 <input type="checkbox" className="cb-tick" data-cutoff="" checked={cutoffAccepted} onChange={(e) => setCutoffFor(e.target.checked ? cutoffKey : '')} />
                 <span className="cb-terms__text">
-                  I accept the strict {packageClock(new Date(morning.morningCutoffAt ?? morning.endAt))} cutoff on {packageDay(new Date(morning.morningCutoffAt ?? morning.endAt))}.
-                  {morning.upgrade ? ` A trip still running after it becomes ${morning.upgrade.label} (+${formatINR(morning.upgrade.increase)}, ${morning.upgrade.includedKm} km included), with no grace period.` : ''}
+                  {t('I accept the strict {time} cutoff on {day}.', { time: packageClock(new Date(morning.morningCutoffAt ?? morning.endAt)), day: packageDay(new Date(morning.morningCutoffAt ?? morning.endAt)) })}
+                  {morning.upgrade ? ` ${t('A trip still running after it becomes {name} (+{amount}, {km} km included), with no grace period.', { name: morning.upgrade.label, amount: formatINR(morning.upgrade.increase), km: morning.upgrade.includedKm })}` : ''}
                 </span>
               </label>
             ) : null}
-            {cutoffError ? <p className="cb-error" role="alert">{cutoffError}</p> : null}
+            {cutoffError ? <p className="cb-error" role="alert">{t(cutoffError)}</p> : null}
           </div>
           <div className="cb-bar__row">
-            <button type="button" className="cb-iconbtn" aria-label="Back to vehicles" title="Back to vehicles" onClick={() => navigate('/book/ride')}>
+            <button type="button" className="cb-iconbtn" aria-label={t('Back to vehicles')} title={t('Back to vehicles')} onClick={() => navigate('/book/ride')}>
               <Icon name="arrow-left" size={22} />
             </button>
-            <button type="button" className={`cb-total${q.quoteLoading ? ' is-loading' : ''}`} aria-busy={q.quoteLoading} onClick={() => setShowFare(true)} aria-label={`Total ${formatINR(quote.total)}. View fare details`}>
-              <small>Total payable <Icon name="info" size={13} /></small>
+            <button type="button" className={`cb-total${q.quoteLoading ? ' is-loading' : ''}`} aria-busy={q.quoteLoading} onClick={() => setShowFare(true)} aria-label={t('Total {amount}. View fare details', { amount: formatINR(quote.total) })}>
+              <small>{t('Total payable')} <Icon name="info" size={13} /></small>
               <strong key={quote.total} className="num">{formatINR(quote.total)}</strong>
               {strikeOf > 0 ? <s>{formatINR(strikeOf)}</s> : null}
             </button>
             <button type="button" className="cb-confirm" disabled={submitting} onClick={submit}>
               {submitting ? <span className="cb-confirm__spin" aria-hidden="true" /> : null}
-              <span>{profile ? (payOnline ? `Pay ${formatINR(advanceOf(quote.total, payChoice.percent))} & confirm` : 'Confirm booking') : 'Sign in'}</span>
+              <span>{profile ? (payOnline ? t('Pay {amount} & confirm', { amount: formatINR(advanceOf(quote.total, payChoice.percent)) }) : t('Confirm booking')) : t('Sign in')}</span>
               <span className="cb-confirm__arrow" aria-hidden="true"><Icon name="arrow-right" size={20} /></span>
             </button>
           </div>

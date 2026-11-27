@@ -4,11 +4,15 @@ import { useState } from 'react';
 import { SERVICE_COPY, type ServiceNoteKind } from '@/lib/serviceCopy';
 import { Icon } from '@/components/Icon';
 import { Dialog } from '@/components/ui';
+import { useT } from '@/i18n';
 import './serviceNote.css';
 
 export function ServiceNote({ kind, className = '' }: { kind: ServiceNoteKind; className?: string }) {
   const [open, setOpen] = useState(false);
-  const copy = SERVICE_COPY[kind];
+  const t = useT();
+  const base = SERVICE_COPY[kind];
+  // The words are kept in English in @/lib/serviceCopy and translated here (the Tamil keeps the ' · ' separators).
+  const copy = { ...base, title: t(base.title), sub: t(base.sub), intro: t(base.intro), heading: t(base.heading) };
   // The note runs as a ticker: every point (title first, then the short lines) in one row that scrolls across the strip.
   // Two copies of the row sit side by side so the loop never shows a gap. Tapping the strip still opens the full details.
   const points = [...copy.title.split(' · '), ...copy.sub.split(' · ')].map((p) => p.trim()).filter(Boolean);
@@ -28,7 +32,7 @@ export function ServiceNote({ kind, className = '' }: { kind: ServiceNoteKind; c
         type="button"
         className={`svc-note svc-note--ticker ${className}`}
         aria-haspopup="dialog"
-        aria-label={`${copy.title}. ${copy.sub}. Tap for ${copy.heading} service details`}
+        aria-label={t('{title}. {sub}. Tap for {service} service details', { title: copy.title, sub: copy.sub, service: copy.heading })}
         onClick={() => setOpen(true)}
       >
         <span className="svc-tick__view" aria-hidden="true">
@@ -39,24 +43,24 @@ export function ServiceNote({ kind, className = '' }: { kind: ServiceNoteKind; c
         </span>
       </button>
       {open ? (
-        <Dialog title={copy.heading} onClose={() => setOpen(false)} className="svc-dialog" footer={<button type="button" className="svc-dialog__ok" onClick={() => setOpen(false)}>Understood</button>}>
+        <Dialog title={copy.heading} onClose={() => setOpen(false)} className="svc-dialog" footer={<button type="button" className="svc-dialog__ok" onClick={() => setOpen(false)}>{t('Understood')}</button>}>
           <div className="svc-dialog__intro">
-            <small>Trip summary</small>
+            <small>{t('Trip summary')}</small>
             <p>{copy.intro}</p>
           </div>
           {/* A numbered terms sheet: each clause has a status tag; additional charges close it as a highlighted band */}
           <ol className="svc-dialog__list">
-            {copy.items.map(([label, text]) => {
+            {base.items.map(([label, text]) => {
               const band = label === 'Additional charges';
               const mark = label === 'Exclusions' ? 'no' : /additional|extra|waiting|time|morning/i.test(label) ? 'extra' : 'ok';
               const status = mark === 'no' ? 'Not covered' : mark === 'extra' ? 'Chargeable' : 'Covered';
               return (
                 <li key={label} className={band ? 'is-band' : undefined}>
                   <div className="svc-dialog__row">
-                    <strong>{label}</strong>
-                    {band ? null : <span className={`svc-dialog__mark is-${mark}`}>{status}</span>}
+                    <strong>{t(label)}</strong>
+                    {band ? null : <span className={`svc-dialog__mark is-${mark}`}>{t(status)}</span>}
                   </div>
-                  <p>{text}</p>
+                  <p>{t(text)}</p>
                 </li>
               );
             })}

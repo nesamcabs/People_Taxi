@@ -62,6 +62,13 @@ const PATHS = {
   ),
   // Verified badge: a tick.
   verified: <path d="M5 12.5l4.2 4.2L19 7" />,
+  // Language: a globe.
+  language: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17M12 3.5c2.3 2.4 3.4 5.2 3.4 8.5s-1.1 6.1-3.4 8.5c-2.3-2.4-3.4-5.2-3.4-8.5S9.7 5.9 12 3.5z" />
+    </>
+  ),
 } as const;
 
 export type DrawerIconName = keyof typeof PATHS;
