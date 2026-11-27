@@ -122,10 +122,11 @@
     line-height: 1.15;
   }
 
-  /* ── Service note ("Direct pickup & drop · Details") ── */
+  /* ── Service note ("Direct pickup & drop · Details") ──
+     It sits above the One Way / Round Trip switch, so its space is below it. */
   html body .home .home-hero > .bf .svc-note {
     gap: clamp(6px, calc(var(--pt-vh) * 1.1), 10px);
-    margin: var(--pt-gap) 0 0;
+    margin: 0 0 var(--pt-gap);
     padding: clamp(5px, calc(var(--pt-vh) * 1), 9px) clamp(8px, calc(var(--pt-vh) * 1.2), 10px) clamp(5px, calc(var(--pt-vh) * 1), 9px) clamp(11px, calc(var(--pt-vh) * 1.6), 14px);
     border-radius: clamp(10px, calc(var(--pt-vh) * 1.7), 14px);
   }

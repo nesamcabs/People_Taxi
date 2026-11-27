@@ -47,6 +47,8 @@ export const ICONS: Record<string, string> = {
   briefcase: '<rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   route: '<circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/>',
   luggage: '<rect width="14" height="16" x="5" y="6" rx="2"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><circle cx="9" cy="22" r="1"/><circle cx="15" cy="22" r="1"/>',
+  // Cabin trolley bag: a pull-up handle on two rods, a rounded shell with two ribs, and two wheels (the cab list's "bags").
+  'trolley-bag': '<path d="M10 2.6h4M10.6 2.6v4.4M13.4 2.6v4.4"/><rect width="11" height="12.4" x="6.5" y="7" rx="2.6"/><path d="M10 10.4v5.6M14 10.4v5.6"/><circle cx="9.2" cy="21.3" r="1.1"/><circle cx="14.8" cy="21.3" r="1.1"/>',
   multicity: '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M9 18h3a3 3 0 0 0 3-3V9a3 3 0 0 1 3-3"/>',
   'travel-multicity': '<circle cx="6" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><path d="M9 18h3a3 3 0 0 0 3-3V9a3 3 0 0 1 3-3"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',

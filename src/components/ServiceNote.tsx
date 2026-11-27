@@ -39,24 +39,28 @@ export function ServiceNote({ kind, className = '' }: { kind: ServiceNoteKind; c
         </span>
       </button>
       {open ? (
-        <Dialog title={copy.heading} onClose={() => setOpen(false)} className="svc-dialog" footer={<button type="button" className="svc-dialog__ok" onClick={() => setOpen(false)}>Got it</button>}>
-          <p className="svc-dialog__intro">{copy.intro}</p>
-          <ul className="svc-dialog__list">
+        <Dialog title={copy.heading} onClose={() => setOpen(false)} className="svc-dialog" footer={<button type="button" className="svc-dialog__ok" onClick={() => setOpen(false)}>Understood</button>}>
+          <div className="svc-dialog__intro">
+            <small>Trip summary</small>
+            <p>{copy.intro}</p>
+          </div>
+          {/* A numbered terms sheet: each clause has a status tag; additional charges close it as a highlighted band */}
+          <ol className="svc-dialog__list">
             {copy.items.map(([label, text]) => {
-              const no = label === 'Not included';
+              const band = label === 'Additional charges';
+              const mark = label === 'Exclusions' ? 'no' : /additional|extra|waiting|time|morning/i.test(label) ? 'extra' : 'ok';
+              const status = mark === 'no' ? 'Not covered' : mark === 'extra' ? 'Chargeable' : 'Covered';
               return (
-                <li key={label}>
-                  <span className={`svc-dialog__mark ${no ? 'is-no' : ''}`} aria-hidden="true">
-                    <Icon name={no ? 'cross' : 'check'} size={13} />
-                  </span>
-                  <div>
+                <li key={label} className={band ? 'is-band' : undefined}>
+                  <div className="svc-dialog__row">
                     <strong>{label}</strong>
-                    <p>{text}</p>
+                    {band ? null : <span className={`svc-dialog__mark is-${mark}`}>{status}</span>}
                   </div>
+                  <p>{text}</p>
                 </li>
               );
             })}
-          </ul>
+          </ol>
         </Dialog>
       ) : null}
     </>

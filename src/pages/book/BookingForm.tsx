@@ -1,8 +1,8 @@
 // The booking form on the People Taxi home page: service, route, schedule and "Search Cabs".
 // Places are real coordinates (search, device location, saved/recent places, map pin); the
 // schedule follows the booking server's rules; fares are only ever priced by the server.
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import type { GeoPlace } from '@core/types';
 import { useCustomerData } from '@/state/customer';
 import { reverseGeocode } from '@core/services/geoService';
@@ -19,16 +19,16 @@ import { UNAVAILABLE_TEXT, useServiceAvailability, type ServiceKey } from '@/lib
 import { useAuth } from '@/state/Auth';
 import { setPendingReturn } from '@/lib/pendingReturn';
 import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
-import { useDeviceLocation, useLivePickupDefault, useOnline } from '@/lib/hooks';
+import { useDeviceLocation, useLivePickupDefault, useOnline, useToday } from '@/lib/hooks';
 import { ClockIcon, SwapIcon } from '@/shared/components/CabParts';
-import { combineDateTime, defaultPickup, latestPickup, toDateInput, toTimeInput } from '@/lib/schedule';
+import { combineDateTime, defaultPickup, latestPickup, pickupDayFor, quickDaySwitch, timeForDay, toDateInput, toTimeInput } from '@/lib/schedule';
 import { isOvernightPickup } from '@core/utils/timePackages';
 import { ServiceNote } from '@/components/ServiceNote';
-import { LOCAL_RENTALS_LABEL, SERVICES, SERVICE_TITLE, isLocalRentals, type ServiceId } from '@/lib/services';
+import { SERVICE_TITLE, isLocalRentals, type ServiceId } from '@/lib/services';
 import { AIRPORTS, QUICK_CITIES, isAirportPlace } from './content';
 import { MulticityForm } from './MulticityForm';
 import { FindCabLabel } from './FindCabLabel';
-import { ServiceIcon } from '@/components/ServiceIcon';
+import { SERVICE_BAR, isBarActive, useActiveService } from '@/components/serviceBar';
 
 type Field = 'pickup' | 'drop' | 'stops' | 'hours' | 'date' | 'time' | 'retDate' | 'retTime' | 'form';
 type Errors = Partial<Record<Field, string>>;
@@ -64,6 +64,9 @@ const dayHint = (iso: string): string => {
   return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'long' });
 };
 
+/** No recent-place suggestions in the booking form (see `recent` below). */
+const NO_RECENT: GeoPlace[] = [];
+
 /** Round trips are booked for up to this many days (the server's roundTrip.maxDays). */
 const RT_MAX_DAYS = 30;
 /** The calendar date `n` days after a YYYY-MM-DD date (plain calendar arithmetic). */
@@ -86,9 +89,11 @@ export function BookingForm({
   const navigate = useNavigate();
   const { draft, update } = useBooking();
   const { state: auth, openLoginModal } = useAuth();
-  const { trips, savedPlaces } = useCustomerData();
+  const { savedPlaces } = useCustomerData();
   const { position } = useDeviceLocation(true, true);
   const { online } = useOnline();
+  // The selected service for the five-service selector (the same reading the phone bottom bar uses).
+  const activeService = useActiveService();
   const avail = useServiceAvailability();
   const { pickup, drop, scheduledAt, tripEndAt, tripType } = draft;
   const isRound = service === 'outstation' && tripType === 'Round Trip';
@@ -136,8 +141,22 @@ export function BookingForm({
   // By default: today, 30 minutes from now. A time already chosen earlier is kept while it can still be booked.
   const keptSchedule = scheduledAt && !scheduleProblem(scheduledAt) ? scheduledAt : null;
   const scheduleTouched = useRef(keptSchedule !== null);
+  // True once the rider picks the date themselves (or a schedule they chose earlier is kept). Until then, picking a time
+  // also moves the date to the first day that time can be booked (a time already gone today means tomorrow).
+  const datePicked = useRef(keptSchedule !== null);
+  // Re-renders at midnight, so the "Today" / "Tomorrow" tag on the date follows the calendar.
+  useToday();
   const [date, setDate] = useState(() => (keptSchedule ? toDateInput(keptSchedule) : defaultPickup().date));
   const [time, setTime] = useState(() => (keptSchedule ? toTimeInput(keptSchedule) : defaultPickup().time));
+  // The quick day button above the date, and what it does: move the date only (the time is kept while it can be booked).
+  const quickDay = date ? quickDaySwitch(date) : null;
+  const switchDay = (to: string) => {
+    scheduleTouched.current = true;
+    datePicked.current = true;
+    setDate(to);
+    setTime((t) => timeForDay(to, t));
+    setErrors((x) => ({ ...x, date: '', time: '' }));
+  };
   // Until the rider picks a date or time, the default keeps following the clock (always 30 minutes from now).
   useLivePickupDefault(scheduleTouched, (next) => {
     setDate(next.date);
@@ -173,18 +192,9 @@ export function BookingForm({
     if (Object.keys(patch).length) update(patch);
   }, [date, time, days, isRound]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const recent = useMemo(() => {
-    const seen = new Set<string>();
-    const out: GeoPlace[] = [];
-    for (const t of trips) {
-      for (const p of [t.drop, t.pickup]) {
-        if (!isValidLatLng(p) || seen.has(p.name) || p.id === 'place-local-disposal') continue;
-        seen.add(p.name);
-        out.push({ ...p, id: `recent-${t.id}-${p.id}`, type: 'recent' });
-      }
-    }
-    return out.slice(0, 6);
-  }, [trips]);
+  // Recent places (from past trips) are not suggested in the booking form: the place list shows saved places,
+  // popular cities and what the rider types. The constant keeps one stable empty list across renders.
+  const recent = NO_RECENT;
 
   const airportField: 'pickup' | 'drop' = direction === 'to' ? 'drop' : 'pickup';
   const pickerConfig = (f: 'pickup' | 'drop'): PickerConfig => {
@@ -347,23 +357,42 @@ export function BookingForm({
         <p>{service === 'multicity' ? 'Plan multi-stop itineraries with transparent upfront package quotes.' : 'Verified drivers. Upfront fares. Pay at drop.'}</p>
       </div>
 
-      <div className="bf-services" role="group" aria-label="Services">
-        {SERVICES.filter((s) => s.id !== 'local' && s.id !== 'pickup').map((s) => {
-          // The rental slot is the "Local Rentals" button: it holds both the hourly rental and the pickup & drop.
-          const grouped = s.id === 'rental';
-          const active = grouped ? isLocalRentals(service) : service === s.id;
-          const off = serviceOff(s.id);
-          return (
-            <button key={s.id} type="button" className={`bf-service ${active ? 'is-active' : ''} ${off ? 'is-off' : ''}`} aria-pressed={active} aria-disabled={off || undefined} disabled={off} title={off ? UNAVAILABLE_TEXT : undefined} aria-controls="bf-form" onClick={() => (grouped && isLocalRentals(service) ? undefined : onService(s.id))}>
+      {/* Tablets and desktops (900px and wider; phones use the bottom bar instead, so only one selector shows): the same
+          five services as the phone bottom bar, in its order, with its illustrated icons, routes and selected state. */}
+      <nav className="bf-services bf-services--five" aria-label="Services">
+        {SERVICE_BAR.map((s) => {
+          const active = isBarActive(s.id, activeService);
+          const key = keyOf(s.id);
+          const off = s.id === 'outstation' ? serviceOff('outstation') : !!key && avail.off(key);
+          const face = (
+            <>
               <span className="bf-service__icon">
-                <ServiceIcon id={s.id} size={30} />
+                <img src={s.image} alt="" width={s.size} height={s.size} draggable={false} />
               </span>
-              <span>{grouped ? LOCAL_RENTALS_LABEL : s.label}</span>
+              <span>{s.label}</span>
               {off ? <small className="bf-service__off">{UNAVAILABLE_TEXT}</small> : null}
-            </button>
+            </>
+          );
+          return off ? (
+            <span key={s.id} className="bf-service is-off" aria-disabled="true" title={`${s.full}: ${UNAVAILABLE_TEXT}`}>
+              {face}
+            </span>
+          ) : (
+            <Link key={s.id} to={s.to} className={`bf-service ${active ? 'is-active' : ''}`} aria-label={s.full} aria-current={active ? 'page' : undefined} title={s.full}>
+              {face}
+            </Link>
           );
         })}
-      </div>
+      </nav>
+
+      {/* The running service note sits above the trip switch (One Way / Round Trip, Hourly / Pickup & Drop). */}
+      {service === 'outstation' ? (
+        <ServiceNote kind={outstationTrip === 'Round Trip' ? 'roundtrip' : 'oneway'} />
+      ) : service === 'multicity' ? (
+        <ServiceNote kind="multicity" />
+      ) : isLocalRentals(service) ? (
+        <ServiceNote kind={service === 'rental' ? 'rental' : 'local'} />
+      ) : null}
 
       {isLocalRentals(service) ? (
         <Tabs
@@ -403,14 +432,6 @@ export function BookingForm({
             { id: 'from', label: 'From airport' },
           ]}
         />
-      ) : null}
-
-      {service === 'outstation' ? (
-        <ServiceNote kind={outstationTrip === 'Round Trip' ? 'roundtrip' : 'oneway'} />
-      ) : service === 'multicity' ? (
-        <ServiceNote kind="multicity" />
-      ) : isLocalRentals(service) ? (
-        <ServiceNote kind={service === 'rental' ? 'rental' : 'local'} />
       ) : null}
 
       {service === 'multicity' ? (
@@ -499,6 +520,7 @@ export function BookingForm({
                   id="bf-date"
                   className="input bf-input"
                   type="date"
+                  autoComplete="off"
                   value={date}
                   min={toDateInput(new Date())}
                   max={toDateInput(latestPickup())}
@@ -514,11 +536,18 @@ export function BookingForm({
                   }}
                   onChange={(e) => {
                     scheduleTouched.current = true;
+                    datePicked.current = true;
                     setDate(e.target.value);
                     setErrors((x) => ({ ...x, date: '', time: '' }));
                   }}
                 />
-                {date ? <span className="bf-chip">{dayHint(date)}</span> : null}
+                {/* Quick day button: "Tomorrow" (or "Today" when the date is tomorrow). It changes only the date; the
+                    calendar opens only from the date box itself. */}
+                {quickDay ? (
+                  <button type="button" className="bf-chip bf-chip--switch" aria-label={`Change the pickup date to ${quickDay.label.toLowerCase()}`} onClick={() => switchDay(quickDay.to)}>
+                    {quickDay.label}
+                  </button>
+                ) : null}
               </div>
               {fieldErr('date')}
             </div>
@@ -593,11 +622,13 @@ export function BookingForm({
           value={time}
           validate="pickup"
           notBefore={null}
+          resolveDate={(t) => pickupDayFor(date, t, datePicked.current)}
           onClose={() => setTimeFor(null)}
-          onConfirm={(t) => {
+          onConfirm={(t, day) => {
             scheduleTouched.current = true;
+            if (day && day !== date) setDate(day);
             setTime(t);
-            setErrors((x) => ({ ...x, time: '' }));
+            setErrors((x) => ({ ...x, date: '', time: '' }));
             setTimeFor(null);
           }}
         />

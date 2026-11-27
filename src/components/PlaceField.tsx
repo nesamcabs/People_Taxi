@@ -328,6 +328,7 @@ export function PlaceField({ value, config, saved, recent, onSelect, placeholder
         placeholder={config.placeholder ?? placeholder ?? 'City, area or landmark'}
         autoComplete="off"
         autoCorrect="off"
+        autoCapitalize="none"
         spellCheck={false}
         enterKeyHint="search"
         title={value ? [value.name, value.address !== value.name ? value.address : ''].filter(Boolean).join(', ') : undefined}

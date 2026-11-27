@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { setOnlineState } from '@core/utils/network';
-import { defaultPickup } from './schedule';
+import { defaultPickup, toDateInput } from './schedule';
 import { getCurrentPosition, getLocationPermission, watchPosition, LocationError, type DevicePosition, type PermissionStateLite } from '@core/services/geoService';
 
 /** True while the viewport is at least `px` wide. */
@@ -147,6 +147,9 @@ export function useVisualViewportHeight(): void {
     let tallest = Math.max(window.innerHeight, vv?.height ?? 0);
     let width = window.innerWidth;
     const FIELD = 'input:not([readonly]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=range]):not([type=file]), textarea, select, [contenteditable="true"]';
+    // Fields that open the phone's own picker (calendar, clock, option list) instead of the keyboard. Nothing needs room for
+    // a keyboard there, so the page stays where it is: tapping "Pickup date" must not scroll the booking form up.
+    const PICKER = 'select, input[type=date], input[type=time], input[type=datetime-local], input[type=month], input[type=week], input[type=color]';
     const typing = () => !!document.activeElement?.matches?.(FIELD);
     const apply = () => {
       const h = vv?.height ?? window.innerHeight;
@@ -173,7 +176,7 @@ export function useVisualViewportHeight(): void {
     };
     const onFocusIn = (e: FocusEvent) => {
       apply();
-      if (e.target instanceof Element && e.target.matches(FIELD)) reveal(e.target);
+      if (e.target instanceof Element && e.target.matches(FIELD) && !e.target.matches(PICKER)) reveal(e.target);
     };
     const onFocusOut = () => window.setTimeout(apply, 150);
     apply();
@@ -207,6 +210,26 @@ export function useDebounced<T>(value: T, ms: number): T {
  * refreshed every few seconds (and the moment the tab is shown again). Once the rider picks a date or time they set
  * `touched.current = true` and it never changes under them.
  */
+/** Today's date (yyyy-mm-dd). The component re-renders just after midnight, and when the tab comes back after the day
+ *  changed, so labels such as "Today" / "Tomorrow" always follow the calendar. */
+export function useToday(): string {
+  const [day, setDay] = useState(() => toDateInput(new Date()));
+  useEffect(() => {
+    const now = new Date();
+    const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 1);
+    const id = window.setTimeout(() => setDay(toDateInput(new Date())), next.getTime() - now.getTime());
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') setDay(toDateInput(new Date()));
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.clearTimeout(id);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [day]);
+  return day;
+}
+
 export function useLivePickupDefault(touched: { current: boolean }, apply: (next: { date: string; time: string }) => void): void {
   const applyRef = useRef(apply);
   applyRef.current = apply;

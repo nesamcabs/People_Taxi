@@ -69,7 +69,9 @@ function HeroCopy({ service, trip }: { service: ServiceId; trip: 'One Way' | 'Ro
   return (
     <div className="hero-copy">
       <div className="hero-logo" ref={logo}>
-        <img className="people-wordmark" src="/brand/peopletaxi-transparent.webp" alt="People Taxi" width={760} height={249} />
+        <span className="logo-anim">
+          <img className="people-wordmark" src="/brand/peopletaxi-transparent.webp" alt="People Taxi" width={760} height={249} />
+        </span>
       </div>
       {headline || subtitle ? (
         <h1 key={`${service}-${trip}`} className={service === 'multicity' ? 'multicity-slogan' : service === 'outstation' || service === 'airport' ? 'journey-slogan' : undefined} aria-live="polite" style={{ textTransform: 'none' }}>

@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useCustomerData } from '@core/context/CustomerData';
 import { formatPhone } from '@core/utils/format';
 import { COMPANY_LEGAL_NAME, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@core/config/constants';
@@ -8,12 +8,12 @@ import { useAuth } from '@/state/Auth';
 import { useBooking } from '@/state/Booking';
 import { useOnline } from '@/lib/hooks';
 import { scrollToBookingForm } from '@/lib/scrollToForm';
-import { parseService, serviceHref, serviceOfTrip, type ServiceId } from '@/lib/services';
 import { Avatar, Button, Dialog, PageLoader } from './ui';
 import { Icon } from './Icon';
-import { BrandIcon, navIconSrc, type BrandIconName } from './BrandIcon';
+import { BrandIcon } from './BrandIcon';
+import { SERVICE_BAR, isBarActive, useActiveService, type BarId } from './serviceBar';
 import { RideBanner } from './RideBanner';
-import { BellIcon, HeadsetIcon } from './HeaderIcons';
+import { BellRingIcon, SupportChatIcon, TaxiTicketIcon } from './HeaderIcons';
 import { RouteErrorBoundary } from '@/shared/components/RouteErrorBoundary';
 import { SideDrawer } from './SideDrawer';
 import { HeaderNotice } from './HeaderNotice';
@@ -22,44 +22,48 @@ import { AiChatbot } from './AiChatbot';
 import { ALL_ROUTES } from '@/pages/routes/routesData';
 
 export function Brand({ compact = false, light = false }: { compact?: boolean; light?: boolean }) {
+  const img = (
+    <img
+      src={compact ? '/brand/peopletaxi-symbol.png' : '/brand/peopletaxi-transparent.webp'}
+      alt="People Taxi"
+      width={compact ? 44 : 192}
+      height={compact ? 44 : 44}
+      style={{ objectFit: 'contain' }}
+    />
+  );
   return (
     <Link to="/" className={`brand ${compact ? 'brand--compact' : ''} ${light ? 'brand--light' : ''}`} aria-label="People Taxi — book a ride">
-      <img
-        src={compact ? '/brand/peopletaxi-symbol.png' : '/brand/peopletaxi-transparent.webp'}
-        alt="People Taxi"
-        width={compact ? 44 : 192}
-        height={compact ? 44 : 44}
-        style={{ objectFit: 'contain' }}
-      />
+      {/* The full wordmark animates (logo-anim.css). The symbol alone and the footer's white-card logo stay still. */}
+      {compact || light ? img : <span className="logo-anim">{img}</span>}
     </Link>
   );
 }
 
-const NAV: readonly { to: string; label: string; short: string; icon: string; art?: BrandIconName }[] = [
-  { to: '/book', label: 'Book a ride', short: 'Book', icon: 'car' },
-  { to: '/trips', label: 'My trips', short: 'Trips', icon: 'trip-history', art: 'trips' },
-  { to: '/notifications', label: 'Notifications', short: 'Alerts', icon: 'notifications', art: 'bell' },
+/** Header links on tablets and desktops (900px and wider), each with a full label and a short one for narrower widths.
+    "My trips" and "Notifications" use the same glossy icons as the phone header buttons, so one action looks the same at
+    every size. Offers is secondary: it shows from 1440px, and below that it is in the menu (the side drawer). */
+type TopNavItem = { to: string; label: string; short: string; secondary?: boolean };
+const TOP_NAV: readonly TopNavItem[] = [
+  { to: '/book', label: 'Book a ride', short: 'Book' },
+  { to: '/trips', label: 'My trips', short: 'Trips' },
+  { to: '/offers', label: 'Offers', short: 'Offers', secondary: true },
+  { to: '/notifications', label: 'Notifications', short: 'Alerts' },
 ];
-
-
-/** Desktop header links. Account lives in the profile menu there. On phones the bottom bar holds the four
-    services, and the header holds Notifications. Account and My trips are in the side menu. */
-const TOP_NAV: typeof NAV = [NAV[0]!, NAV[1]!, { to: '/offers', label: 'Offers', short: 'Offers', icon: 'offers', art: 'offers' }, NAV[2]!];
+function TopNavIcon({ to }: { to: string }) {
+  if (to === '/trips') return <TaxiTicketIcon size={28} />;
+  if (to === '/notifications') return <BellRingIcon size={28} />;
+  if (to === '/offers') return <BrandIcon name="offers" size={26} />;
+  return <Icon name="car" size={20} />;
+}
 
 /** Active booking flow pages where the phone bottom tab bar steps aside for the sticky FlowBar. */
 const FLOW = [/^\/book\/(ride|confirm|done\/[^/]+)$/, /^\/ride\//, /^\/trips\/[^/]+$/];
 const IMMERSIVE = [/^\/ride\//, /^\/local-rentals(\/|$)/, /^\/trips\/[^/]+$/];
 
 /** Phone bottom bar, left to right: Local Pickup & Drop · Hourly Rental · Outstation (the middle one) · Multicity · Airport Taxi.
-    My trips is in the header. The selected service rises in its brand color. */
-type BarId = 'pickup' | 'rental' | 'outstation' | 'multicity' | 'airport';
-const BAR: { id: BarId; label: string; full: string; to: string; image: string; size: number; wide?: boolean }[] = [
-  { id: 'pickup', label: 'Local', full: 'Local Pickup & Drop', to: '/local-rentals?mode=pickup', image: navIconSrc('local'), size: 44, wide: true },
-  { id: 'rental', label: 'Rental', full: 'Hourly Rental', to: '/local-rentals?mode=hourly', image: navIconSrc('rental'), size: 44, wide: true },
-  { id: 'outstation', label: 'Outstation', full: 'Outstation', to: serviceHref('outstation'), image: navIconSrc('outstation'), size: 46 },
-  { id: 'multicity', label: 'Multicity', full: 'Multicity', to: serviceHref('multicity'), image: navIconSrc('multicity'), size: 44 },
-  { id: 'airport', label: 'Airport', full: 'Airport Taxi', to: serviceHref('airport'), image: navIconSrc('airport'), size: 44 },
-];
+    My trips is in the header. The selected service rises in its brand color. The list and the selected state come from
+    ./serviceBar, which the booking form's selector on tablets and desktops reads too. */
+const BAR = SERVICE_BAR;
 
 /** The bar's outline as one SVG path: a rounded rectangle whose top line rises in a smooth bump around the selected
  *  service's ring. Small fillets join the straight line to the ring, so the line flows up and over the circle. Below the bar's
@@ -110,11 +114,8 @@ function barOutline(w: number, h: number, radius: number, ring: { cx: number; cy
 
 function BottomNav() {
   const location = useLocation();
-  const [params] = useSearchParams();
-  const { draft } = useBooking();
-  const onHome = location.pathname === '/book' || location.pathname === '/';
   const onRentals = /^\/local-rentals(\/|$)/.test(location.pathname);
-  const current: ServiceId | null = onRentals ? (params.get('mode') === 'hourly' ? 'rental' : 'pickup') : onHome ? (parseService(params.get('service')) ?? (location.pathname === '/' ? 'outstation' : serviceOfTrip(draft.tripType, draft.multicity))) : null;
+  const current = useActiveService();
   const navRef = useRef<HTMLElement>(null);
   const [outline, setOutline] = useState('');
   // The service under the finger: its icon zooms in. Held for a moment after release, so even a quick tap shows the zoom
@@ -175,7 +176,7 @@ function BottomNav() {
         </svg>
       ) : null}
       {BAR.map((s) => {
-        const active = current === s.id || (s.id === 'pickup' && current === 'local');
+        const active = isBarActive(s.id, current);
         return (
           <Link key={s.id} to={s.to} replace={onRentals && s.to.startsWith('/local-rentals')} className={`tabbar__link tabbar__link--${s.id} ${s.wide ? 'tabbar__link--wide' : ''} ${active ? 'is-active' : ''} ${pressed === s.id ? 'is-pressed' : ''}`} aria-label={s.full} aria-current={active ? 'page' : undefined} onPointerDown={() => press(s.id)} onPointerUp={release} onPointerCancel={release} onPointerLeave={release}>
             <span className="tabbar__icon">
@@ -223,14 +224,10 @@ function SupportMenu({ onAsk, phone = false }: { onAsk: () => void; phone?: bool
         title="Help"
         onClick={() => setOpen((o) => !o)}
       >
-        {phone ? (
-          <>
-            <HeadsetIcon size={25} />
-            <i className="hdr-btn__live" aria-hidden="true" />
-          </>
-        ) : (
-          <BrandIcon name="support" size={30} />
-        )}
+        {/* The same glossy icon and "we're online" dot at every size; desktops also show the word. */}
+        <SupportChatIcon size={phone ? 32 : 30} />
+        <i className="hdr-btn__live" aria-hidden="true" />
+        {phone ? null : <span className="support-menu__label">Help</span>}
       </button>
       {open ? (
         <div className="support-menu__panel" role="menu">
@@ -263,6 +260,15 @@ function SupportMenu({ onAsk, phone = false }: { onAsk: () => void; phone?: bool
               <small>24/7 booking · {SUPPORT_PHONE_DISPLAY}</small>
             </span>
           </a>
+          <Link role="menuitem" className="support-menu__item" to="/support" onClick={() => setOpen(false)}>
+            <span className="support-menu__icon support-menu__icon--help" aria-hidden="true">
+              <BrandIcon name="support" size={24} />
+            </span>
+            <span className="support-menu__text">
+              <strong>Help centre</strong>
+              <small>FAQs, policies and your requests</small>
+            </span>
+          </Link>
         </div>
       ) : null}
     </div>
@@ -582,39 +588,42 @@ export function Shell() {
       {hideHeader ? null : (
         <header className={`topbar ${live ? 'topbar--notice' : ''}`}>
           <div className="topbar__inner">
-            <button type="button" className="menu-btn" aria-label="Open profile" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
+            {/* The menu (side drawer) at every size: on phones it holds the account and secondary pages; on narrower
+                desktops it also holds the links the header has no room for (Offers). */}
+            <button type="button" className="menu-btn" aria-label="Open menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
               <BrandIcon name="menu" size={28} />
             </button>
             <Brand />
             <nav className="topnav" aria-label="Main">
-              {TOP_NAV.map((n) => (
-                <NavLink
-                  key={n.to}
-                  to={n.to}
-                  aria-label={n.to === '/notifications' && unreadCount > 0 ? `${n.label}, ${unreadCount} unread` : n.label}
-                  title={n.label}
-                  className={({ isActive }) => `topnav__link ${isActive || (n.to === '/book' && location.pathname === '/') ? 'is-active' : ''}`}
-                >
-                  {n.art ? <BrandIcon name={n.art} size={26} /> : <Icon name={n.icon} size={19} />}
-                  <span className="lbl-long">{n.label}</span>
-                  {n.to === '/notifications' && unreadCount > 0 ? (
-                    <em className="count" aria-label={`${unreadCount} unread`}>
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </em>
-                  ) : null}
-                </NavLink>
-              ))}
+              {TOP_NAV.map((n) => {
+                const alerts = n.to === '/notifications';
+                return (
+                  <NavLink
+                    key={n.to}
+                    to={n.to}
+                    aria-label={alerts && unreadCount > 0 ? `${n.label}, ${unreadCount} unread` : n.label}
+                    title={n.label}
+                    className={({ isActive }) =>
+                      `topnav__link ${n.secondary ? 'topnav__link--secondary' : ''} ${alerts && unreadCount > 0 ? 'has-unread' : ''} ${isActive || (n.to === '/book' && location.pathname === '/') ? 'is-active' : ''}`
+                    }
+                  >
+                    <span className="topnav__icon">
+                      <TopNavIcon to={n.to} />
+                      {alerts && unreadCount > 0 ? (
+                        <em className="count" aria-hidden="true">
+                          {unreadCount > 9 ? '9+' : unreadCount}
+                        </em>
+                      ) : null}
+                    </span>
+                    <span className="lbl-long">{n.label}</span>
+                    <span className="lbl-short">{n.short}</span>
+                  </NavLink>
+                );
+              })}
             </nav>
             <RideBanner />
             <div className="topbar__right">
-              <Link to="/support" className="help-link" aria-label="Help and support" title="Help">
-                <BrandIcon name="support" size={26} />
-                <span className="help-link__text">Help</span>
-              </Link>
-              <a className="help-link help-link--phone" href={`tel:${SUPPORT_PHONE}`} aria-label={`Call People Taxi support ${SUPPORT_PHONE_DISPLAY}`} title={SUPPORT_PHONE_DISPLAY}>
-                <BrandIcon name="contact" size={24} />
-                <span className="num">{SUPPORT_PHONE_DISPLAY}</span>
-              </a>
+              {/* Help: the same button and choices as on phones (Ask NESAM, Call us, Help centre), with its label. */}
               <SupportMenu onAsk={() => setAiOpen(true)} />
               <ProfileMenu />
             </div>
@@ -626,7 +635,7 @@ export function Shell() {
                 aria-label="My trips"
                 title="My trips"
               >
-                <BrandIcon name="trips" size={28} />
+                <TaxiTicketIcon size={32} />
               </NavLink>
               {!profile ? (
                 <Button
@@ -644,7 +653,7 @@ export function Shell() {
                     aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
                     title="Notifications"
                   >
-                    <BellIcon size={25} />
+                    <BellRingIcon size={32} />
                     {unreadCount > 0 ? <em className="count" aria-hidden="true">{unreadCount > 9 ? '9+' : unreadCount}</em> : null}
                   </NavLink>
                 </>

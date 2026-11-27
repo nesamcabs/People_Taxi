@@ -11,7 +11,7 @@ export interface ServiceCopy {
   sub: string;
   /** The first paragraph of the Details dialog. */
   intro: string;
-  /** Label + text rows of the Details dialog. A row labelled "Not included" is drawn with a minus mark. */
+  /** Label + text rows of the Details dialog. A row labelled "Exclusions" is tagged "Not covered"; "Additional charges" is the highlighted band. */
   items: readonly (readonly [label: string, text: string])[];
   /** The Details dialog's heading. */
   heading: string;
@@ -22,59 +22,61 @@ export const SERVICE_COPY: Record<ServiceNoteKind, ServiceCopy> = {
     heading: 'One Way',
     title: 'Direct pickup & drop',
     sub: 'Tea / food breaks allowed · No local sightseeing',
-    intro: 'A direct journey from your pickup to your drop.',
+    intro: 'Point-to-point travel from your pickup to your destination.',
     items: [
-      ['Included', 'One pickup, one drop, and tea / food breaks on your route.'],
-      ['Not included', 'City sightseeing or unplanned local rides.'],
-      ['Extra stops', 'Additional pickup / drop in the same city is charged separately.'],
-      ['Other charges', 'Toll, parking and applicable state permit / entry tax are extra.'],
+      ['Inclusions', 'One pickup, one drop and refreshment breaks en route.'],
+      ['Exclusions', 'Sightseeing and unscheduled local travel.'],
+      ['Additional stops', 'A second pickup or drop within the same city is billed separately.'],
+      ['Additional charges', 'Toll, Parking & State Tax Extra'],
     ],
   },
   roundtrip: {
     heading: 'Round Trip',
     title: 'Round trip · Return to pickup city',
     sub: 'Your cab stays with you · Booked itinerary only',
-    intro: 'Travel to your booked stops and return to your pickup city.',
+    intro: 'A return journey covering your scheduled stops, ending in your pickup city.',
     items: [
-      ['Included', 'Your selected package distance, time and driver bata.'],
-      ['Your route', 'Only the itinerary and stops confirmed in this booking.'],
-      ['Time & distance', 'Package upgrades and extra kilometres follow the selected vehicle tariff.'],
-      ['Morning Return', 'Complete by 9:00 AM next day. After the cutoff, Next-Day Return applies automatically.'],
-      ['Other charges', 'Toll, parking and applicable state permit / entry tax are extra.'],
+      ['Inclusions', 'Package distance, duration and driver allowance as selected.'],
+      ['Itinerary', 'Travel is limited to the route and stops confirmed in this booking.'],
+      ['Time & distance', 'Package upgrades and additional kilometres are billed at the selected vehicle tariff.'],
+      ['Morning Return', 'Complete the trip by 9:00 AM the next day. Beyond this, Next-Day Return applies automatically.'],
+      ['Additional charges', 'Toll, Parking & State Tax Extra'],
     ],
   },
   multicity: {
     heading: 'Multicity',
     title: 'Multiple cities · One booked route',
     sub: 'Stop at booked cities · No local sightseeing',
-    intro: 'Book one cab through your chosen stop cities to your final drop.',
+    intro: 'One dedicated cab across your selected cities to the final destination.',
     items: [
-      ['Included', 'Travel through the cities and stops in your confirmed itinerary.'],
-      ['Not included', 'City sightseeing or unplanned local rides at stop cities.'],
-      ['Waiting at stops', 'Waiting at a via-stop is charged separately. Travel time is not waiting time.'],
-      ['Other charges', 'Extra pickup / drop, toll, parking and applicable state permit / entry tax are extra.'],
+      ['Inclusions', 'Travel across the cities and stops in your confirmed itinerary.'],
+      ['Exclusions', 'Sightseeing and unscheduled local travel at stop cities.'],
+      ['Waiting at stops', 'Waiting time at via-stops is billed separately. Travel time is not counted as waiting.'],
+      ['Additional stops', 'Any extra pickup or drop is billed separately.'],
+      ['Additional charges', 'Toll, Parking & State Tax Extra'],
     ],
   },
   local: {
     heading: 'Pickup & Drop',
     title: 'Local pickup & drop',
     sub: 'Direct city ride · Now or Schedule',
-    intro: 'A direct ride within the city of your pickup.',
+    intro: 'Direct travel within your pickup city.',
     items: [
-      ['Included', 'The base distance and estimated trip time shown with your vehicle.'],
-      ['Not included', 'Sightseeing, stops on the way, and travel outside the city.'],
-      ['Other charges', 'Extra distance or time, toll, parking and applicable permit charges are extra.'],
+      ['Inclusions', 'Base distance and estimated trip time shown with your vehicle.'],
+      ['Exclusions', 'Sightseeing, en-route stops and travel beyond city limits.'],
+      ['Extra usage', 'Additional distance or time is billed separately.'],
+      ['Additional charges', 'Toll, Parking & Permit Charges Extra'],
     ],
   },
   rental: {
     heading: 'Hourly Rental',
     title: 'Hourly city rental',
     sub: 'Multiple city stops · Now or Schedule',
-    intro: 'Keep your cab for the hours you choose, from 1 to 15.',
+    intro: 'A dedicated cab for your chosen duration, from 1 to 15 hours.',
     items: [
-      ['Included', 'The package hours and kilometres shown with your vehicle.'],
-      ['Extra usage', 'Hours or kilometres beyond your package are charged at the rates shown with your fare.'],
-      ['Other charges', 'Toll, parking and applicable state entry tax are extra.'],
+      ['Inclusions', 'Package hours and kilometres shown with your vehicle.'],
+      ['Extra usage', 'Usage beyond the package is billed at the rates shown with your fare.'],
+      ['Additional charges', 'Toll, Parking & State Tax Extra'],
     ],
   },
 };

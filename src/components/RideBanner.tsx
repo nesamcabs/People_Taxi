@@ -22,6 +22,7 @@ export function RideBanner() {
     if (typeof ResizeObserver === 'undefined') return;
     const ro = new ResizeObserver(measure);
     ro.observe(box);
+    ro.observe(text); // also when only the text changes width (the web font arriving), so the loop never jumps
     return () => ro.disconnect();
   }, [route]);
 

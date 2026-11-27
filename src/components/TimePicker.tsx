@@ -68,14 +68,18 @@ export function TimePicker({
   onClose,
   validate = 'pickup',
   notBefore,
+  resolveDate,
 }: {
   title?: string;
   date: string;
   value: string;
-  onConfirm: (hhmm: string) => void;
+  /** Called with the time and the day it is for (the `date` prop, or the day `resolveDate` chose). */
+  onConfirm: (hhmm: string, date: string) => void;
   onClose: () => void;
   validate?: 'pickup' | 'after';
   notBefore?: Date | null;
+  /** Optional: picks the day for the chosen time before it is checked (the booking form moves a gone time to tomorrow). */
+  resolveDate?: (hhmm: string) => string;
 }) {
   const init = split(value);
   const [hour, setHour] = useState(init.hour);
@@ -92,7 +96,8 @@ export function TimePicker({
 
   const confirm = () => {
     const t = hhmm();
-    const at = date ? combineDateTime(date, t) : null;
+    const day = resolveDate ? resolveDate(t) : date;
+    const at = day ? combineDateTime(day, t) : null;
     if (at) {
       const problem = validate === 'pickup' ? scheduleProblem(at) : notBefore && at.getTime() <= notBefore.getTime() ? 'The return must be after the pickup.' : '';
       if (problem) {
@@ -100,7 +105,7 @@ export function TimePicker({
         return;
       }
     }
-    onConfirm(t);
+    onConfirm(t, day);
   };
 
   return (
