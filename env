@@ -1,9 +1,0 @@
-﻿# ── Groq AI Chatbot ─────────────────────────────────────────────────────────
-# Paste your Groq API key here (gsk_...)
-GROQ_API_KEY=
-VITE_GROQ_API_KEY=
-GROQ_MODEL=llama-3.3-70b-versatile
-# ── Google Maps Platform (browser-restricted key — safe to expose in frontend) ──
-# Enable: Maps JavaScript API in Google Cloud Console.
-# Set HTTP referrer restrictions to *.peopletaxi.in/* in the Google Cloud Console.
-VITE_GOOGLE_MAPS_API_KEY=AIzaSyClCvf1FUnXb6na8UeZ_knRBTCakAVJCQs
