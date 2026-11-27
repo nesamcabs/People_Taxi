@@ -7,6 +7,7 @@ import { formatPhone, isValidEmail, isValidIndianMobile, isValidName, localMobil
 import { describeError } from '@core/utils/retry';
 import { Button, Notice, TextField } from '@/components/ui';
 import { Icon } from '@/components/Icon';
+import { EmailVerify } from '@/components/EmailVerify';
 import { useToasts } from '@/state/Toasts';
 
 interface FormProps {
@@ -79,6 +80,8 @@ export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
         hint="Booking confirmations and receipts are sent here."
         error={touched ? errors.email : ''}
       />
+      {/* Verification is offered for the saved address, not one still being typed. */}
+      {profile.email && email.trim().toLowerCase() === profile.email ? <EmailVerify key={profile.email} email={profile.email} /> : null}
       {error ? <Notice tone="error">{error}</Notice> : null}
       <Button type="submit" block loading={busy} disabled={!dirty}>
         Save
@@ -91,7 +94,7 @@ export function PersonalDetailsForm({ onDone, onCancel }: FormProps) {
 }
 
 /** One number we can call if something goes wrong on a trip. */
-export function EmergencyContactForm({ onDone, onCancel }: FormProps) {
+export function EmergencyContactForm({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) {
   const { profile } = useCustomerData();
   const { push } = useToasts();
   const current = profile ? localMobile(profile.emergencyContact) : '';
@@ -153,9 +156,11 @@ export function EmergencyContactForm({ onDone, onCancel }: FormProps) {
           Remove contact
         </Button>
       ) : null}
-      <Button variant="ghost" block onClick={onCancel} disabled={!!busy}>
-        Cancel
-      </Button>
+      {onCancel ? (
+        <Button variant="ghost" block onClick={onCancel} disabled={!!busy}>
+          Cancel
+        </Button>
+      ) : null}
     </form>
   );
 }

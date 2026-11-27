@@ -13,7 +13,7 @@ import { PRESENCE_STALE_MS, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@core/c
 import { formatDate, formatDateTime, formatDistance, formatDuration, formatINR, formatPhone, formatTime, localMobile, timeAgo } from '@core/utils/format';
 import { haversineKm, isValidLatLng } from '@core/utils/geo';
 import { describeError } from '@core/utils/retry';
-import { customerStatus, paymentLabel, tripStatusChip } from '@core/utils/tripView';
+import { paymentLabel } from '@core/utils/tripView';
 import { Avatar, Badge, Button, IconButton, Notice, PageLoader } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { RoutePoints } from '@/components/RoutePoints';
@@ -31,13 +31,15 @@ import { useBooking } from '@/state/Booking';
 import { CancelDialog, SafetyDialog } from './dialogs';
 import { RatingCard } from './Rating';
 import { markRideDismissed, unmarkRideDismissed } from '@/state/rideFocus';
-import { tripCategoryPhoto } from '@/lib/categories';
+import { driverNote, statusTag } from '@/lib/driverNote';
+import { tripCategoryName } from '@/lib/categories';
+import '@/pages/book/done.css';
 
 const PHASE_TITLE: Record<TripRecord['phase'], string> = {
   awaiting_review: 'Booking under review',
   arranging: 'Booking approved',
-  partner_confirmed: 'Vendor assigned',
-  driver_assigned: 'Driver and vehicle assigned',
+  partner_confirmed: 'Allocation in progress',
+  driver_assigned: 'Driver and cab assigned',
   driver_en_route: 'Driver on the way',
   driver_arrived: 'Your driver has arrived',
   in_trip: 'On your way',
@@ -51,73 +53,23 @@ function titleOf(t: TripRecord): string {
   return PHASE_TITLE[t.phase];
 }
 
-type StepState = 'done' | 'current' | 'todo';
-
-interface TimelineStep {
-  key: string;
-  label: string;
-  detail?: string;
-  state: StepState;
+/** The four stages shown on the progress line. */
+const STAGES = ['Booked', 'Approved', 'Driver', 'Journey'] as const;
+/** How many stages are behind the booking. */
+function stagesDone(t: TripRecord): number {
+  if (t.status === 'Pending' || t.phase === 'awaiting_review') return 1;
+  if (t.phase === 'arranging' || t.phase === 'partner_confirmed') return 2;
+  if (t.phase === 'completed') return 4;
+  return 3;
 }
-
-function buildTimeline(trip: TripRecord): TimelineStep[] {
-  const at = (d: Date | null) => (d ? formatTime(d) : '');
-  const phase = trip.phase;
-  const pending = trip.status === 'Pending';
-  const order = ['requested', 'approved', 'assigned', 'arrived', 'ontrip', 'done'] as const;
-  // Index of the step the ride is currently on.
-  let current = 0;
-  if (pending) current = 1;
-  else if (phase === 'awaiting_review') current = 1;
-  else if (phase === 'arranging') current = 2;
-  else if (phase === 'partner_confirmed') current = 2;
-  else if (phase === 'driver_assigned') current = 3;
-  else if (phase === 'driver_en_route') current = 3;
-  else if (phase === 'driver_arrived') current = 4;
-  else if (phase === 'in_trip') current = 4;
-  else if (phase === 'completed') current = 6;
-
-  const label: Record<(typeof order)[number], { done: string; now: string; todo: string; detail: string }> = {
-    requested: { done: 'Booking received', now: 'Booking received', todo: 'Booking received', detail: at(trip.createdAt) },
-    approved: { done: 'Approved by People Taxi', now: 'Waiting for People Taxi approval', todo: 'People Taxi approval', detail: at(trip.approvedAt) },
-    assigned: {
-      done: 'Driver and vehicle assigned',
-      now: phase === 'partner_confirmed' ? 'Vendor assigned — driver details pending' : 'Arranging your vehicle',
-      todo: 'Driver and vehicle assigned',
-      detail: at(trip.assignedAt),
-    },
-    arrived: { done: 'Driver at pickup', now: phase === 'driver_en_route' ? 'Driver on the way' : 'Pickup at your scheduled time', todo: 'Driver arrives', detail: '' },
-    ontrip: { done: 'Trip started', now: phase === 'driver_arrived' ? 'Share your code to start' : 'On your way', todo: 'Trip starts', detail: at(trip.startedAt) },
-    done: { done: 'Trip completed', now: 'Trip completed', todo: 'Trip completed', detail: at(trip.completedAt) },
-  };
-
-  return order.map((key, i) => {
-    const state: StepState = i < current ? 'done' : i === current ? 'current' : 'todo';
-    const l = label[key];
-    return { key, label: state === 'done' ? l.done : state === 'current' ? l.now : l.todo, detail: state === 'todo' ? '' : l.detail, state };
-  });
-}
-
-function Timeline({ steps }: { steps: TimelineStep[] }) {
-  return (
-    <ol className="timeline" aria-label="Ride progress">
-      {steps.map((s) => (
-        <li key={s.key} className={`timeline__step is-${s.state}`} aria-current={s.state === 'current' ? 'step' : undefined}>
-          <span className="timeline__dot" aria-hidden="true">
-            {s.state === 'done' ? <Icon name="check" size={14} /> : null}
-          </span>
-          <span className="timeline__body">
-            <span className="timeline__label">
-              {s.label}
-              <span className="sr-only">{s.state === 'done' ? ' (done)' : s.state === 'current' ? ' (current)' : ' (upcoming)'}</span>
-            </span>
-            {s.state === 'current' ? <span className="timeline__tag">In progress</span> : null}
-            {s.detail ? <time className="timeline__time">{s.detail}</time> : null}
-          </span>
-        </li>
-      ))}
-    </ol>
-  );
+/** One line about what happens now; never repeats what is already on the page. */
+function stageNote(t: TripRecord, now: number): string {
+  if (t.status === 'Pending' || t.phase === 'awaiting_review') return `Our team is reviewing your booking. ${driverNote(t, now)}`;
+  if (t.phase === 'driver_assigned') return 'Your driver and cab are confirmed for your pickup.';
+  if (t.phase === 'driver_en_route') return 'Your driver is on the way.';
+  if (t.phase === 'driver_arrived') return 'Your driver is at the pickup point.';
+  if (t.phase === 'in_trip') return 'Your trip is underway.';
+  return driverNote(t, now);
 }
 
 export function RidePage() {
@@ -219,6 +171,31 @@ export function RidePage() {
   const etaTarget = trip?.phase === 'in_trip' ? 'drop' : 'pickup';
   const eta = driverLoc && etaState?.target === etaTarget ? etaState.info : null;
 
+  // The heading bar (Back + title) sticks under the site header while the page scrolls (ride-corp.css), so Back is always
+  // one tap away. Once it is stuck it gets a white band and a soft shadow, to stand clear of the content passing under it.
+  const headRef = useRef<HTMLElement>(null);
+  const [headStuck, setHeadStuck] = useState(false);
+  const hasTrip = trip != null;
+  useEffect(() => {
+    const el = headRef.current;
+    if (!el) return undefined;
+    let frame = 0;
+    const check = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const stickAt = parseFloat(getComputedStyle(el).top) || 0;
+        setHeadStuck(window.scrollY > 0 && el.getBoundingClientRect().top <= stickAt + 1);
+      });
+    };
+    check();
+    window.addEventListener('scroll', check, { passive: true });
+    window.addEventListener('resize', check);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', check);
+      window.removeEventListener('resize', check);
+    };
+  }, [hasTrip]);
 
 
   if (loadError && !trip) {
@@ -271,8 +248,7 @@ export function RidePage() {
   const straightKm = driverLoc && isValidLatLng(trip.pickup) ? haversineKm(driverLoc, trip.pickup) : null;
   const sharePoint: LatLng | null = phase === 'in_trip' && driverLoc ? driverLoc : position;
   const driverPhone = trip.driver ? localMobile(trip.driver.phone) : '';
-  const chip = tripStatusChip(trip);
-  const title = titleOf(trip);
+  const chipLabel = statusTag(trip);
   const finished = phase === 'completed' || phase === 'cancelled';
   const due = amountDue(trip);
   const mapPickup = phase === 'in_trip' ? null : trip.pickup;
@@ -294,8 +270,6 @@ export function RidePage() {
     }
   };
 
-  const stepsNow = buildTimeline(trip);
-  const status = customerStatus(trip, now);
   const hero =
     phase === 'driver_en_route' && tracking
       ? { big: minutesAway != null ? `${minutesAway} min` : '—', small: 'until your driver arrives' }
@@ -312,7 +286,6 @@ export function RidePage() {
   const showDriver = !!trip.driver && (tracking || phase === 'driver_assigned');
   const closed = phase === 'cancelled' || trip.status === 'Rejected';
   const paymentState = closed ? paymentLabel(trip).text : isPaid(trip) ? 'Paid' : trip.paymentStatus;
-  const driverLine = trip.driver ? [trip.driver.name, trip.driver.vehicleModel || trip.categoryName, trip.driver.vehicleNumber].filter(Boolean).join(' · ') : '';
   const hasMap = phase !== 'cancelled' && isValidLatLng(trip.pickup) && isValidLatLng(trip.drop);
 
   const mapCard = hasMap ? (
@@ -332,43 +305,29 @@ export function RidePage() {
     </section>
   ) : null;
 
-  const tripCard = (
-    <section className="rcard" aria-labelledby="trip-h">
-      <header>
-        <h2 id="trip-h">Trip details</h2>
-      </header>
-      <RoutePoints pickup={trip.pickup.name} drop={trip.drop.name} pickupAddress={trip.pickup.address} dropAddress={trip.drop.address} />
-      <TripItinerary trip={trip} />
-      <div className="mini-ride">
-        <img src={tripCategoryPhoto(categories, trip)} alt="" width={96} height={63} />
-        <div className="mini-ride__info">
-          <strong>{trip.categoryName}</strong>
-          <small className="muted">
-            {trip.tripType} · {trip.service}
-            {trip.distanceKm ? ` · ${formatDistance(trip.distanceKm)}` : ''}
-          </small>
-        </div>
+  const details = (
+    <details className="rd-more">
+      <summary>Addresses{trip.notes ? ' and instructions' : ''}</summary>
+      <div>
+        <RoutePoints pickup={trip.pickup.name} drop={trip.drop.name} pickupAddress={trip.pickup.address} dropAddress={trip.drop.address} />
+        <TripItinerary trip={trip} />
+        {trip.notes ? <p className="rd-note">Special instructions: {trip.notes}</p> : null}
       </div>
-      <dl className="facts">
-        <div>
-          <dt>{trip.scheduledAt ? 'Pickup date and time' : 'Booked on'}</dt>
-          <dd>{trip.scheduledAt ? `${formatDate(trip.scheduledAt)}, ${formatTime(trip.scheduledAt)}` : formatDateTime(trip.createdAt)}</dd>
-        </div>
-        {!closed ? (
-          <div>
-            <dt>Driver and vehicle</dt>
-            <dd>{driverLine || (finished ? '—' : 'Being arranged. Details appear here once your vehicle is assigned.')}</dd>
-          </div>
-        ) : null}
-        {trip.notes ? (
-          <div>
-            <dt>Your note</dt>
-            <dd>{trip.notes}</dd>
-          </div>
-        ) : null}
-      </dl>
-    </section>
+    </details>
   );
+
+  // Before the trip ends the fare is on the pass already; only the ways to pay are offered here.
+  const payNow =
+    !closed && phase !== 'completed' && trip.status !== 'Pending' && !isPaid(trip) ? (
+      <>
+        {trip.paymentMethod === 'UPI' && upiLink(trip) ? (
+          <a className="btn btn--secondary" href={upiLink(trip)!}>
+            Open UPI app
+          </a>
+        ) : null}
+        <PayOnline trip={trip} />
+      </>
+    ) : null;
 
   const moneyBox =
     !closed && trip.status !== 'Pending' ? (
@@ -405,7 +364,7 @@ export function RidePage() {
   const fareCard = (
     <section className="rcard" aria-labelledby="fare-h">
       <header>
-        <h2 id="fare-h">{phase === 'completed' ? 'Receipt and payment' : 'Fare and payment'}</h2>
+        <h2 id="fare-h">{phase === 'completed' ? 'Invoice and payment' : 'Fare summary'}</h2>
         {phase === 'completed' ? (
           <Button size="sm" variant="secondary" icon="download" onClick={doPrint}>
             Save or print
@@ -414,13 +373,13 @@ export function RidePage() {
       </header>
       {phase !== 'completed' ? (
         <p className="fare-total">
-          <span>{closed ? 'Booking fare' : 'Total fare'}</span>
+          <span>{closed ? 'Booking fare' : 'Total payable'}</span>
           <strong className="num">{formatINR(total)}</strong>
         </p>
       ) : null}
       <dl className="facts">
         <div>
-          <dt>Payment method</dt>
+          <dt>Settlement mode</dt>
           <dd>{trip.paymentMethod}</dd>
         </div>
         <div>
@@ -443,36 +402,27 @@ export function RidePage() {
     </section>
   );
 
-  const timeline = (
-    <section className="rcard" aria-labelledby="progress-h">
-      <header>
-        <h2 id="progress-h">Progress</h2>
-      </header>
-      <Timeline steps={stepsNow} />
-    </section>
-  );
-
   const actions = (
     <section className="rcard rcard--actions" aria-labelledby="actions-h">
       <header>
-        <h2 id="actions-h">Need something?</h2>
+        <h2 id="actions-h">Assistance</h2>
       </header>
       {finished ? (
         <Button size="lg" block onClick={bookAgain}>
-          {phase === 'completed' ? 'Book this trip again' : 'Book another ride'}
+          {phase === 'completed' ? 'Rebook this journey' : 'Book another journey'}
         </Button>
       ) : null}
       <div className="options">
         {!finished ? (
           <button type="button" className="option" onClick={() => void doShare()}>
-            <Icon name="share" /> Share trip details
+            <Icon name="share" /> Share itinerary
           </button>
         ) : null}
         <Link className="option" to={`/support?booking=${encodeURIComponent(trip.bookingId)}`}>
-          <Icon name="support" /> Get help with this trip
+          <Icon name="support" /> Get support
         </Link>
         <a className="option" href={`tel:${SUPPORT_PHONE}`}>
-          <Icon name="phone" /> Call People Taxi · {SUPPORT_PHONE_DISPLAY}
+          <Icon name="phone" /> Call support
         </a>
         {tracking ? (
           <button type="button" className="option option--danger" onClick={() => setShowSafety(true)}>
@@ -489,39 +439,84 @@ export function RidePage() {
   );
 
   return (
-    <div className="page ride">
-      <header className="ride-head">
+    <div className="page ride ride--corp">
+      <header className={`ride-head${headStuck ? ' is-stuck' : ''}`} ref={headRef}>
         <div className="ride-head__bar">
           <IconButton icon="arrow-left" label="Back" outline onClick={() => ((window.history.state as { idx?: number } | null)?.idx ? navigate(-1) : navigate('/trips'))} />
-          <p className="ride-head__ref">
-            <span>Booking reference</span>
-            <strong className="num">{trip.bookingId}</strong>
-            {pending ? <small> · sending…</small> : fromCache && !online ? <small> · offline</small> : null}
-          </p>
-          <span className="status-chip" style={{ color: chip.fg, background: chip.bg }}>
-            {chip.label}
-          </span>
+          <h1>Booking details</h1>
+          <span className="ride-head__spacer" aria-hidden="true" />
         </div>
-        <h1 className="ride-head__title">{title}</h1>
       </header>
 
       <div className="ride__grid">
         <div className="ride__main">
-          {/* Awaiting review / approved / vendor assigned: a status, never a search or an arrival promise */}
-          {arranging || phase === 'driver_assigned' ? (
-            <section className={`status-card ${phase === 'driver_assigned' ? 'is-good' : ''}`} aria-labelledby="status-h">
-              {arranging ? <img src="/art/account-review.webp" alt="" width={96} height={96} /> : <span className="status-card__icon" aria-hidden="true"><Icon name="check" size={28} /></span>}
-              <div>
-                <h2 id="status-h">{arranging ? 'What happens next' : 'Your trip is confirmed'}</h2>
-                <p>{pending ? 'Sending your request…' : status.detail}</p>
-                {trip.scheduledAt ? (
-                  <p className="status-card__when">
-                    <Icon name="clock" size={16} /> Pickup {formatDateTime(trip.scheduledAt)}
+          {/* The booking at a glance: status, reference, route, and the trip facts on the stub */}
+          <div className="dn">
+            <section className={`dn-card${closed ? ' dn-card--bad' : ''}`} aria-label="Booking summary">
+              <div className="dn-card__top">
+                <div className="dn-card__head">
+                  <img src="/brand/peopletaxi-transparent.webp" alt="People Taxi" width={92} height={30} />
+                  <span className="dn-card__tag">{chipLabel}</span>
+                </div>
+                <p className="dn-card__ref">
+                  <small>Booking reference</small>
+                  <strong className="num">{trip.bookingId}</strong>
+                  {pending ? <small>Sending…</small> : fromCache && !online ? <small>Offline</small> : null}
+                </p>
+                <div className="dn-card__route">
+                  <p>
+                    <small>From</small>
+                    <strong>{trip.pickup.name}</strong>
                   </p>
-                ) : null}
+                  <span className="dn-card__line" aria-hidden="true">
+                    <span>
+                      <Icon name="car" size={15} />
+                    </span>
+                  </span>
+                  <p>
+                    <small>To</small>
+                    <strong>{trip.drop.id === 'place-local-disposal' ? 'Within the city' : trip.drop.name}</strong>
+                  </p>
+                </div>
               </div>
+              <dl className="dn-card__stub">
+                <div>
+                  <dt>Pickup</dt>
+                  <dd className="num">{trip.scheduledAt ? `${formatDate(trip.scheduledAt)}, ${formatTime(trip.scheduledAt)}` : '—'}</dd>
+                </div>
+                <div>
+                  <dt>Vehicle</dt>
+                  <dd>{tripCategoryName(categories, trip)}</dd>
+                </div>
+                <div>
+                  <dt>Service</dt>
+                  <dd>
+                    {trip.tripType}
+                    {trip.distanceKm ? ` · ${formatDistance(trip.distanceKm)}` : ''}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{closed ? 'Booking fare' : 'Total payable'}</dt>
+                  <dd className="num">{formatINR(total)}</dd>
+                  <dd className="rd-pay">{closed || isPaid(trip) ? paymentState : trip.paid && trip.paid.totalPaid > 0 ? `Balance ${formatINR(due)}` : `${trip.paymentMethod === 'UPI' ? 'UPI' : 'Cash'} to driver`}</dd>
+                </div>
+              </dl>
             </section>
-          ) : null}
+
+            {!closed && phase !== 'completed' ? (
+              <section className="rd-status" aria-label="Trip status">
+                <ol>
+                  {STAGES.map((label, i) => (
+                    <li key={label} className={i < stagesDone(trip) ? 'is-done' : i === stagesDone(trip) ? 'is-now' : ''} aria-current={i === stagesDone(trip) ? 'step' : undefined}>
+                      {label}
+                    </li>
+                  ))}
+                </ol>
+                <p>{pending ? 'Sending your request…' : stageNote(trip, now)}</p>
+                {!isPaid(trip) ? <small>Tolls and parking, if any, are billed at actuals.</small> : null}
+              </section>
+            ) : null}
+          </div>
 
           {/* Live: ETA, code, driver */}
           {tracking && hero ? (
@@ -534,12 +529,12 @@ export function RidePage() {
           {streamingNote ? <p className="muted small">{streamingNote}</p> : null}
           {tracking && !driverLoc ? <p className="muted small">Live location appears once your driver’s app shares it.</p> : null}
 
-          {(phase === 'driver_assigned' || phase === 'driver_en_route' || phase === 'driver_arrived') && trip.driver ? (
+          {((phase === 'driver_assigned' || phase === 'driver_en_route' || phase === 'driver_arrived') && trip.driver) || (otp && !closed && phase !== 'completed' && phase !== 'in_trip') ? (
             <div className={`otp-card ${phase === 'driver_arrived' ? 'is-arrived' : ''}`}>
               <div>
-                <strong>{phase === 'driver_arrived' ? 'Share this code to start your ride' : 'Your start-of-ride code'}</strong>
+                <strong>{phase === 'driver_arrived' ? 'Share your boarding OTP to start' : 'Boarding OTP'}</strong>
                 <small>
-                  {phase === 'driver_arrived' ? `Meet your driver at ${trip.pickup.name}. Only share the code once you’re in the car.` : 'Give it to your driver once you’re in the car.'}
+                  {phase === 'driver_arrived' ? `Meet your driver at ${trip.pickup.name}. Only share the code once you’re in the car.` : 'Share it with your driver only after you board the cab.'}
                 </small>
               </div>
               <span className="otp-card__code num" aria-label={`Ride code ${otp ? otp.split('').join(' ') : 'unavailable'}`}>
@@ -555,7 +550,7 @@ export function RidePage() {
                 <strong>{trip.driver.name}</strong>
                 <small className="muted">
                   {trip.driver.rating != null ? `★ ${trip.driver.rating.toFixed(1)} · ` : ''}
-                  {trip.driver.vehicleModel || trip.categoryName}
+                  {trip.driver.vehicleModel || tripCategoryName(categories, trip)}
                 </small>
               </div>
               {trip.driver.vehicleNumber ? <span className="plate">{trip.driver.vehicleNumber}</span> : null}
@@ -608,14 +603,12 @@ export function RidePage() {
             </>
           ) : null}
 
-          {tracking ? mapCard : null}
-          {phase !== 'cancelled' ? timeline : null}
-          {tripCard}
-          {!tracking ? mapCard : null}
+          {mapCard}
+          {details}
         </div>
 
         <aside className="ride__side" aria-label="Fare, payment and actions">
-          {fareCard}
+          {phase === 'completed' ? fareCard : payNow}
           {actions}
         </aside>
       </div>

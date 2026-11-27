@@ -29,10 +29,10 @@ export function PaymentChoice({ choices, value, onChange, total, disabled }: { c
       <header className="pc__head">
         <span className="pc__headicon" aria-hidden="true"><CardIcon /></span>
         <div className="pc__headtext">
-          <h2 id="pc-title">Choose Payment Option</h2>
-          <p>Select how you’d like to pay for this trip</p>
+          <h2 id="pc-title">Payment method</h2>
+          <p>Select your preferred mode of settlement.</p>
         </div>
-        <span className="pc__secure"><ShieldIcon />Secure Payment</span>
+        <span className="pc__secure"><ShieldIcon />Secure</span>
       </header>
       <div className="pc__list" role="radiogroup" aria-labelledby="pc-title">
         {choices.map((c) => {

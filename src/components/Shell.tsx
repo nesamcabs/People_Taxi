@@ -13,7 +13,7 @@ import { Icon } from './Icon';
 import { BrandIcon } from './BrandIcon';
 import { SERVICE_BAR, isBarActive, useActiveService, type BarId } from './serviceBar';
 import { RideBanner } from './RideBanner';
-import { BellRingIcon, SupportChatIcon, TaxiTicketIcon } from './HeaderIcons';
+import { BellRingIcon, BookingCarIcon, MenuIcon, SupportChatIcon } from './HeaderIcons';
 import { RouteErrorBoundary } from '@/shared/components/RouteErrorBoundary';
 import { SideDrawer } from './SideDrawer';
 import { HeaderNotice } from './HeaderNotice';
@@ -50,7 +50,7 @@ const TOP_NAV: readonly TopNavItem[] = [
   { to: '/notifications', label: 'Notifications', short: 'Alerts' },
 ];
 function TopNavIcon({ to }: { to: string }) {
-  if (to === '/trips') return <TaxiTicketIcon size={28} />;
+  if (to === '/trips') return <BookingCarIcon size={28} />;
   if (to === '/notifications') return <BellRingIcon size={28} />;
   if (to === '/offers') return <BrandIcon name="offers" size={26} />;
   return <Icon name="car" size={20} />;
@@ -231,6 +231,10 @@ function SupportMenu({ onAsk, phone = false }: { onAsk: () => void; phone?: bool
       </button>
       {open ? (
         <div className="support-menu__panel" role="menu">
+          <p className="support-menu__head" role="presentation">
+            <strong>Customer support</strong>
+            <span>Available 24/7</span>
+          </p>
           <button
             type="button"
             role="menuitem"
@@ -247,8 +251,8 @@ function SupportMenu({ onAsk, phone = false }: { onAsk: () => void; phone?: bool
               </svg>
             </span>
             <span className="support-menu__text">
-              <strong>Ask NESAM</strong>
-              <small>Instant travel help</small>
+              <strong>Chat with NESAM</strong>
+              <small>Virtual assistant for instant answers</small>
             </span>
           </button>
           <a role="menuitem" className="support-menu__item" href={`tel:${SUPPORT_PHONE}`} onClick={() => setOpen(false)}>
@@ -256,8 +260,8 @@ function SupportMenu({ onAsk, phone = false }: { onAsk: () => void; phone?: bool
               <BrandIcon name="contact" size={24} />
             </span>
             <span className="support-menu__text">
-              <strong>Call us</strong>
-              <small>24/7 booking · {SUPPORT_PHONE_DISPLAY}</small>
+              <strong>Call the support desk</strong>
+              <small className="num">{SUPPORT_PHONE_DISPLAY}</small>
             </span>
           </a>
           <Link role="menuitem" className="support-menu__item" to="/support" onClick={() => setOpen(false)}>
@@ -266,7 +270,7 @@ function SupportMenu({ onAsk, phone = false }: { onAsk: () => void; phone?: bool
             </span>
             <span className="support-menu__text">
               <strong>Help centre</strong>
-              <small>FAQs, policies and your requests</small>
+              <small>FAQs, policies and service requests</small>
             </span>
           </Link>
         </div>
@@ -554,8 +558,9 @@ export function Shell() {
   // Local Rentals now only ever shows the "Coming soon" notice (no real immersive map to hide the header for),
   // so it keeps the normal always-visible header; Local Taxi's live map screen still goes full-bleed.
   const isLanding = location.pathname === '/' || location.pathname === '/book';
-  // The cab-selection step is a focused screen with its own Back / Continue bar: no site header (and no space kept for it).
-  const hideHeader = location.pathname === '/book/ride';
+  // The cab-selection and review steps are focused screens with their own Back / Continue bar: no site header (and no space
+  // kept for it).
+  const hideHeader = location.pathname === '/book/ride' || location.pathname === '/book/confirm';
   // The header is always on screen, on phones and tablets too (it takes its own space above the page).
 
   useEffect(() => {
@@ -591,7 +596,7 @@ export function Shell() {
             {/* The menu (side drawer) at every size: on phones it holds the account and secondary pages; on narrower
                 desktops it also holds the links the header has no room for (Offers). */}
             <button type="button" className="menu-btn" aria-label="Open menu" aria-haspopup="dialog" aria-expanded={menuOpen} onClick={() => setMenuOpen(true)}>
-              <BrandIcon name="menu" size={28} />
+              <MenuIcon size={26} />
             </button>
             <Brand />
             <nav className="topnav" aria-label="Main">
@@ -635,7 +640,7 @@ export function Shell() {
                 aria-label="My trips"
                 title="My trips"
               >
-                <TaxiTicketIcon size={32} />
+                <BookingCarIcon size={32} />
               </NavLink>
               {!profile ? (
                 <Button

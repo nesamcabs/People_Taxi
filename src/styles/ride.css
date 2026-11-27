@@ -586,6 +586,9 @@
 }
 .route-map {
   position: relative;
+  /* Keeps Leaflet's layers (z-index 400–1000) and the recentre button inside the map: without it they paint over the
+     sticky header (z-index 90) while the page scrolls under it. */
+  isolation: isolate;
   width: 100%;
   height: 100%;
   min-height: 240px;

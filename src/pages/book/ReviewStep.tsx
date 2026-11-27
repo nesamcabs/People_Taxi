@@ -102,6 +102,9 @@ export function ReviewStep() {
   useEffect(() => {
     if (profile?.name && !draft.customerName) update({ customerName: profile.name });
   }, [profile?.name]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (profile?.email && !draft.email) update({ email: profile.email });
+  }, [profile?.email]); // eslint-disable-line react-hooks/exhaustive-deps
   // One way to pay: book now, pay the driver at the end of the trip (recorded as Cash, whatever an older draft held).
   useEffect(() => {
     if (payment !== 'Cash') update({ payment: 'Cash' });
@@ -291,9 +294,49 @@ export function ReviewStep() {
           </p>
         ) : null}
 
+        {/* What is being booked, as a boarding pass: from → to on top, date, time and cab on the stub */}
+        <section className="cb-pass" aria-label="Booking summary">
+          <div className="cb-pass__top">
+            <div className="cb-pass__head">
+              <img src="/brand/peopletaxi-transparent.webp" alt="People Taxi" width={76} height={25} />
+              <span>Booking summary</span>
+            </div>
+            <div className="cb-pass__route">
+              <p>
+                <small>From</small>
+                <strong>{pickup.name}</strong>
+              </p>
+              <span className="cb-pass__line" aria-hidden="true">
+                <span>
+                  <Icon name="car" size={16} />
+                </span>
+              </span>
+              <p>
+                <small>To</small>
+                <strong>{drop.id === 'place-local-disposal' ? 'Within the city' : drop.name}</strong>
+              </p>
+            </div>
+          </div>
+          <dl className="cb-pass__stub">
+            <div>
+              <dt>Date</dt>
+              <dd>{scheduledAt ? formatDate(scheduledAt) : '—'}</dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd>{scheduledAt ? formatTime(scheduledAt) : '—'}</dd>
+            </div>
+            <div>
+              <dt>Cab</dt>
+              <dd>{categoryName(category)}</dd>
+            </div>
+          </dl>
+        </section>
+
         <section className="cb__section" aria-label="Passenger & Contact Details">
+          <h2 className="cb__h2">Passenger information</h2>
           <div className={`cb-field${nameError && tried ? ' is-invalid' : ''}`}>
-            <label className="cb-field__label" htmlFor="booking-name">Name</label>
+            <label className="cb-field__label" htmlFor="booking-name">Full name</label>
             <input
               id="booking-name"
               className="cb-input"
@@ -312,7 +355,7 @@ export function ReviewStep() {
           <div className={`cb-field${contactError && tried ? ' is-invalid' : ''}`}>
             <div className="cb-phone">
               <div className="cb-phone__cell cb-phone__cell--code">
-                <label className="cb-field__label" htmlFor="booking-country-code">Country code</label>
+                <label className="cb-field__label" htmlFor="booking-country-code">Code</label>
                 <div className="cb-phone__code">
                   <select id="booking-country-code" value={contactCode} onChange={(e) => setContactCode(e.target.value)}>
                     {UNIQUE_DIAL_CODES.map((code) => <option key={code} value={code}>{code}</option>)}
@@ -322,7 +365,7 @@ export function ReviewStep() {
               </div>
               <span className="cb-phone__sep" aria-hidden="true" />
               <div className="cb-phone__cell cb-phone__cell--num">
-                <label className="cb-field__label" htmlFor="booking-mobile">Mobile number</label>
+                <label className="cb-field__label" htmlFor="booking-mobile">Contact number</label>
                 <input
                   id="booking-mobile"
                   className="cb-input"
@@ -355,7 +398,7 @@ export function ReviewStep() {
           {emailError ? <p className="cb-error">{emailError}</p> : null}
 
           <div className="cb-switch-row">
-            <span id="cb-other-label">Booking for someone else</span>
+            <span id="cb-other-label">Booking on behalf of another passenger</span>
             <button
               type="button"
               role="switch"
@@ -397,7 +440,7 @@ export function ReviewStep() {
         {hasCarrier || hasPets ? (
           <>
             <section className="cb__section cb__section--addons" aria-labelledby="cb-addons-head">
-              <h2 id="cb-addons-head" className="cb__h2">Travel add-ons</h2>
+              <h2 id="cb-addons-head" className="cb__h2">Optional services</h2>
               {hasCarrier ? (
                 <label className="cb-addon">
                   <input type="checkbox" role="switch" className="cb-mini" checked={draft.roofCarrier} onChange={(e) => update({ roofCarrier: e.target.checked })} />
@@ -408,11 +451,11 @@ export function ReviewStep() {
               {hasPets ? (
                 <label className="cb-addon">
                   <input type="checkbox" role="switch" className="cb-mini" checked={draft.pets} onChange={(e) => update({ pets: e.target.checked })} />
-                  <span className="cb-addon__name">Travelling with pets</span>
+                  <span className="cb-addon__name">Pet travel</span>
                   <span className="cb-addon__price">+{formatINR(petCharge)}</span>
                 </label>
               ) : null}
-              <p className="cb__note">Charges are added once per trip and included in your final bill.</p>
+              <p className="cb__note">Billed once per trip and reflected in your final invoice.</p>
             </section>
 
             <hr className="cb__rule" />
@@ -439,7 +482,7 @@ export function ReviewStep() {
             >
               <TicketIcon />
               <span className="cb-coupon__sep" aria-hidden="true" />
-              <input className="cb-input cb-coupon__input" placeholder="Enter coupon code" aria-label="Coupon code" value={couponText} onChange={(e) => setCouponText(e.target.value.toUpperCase())} />
+              <input className="cb-input cb-coupon__input" placeholder="Promotional code" aria-label="Promotional code" value={couponText} onChange={(e) => setCouponText(e.target.value.toUpperCase())} />
               <button type="submit" className="cb-coupon__btn" disabled={!couponText.trim()}>Apply</button>
             </form>
           )}
@@ -465,7 +508,7 @@ export function ReviewStep() {
             <label className="cb-terms__row">
               <input type="checkbox" className="cb-tick" checked={termsAccepted} onChange={(e) => setTermsAccepted(e.target.checked)} />
               <span className="cb-terms__text">
-                I accept the fare, extra charges and{' '}
+                I agree to the fare, additional charges and{' '}
                 <Link to="/legal#terms" target="_blank" rel="noopener">cancellation policy<span className="sr-only"> (opens in a new tab)</span></Link>
               </span>
             </label>
@@ -486,13 +529,13 @@ export function ReviewStep() {
               <Icon name="arrow-left" size={22} />
             </button>
             <button type="button" className={`cb-total${q.quoteLoading ? ' is-loading' : ''}`} aria-busy={q.quoteLoading} onClick={() => setShowFare(true)} aria-label={`Total ${formatINR(quote.total)}. View fare details`}>
-              <small>Total <Icon name="info" size={13} /></small>
+              <small>Total payable <Icon name="info" size={13} /></small>
               <strong key={quote.total} className="num">{formatINR(quote.total)}</strong>
               {strikeOf > 0 ? <s>{formatINR(strikeOf)}</s> : null}
             </button>
             <button type="button" className="cb-confirm" disabled={submitting} onClick={submit}>
               {submitting ? <span className="cb-confirm__spin" aria-hidden="true" /> : null}
-              <span>{profile ? (payOnline ? `Pay ${formatINR(advanceOf(quote.total, payChoice.percent))} & confirm` : 'Confirm') : 'Sign in'}</span>
+              <span>{profile ? (payOnline ? `Pay ${formatINR(advanceOf(quote.total, payChoice.percent))} & confirm` : 'Confirm booking') : 'Sign in'}</span>
               <span className="cb-confirm__arrow" aria-hidden="true"><Icon name="arrow-right" size={20} /></span>
             </button>
           </div>

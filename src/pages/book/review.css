@@ -755,3 +755,161 @@
 .cb .cb-pay--opt .cb-pay__icon { flex: none; display: grid; place-items: center; width: 46px; height: 46px; border-radius: var(--r-sm, 12px); background: color-mix(in srgb, var(--brand) 10%, #fff); color: var(--brand); }
 .cb .cb-pay--opt:not(.is-on) .cb-pay__icon { background: #f3f5f9; color: var(--muted, #5b6472); }
 .cb-pay__tag { padding: 2px 8px; border-radius: 999px; background: var(--brand); color: #fff; font-size: .62rem; font-style: normal; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; line-height: 1.5; }
+
+/* ── Corporate booking sheet ─────────────────────────────────────────────────────────────────────────────────────
+   A navy booking summary, then one white block per section, each opened by a pale heading band with a gold tick.
+   Fields are rows split by hairlines on one left edge (--x); small spaced capitals for labels. */
+html body .cb { --x: 16px; --cb-line: #e3e8f1; --cb-ink: #0f1f3d; --cb-gold: #c9992b; background: #f2f4f9; }
+html body .cb .cb__rule { display: none; }
+
+
+html body .cb .cb__section {
+  display: block; margin: 0; padding: 0 var(--x) 4px; overflow: hidden; border: 1px solid var(--cb-line); border-radius: 16px; background: #fff;
+}
+/* Heading band */
+html body .cb .cb__h2,
+html body .cb .pc__head {
+  position: relative; margin: 0 calc(-1 * var(--x)); padding: 11px var(--x) 10px calc(var(--x) + 12px); border-bottom: 1px solid var(--cb-line); background: #f7f8fc;
+}
+html body .cb .cb__h2::before,
+html body .cb .pc__head::before { content: ''; position: absolute; left: var(--x); top: 13px; width: 4px; height: 14px; border-radius: 2px; background: var(--cb-gold); }
+html body .cb .cb__h2,
+html body .cb .pc__headtext h2 { color: var(--cb-ink); font-size: .74rem; font-weight: 900; letter-spacing: .12em; line-height: 1.6; text-transform: uppercase; }
+
+/* Fields */
+html body .cb .cb-field { gap: 1px; padding: 9px 0 8px; border: 0; border-bottom: 1px solid var(--cb-line); border-radius: 0; background: none; box-shadow: none; }
+html body .cb .cb-field:focus-within { border-bottom-color: var(--cb-ink); box-shadow: 0 1px 0 var(--cb-ink); }
+html body .cb .cb-field.is-invalid { border-bottom-color: var(--danger); box-shadow: 0 1px 0 var(--danger); }
+html body .cb .cb-field__label { color: #7b879d; font-size: .62rem; font-weight: 800; letter-spacing: .1em; line-height: 1.5; text-transform: uppercase; }
+html body .cb .cb-input,
+html body .cb .cb-phone__code select { height: 28px; color: var(--cb-ink); font-size: .98rem; font-weight: 800; }
+html body .cb .cb-input::placeholder { color: #9aa6ba; font-weight: 500; }
+html body .cb .cb-phone { display: grid; grid-template-columns: 76px 1px minmax(0, 1fr); gap: 14px; }
+html body .cb .cb-phone__sep { background: var(--cb-line); }
+html body .cb .cb-error { margin: 6px 0 2px; }
+html body .cb .cb-switch-row { min-height: 52px; padding: 8px 0 4px; font-size: .84rem; font-weight: 700; line-height: 1.35; }
+html body .cb .cb-switch { width: 46px; height: 28px; }
+html body .cb .cb-switch__thumb { width: 22px; height: 22px; }
+html body .cb .cb-switch[aria-checked='true'] .cb-switch__thumb { transform: translateX(18px); }
+html body .cb .cb-switch[aria-checked='true'] { background: var(--cb-ink); }
+html body .cb .cb-other { gap: 0; padding-bottom: 8px; border-top: 1px solid var(--cb-line); }
+html body .cb .cb-other .policy-links { padding-top: 10px; font-size: .74rem; }
+
+/* Optional services */
+html body .cb .cb__section--addons { padding-bottom: 10px; }
+html body .cb .cb__section--addons .cb__h2 { margin: 0 calc(-1 * var(--x)); font-size: .74rem; font-weight: 900; }
+html body .cb .cb-addon,
+html body .cb .cb-addon:hover,
+html body .cb .cb-addon:has(.cb-mini:checked) { min-height: 48px; padding: 9px 0; border: 0; border-bottom: 1px solid var(--cb-line); border-radius: 0; background: none; }
+html body .cb .cb-addon__name { font-size: .86rem; font-weight: 700; }
+html body .cb .cb-addon__price { font-size: .9rem; font-weight: 900; }
+html body .cb .cb__section--addons .cb__note { margin-top: 9px; color: #7b879d; font-size: .7rem; }
+html body .cb input.cb-mini:checked { background: var(--cb-ink); }
+
+/* Payment method */
+html body .cb .pc { gap: 0; }
+html body .cb .pc__head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 0 8px; }
+html body .cb .pc__headicon { display: none; }
+html body .cb .pc__headtext { display: contents; }
+html body .cb .pc__headtext h2 { grid-column: 1; grid-row: 1; margin: 0; }
+html body .cb .pc__headtext p { grid-column: 1 / -1; grid-row: 2; margin: 2px 0 0; color: #7b879d; font-size: .72rem; }
+html body .cb .pc__secure { grid-column: 2; grid-row: 1; gap: 4px; padding: 2px 8px; border: 1px solid #b7e4c7; border-radius: 6px; font-size: .6rem; letter-spacing: .07em; text-transform: uppercase; }
+html body .cb .pc__secure svg { width: 12px; height: 12px; }
+html body .cb .pc__list { gap: 8px; padding-top: 12px; }
+html body .cb .pc__opt { padding: 12px; border-radius: 12px; box-shadow: none; }
+html body .cb .pc__opt.is-on { border-color: var(--cb-ink); background: #f7f8fc; box-shadow: none; }
+html body .cb .pc__opt.is-on .pc__dot { border-color: var(--cb-ink); background: radial-gradient(circle, var(--cb-ink) 0 46%, #fff 50%); }
+html body .cb .pc__dot { width: 20px; height: 20px; }
+html body .cb .pc__text strong { color: var(--cb-ink); font-size: .88rem; }
+html body .cb .pc__text small { font-size: .73rem; }
+html body .cb .pc__pill { padding: 6px 10px; border-radius: 8px; background: #eef1f8; font-size: .94rem; }
+html body .cb .cb-coupon { gap: 10px; margin: 10px 0 8px; padding: 8px 8px 8px 12px; border: 1px dashed #c3cde0; border-radius: 12px; background: #fff; }
+html body .cb .cb-coupon__sep { display: none; }
+html body .cb .cb-coupon__icon { color: var(--cb-gold); }
+html body .cb .cb-coupon__input { font-size: .86rem; }
+html body .cb .cb-coupon__btn { padding: 7px 16px; border-color: var(--cb-ink); color: var(--cb-ink); }
+html body .cb .cb__notes { padding: 0 0 8px; }
+
+/* Bottom bar in the same navy */
+html body .cb .cb-terms__text a { color: #1d4ed8; }
+html body .cb input.cb-tick:checked { border-color: var(--cb-ink); background-color: var(--cb-ink); }
+html body .cb .cb-confirm { min-width: 0; padding: 0 14px; background: #0f1f3d; box-shadow: 0 10px 20px -10px rgb(15 31 61 / .75); font-size: .95rem; white-space: nowrap; }
+html body .cb .cb-total small { font-size: .6rem; letter-spacing: .08em; white-space: nowrap; }
+
+@media (max-width: 999.98px) {
+  html body .cb .cb__wrap { display: flex; flex-direction: column; gap: 12px; padding: 12px 12px 22px; }
+}
+@media (min-width: 1000px) {
+  html body .cb .cb__wrap { gap: 16px 20px; padding: 24px 24px 40px; grid-template-rows: auto auto auto 1fr; }
+  html body .cb .cb__wrap > .cb-pass { grid-column: 1 / -1; }
+  html body .cb .cb__wrap > .cb__section[aria-label="Passenger & Contact Details"] { grid-row: span 3; }
+  html body .cb .cb__wrap:has(> .cb-pkgline) { grid-template-rows: auto auto auto auto 1fr; }
+  html body .cb .cb__wrap > .cb__section[aria-label]::before { content: none; }
+  html body .cb .cb__wrap > .cb__section { padding: 0 var(--x) 8px; border: 1px solid var(--cb-line); border-radius: 16px; }
+}
+@media (max-width: 359.98px) {
+  html body .cb { --x: 12px; }
+  html body .cb .cb-phone { grid-template-columns: 66px 1px minmax(0, 1fr); gap: 10px; }
+  html body .cb .cb-bar__in { padding-inline: 10px; }
+  html body .cb .cb-bar__row { gap: 4px; }
+  html body .cb .cb-iconbtn { width: 40px; }
+  html body .cb .cb-confirm { padding: 0 9px; font-size: .82rem; }
+  html body .cb .cb-confirm__arrow { display: none; }
+  html body .cb .cb-total strong { font-size: 1.15rem; }
+}
+/* Phones: back · total · Confirm always fit inside the screen (the button may shrink; its arrow steps aside) */
+html body .cb .cb-bar__row { min-width: 0; }
+html body .cb .cb-total { min-width: 0; }
+html body .cb .cb-confirm { flex: 0 1 auto; }
+@media (max-width: 429.98px) {
+  html body .cb .cb-bar__in { padding-inline: 12px; }
+  html body .cb .cb-bar__row { gap: 8px; }
+  html body .cb .cb-iconbtn { width: 44px; }
+  html body .cb .cb-confirm { padding: 0 12px; font-size: .86rem; }
+  html body .cb .cb-confirm__arrow { display: none; }
+}
+
+/* ── Booking summary: a boarding pass in the site's blue ── */
+.cb-pass { flex: none; border-radius: 20px; filter: drop-shadow(0 14px 18px rgb(22 101 232 / .24)); }
+.cb-pass__top {
+  position: relative; overflow: hidden; padding: 14px 16px 16px; border-radius: 20px 20px 0 0; color: #fff;
+  background: radial-gradient(90% 120% at 100% 0, rgb(255 255 255 / .22), transparent 60%), linear-gradient(135deg, #2a7bff 0%, var(--brand, #1665e8) 50%, #0d3aa8 100%);
+}
+.cb-pass__head { display: flex; align-items: center; gap: 8px; font-size: .64rem; font-weight: 900; letter-spacing: .16em; text-transform: uppercase; }
+.cb-pass__head img { width: 28px; height: 28px; padding: 2px; border-radius: 8px; background: #fff; object-fit: contain; }
+.cb-pass__route { display: grid; grid-template-columns: minmax(0, 1fr) 76px minmax(0, 1fr); align-items: center; gap: 8px; margin-top: 12px; }
+.cb-pass__route p { margin: 0; min-width: 0; }
+.cb-pass__route p:last-child { text-align: right; }
+.cb-pass__route small { display: block; color: rgb(255 255 255 / .75); font-size: .58rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.cb-pass__route strong { display: block; font-size: 1.02rem; font-weight: 900; line-height: 1.25; overflow-wrap: break-word; }
+.cb-pass__line { position: relative; display: grid; place-items: center; height: 30px; }
+.cb-pass__line::before { content: ''; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed rgb(255 255 255 / .6); }
+.cb-pass__line > span { position: relative; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #fff; color: var(--brand, #1665e8); }
+.cb-pass__stub {
+  position: relative; display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 0; margin: 0; padding: 12px 6px 13px;
+  border-radius: 0 0 20px 20px; border-top: 2px dashed #c5d4f0;
+  /* a half-round notch on each side of the tear line */
+  background: radial-gradient(circle at 0 0, transparent 8px, #fff 9px) left / 51% 100% no-repeat, radial-gradient(circle at 100% 0, transparent 8px, #fff 9px) right / 51% 100% no-repeat;
+}
+.cb-pass__stub > div { min-width: 0; padding: 0 10px; text-align: center; }
+.cb-pass__stub > div + div { border-left: 1px solid #e3eaf7; }
+.cb-pass__stub dt { color: #7b879d; font-size: .56rem; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
+.cb-pass__stub dd { margin: 2px 0 0; color: #0f1f3d; font-size: .8rem; font-weight: 900; line-height: 1.25; }
+
+/* The rest of the page in the same theme blue (it was navy and gold) */
+html body .cb { --cb-gold: var(--brand, #1665e8); }
+html body .cb .cb-confirm { background: linear-gradient(135deg, #2a7bff 0%, var(--brand, #1665e8) 55%, #0f52c4 100%); box-shadow: 0 10px 20px -10px rgb(22 101 232 / .75); }
+html body .cb .cb-field:focus-within { border-bottom-color: var(--brand, #1665e8); box-shadow: 0 1px 0 var(--brand, #1665e8); }
+html body .cb .cb-switch[aria-checked='true'], html body .cb input.cb-mini:checked { background: var(--brand, #1665e8); }
+html body .cb .pc__opt.is-on { border-color: var(--brand, #1665e8); background: #f4f8ff; }
+html body .cb .pc__opt.is-on .pc__dot { border-color: var(--brand, #1665e8); background: radial-gradient(circle, var(--brand, #1665e8) 0 46%, #fff 50%); }
+html body .cb input.cb-tick:checked { border-color: var(--brand, #1665e8); background-color: var(--brand, #1665e8); }
+html body .cb .cb-coupon__btn { border-color: var(--brand, #1665e8); color: var(--brand, #1665e8); }
+/* No site header on this step: start just below any notch */
+html body .flow-page--review .cb__wrap { padding-top: calc(12px + env(safe-area-inset-top, 0px)); }
+/* Wordmark on a white chip at the left, the label at the right */
+.cb-pass__head { justify-content: space-between; }
+.cb-pass__head img { width: auto; height: 30px; padding: 3px 10px; border-radius: 9px; }
+/* Long place names stay whole: a narrower line between them and a size that fits */
+.cb-pass__route { grid-template-columns: minmax(0, 1fr) 48px minmax(0, 1fr); gap: 6px; align-items: end; }
+.cb-pass__route strong { font-size: clamp(.78rem, 4.1vw, 1.02rem); }

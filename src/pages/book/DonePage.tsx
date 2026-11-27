@@ -3,33 +3,18 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCustomerData } from '@/state/customer';
-import { formatDate, formatTime } from '@core/utils/format';
-import { Button, PageLoader } from '@/components/ui';
+import { formatDate, formatPhone, formatTime, localMobile } from '@core/utils/format';
+import { Avatar, Button, PageLoader } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { useBooking } from '@/state/Booking';
 import type { TripRecord, TripType } from '@core/types';
 import { BookingConfirmedOverlay } from '@/components/BookingConfirmedOverlay';
 import { PayOnline } from '@/components/PayOnline';
+import { driverNote } from '@/lib/driverNote';
+import { tripCategoryName } from '@/lib/categories';
 import './done.css';
 
 const BRAND_LOGO = { src: '/brand/peopletaxi-logo.webp', alt: 'People Taxi' };
-
-function JourneyArt({ done }: { done: boolean }) {
-  return (
-    <div className={`journey-art ${done ? 'is-done' : ''}`} aria-hidden="true">
-      <div className="journey-art__track">
-        <span className="journey-art__start" />
-        <span className="journey-art__line" />
-        <span className="journey-art__car">
-          <Icon name="car" size={26} />
-        </span>
-      </div>
-      <div className="journey-art__badge">
-        <Icon name={done ? 'check' : 'clock'} size={28} />
-      </div>
-    </div>
-  );
-}
 
 const tripTypeLabel = (t: TripType): string => {
   if (t === 'One Way') return 'One Way Drop';
@@ -72,7 +57,7 @@ export function DonePage() {
   const payState = handover.payment ?? null;
   const { trips } = useCustomerData();
   const trip = trips.find((t) => t.id === id);
-  const { reset } = useBooking();
+  const { reset, categories } = useBooking();
   const [booked, setBooked] = useState(() => handover.confirmed === true && !(handover.online === true && handover.payment?.status !== 'paid'));
 
   // The flag is consumed: reloading or coming back to this page never shows the celebration again. Arriving straight
@@ -95,56 +80,50 @@ export function DonePage() {
     : headline(trip);
   const at = trip.scheduledAt;
   const dropName = trip.drop.id === 'place-local-disposal' ? 'Within the city' : trip.drop.name;
-  // The seal on the hero: a tick once the booking stands, a clock while a payment is still awaited, a cross if cancelled.
-  const seal = h.tone === 'bad' ? 'circle-xmark' : awaitingPayment ? 'clock' : 'check';
+  const cancelled = h.tone === 'bad';
+  // The trip list is live, so the driver card appears here the moment a driver is assigned.
+  const driver = cancelled ? null : trip.driver;
+  const driverPhone = driver ? localMobile(driver.phone) : '';
+  const note = driverNote(trip);
+  const title = cancelled || awaitingPayment ? h.title : driver ? 'Driver assigned' : 'Booking confirmed';
+  const tag = cancelled ? 'Cancelled' : awaitingPayment ? 'Payment pending' : 'Confirmed';
 
   return (
     <div className="flow-page flow-page--done">
       <div className="wrap flow-page__wrap">
         <div className="dn">
-          {/* Hero: corporate navy with a seal, the headline and a reassurance line */}
-          <section className={`dn-hero dn-hero--${h.tone}`}>
-            <span className={`dn-hero__seal dn-hero__seal--${seal}`} aria-hidden="true">
-              <Icon name={seal} size={26} />
-            </span>
-            <h1>{h.title}</h1>
-            <p className="dn-hero__text">{h.text}</p>
-            <p className="dn-hero__saved">
-              <Icon name="shield-check" size={14} /> Your trip is saved in My Bookings
-            </p>
-          </section>
-
-          {/* Ride pass: booking ID, pickup → drop side by side, a tear line, then the trip facts and the status */}
-          <section className="dn-pass" aria-label="Trip summary">
-            <header className="dn-pass__head">
-              <span className="dn-pass__brand">People Taxi · Ride pass</span>
-              <span className="dn-pass__id">
-                <small>Booking ID</small>
-                <strong className="num">{bookingRef(trip)}</strong>
-              </span>
-            </header>
-
-            <div className="dn-pass__route">
-              <div className="dn-pass__end">
-                <small>Pickup</small>
-                <strong>{trip.pickup.name}</strong>
-              </div>
-              <div className="dn-pass__line" aria-hidden="true">
-                <i />
-                <span className="dn-pass__cab">
-                  <Icon name="car" size={16} />
+          {/* Confirmation pass: brand and status, the reference, the route; the stub holds the trip facts */}
+          <section className={`dn-card dn-card--${h.tone}`} aria-label="Trip summary">
+            <div className="dn-card__top">
+              <div className="dn-card__head">
+                <img src="/brand/peopletaxi-transparent.webp" alt="People Taxi" width={92} height={30} />
+                <span className="dn-card__tag">
+                  <Icon name={cancelled ? 'cross' : awaitingPayment ? 'clock' : 'check'} size={13} /> {tag}
                 </span>
-                <i />
               </div>
-              <div className="dn-pass__end dn-pass__end--to">
-                <small>Drop</small>
-                <strong>{dropName}</strong>
+              <h1>{title}</h1>
+              {cancelled || awaitingPayment ? <p className="dn-card__text">{h.text}</p> : null}
+              <p className="dn-card__ref">
+                <small>Booking reference</small>
+                <strong className="num">{bookingRef(trip)}</strong>
+              </p>
+              <div className="dn-card__route">
+                <p>
+                  <small>From</small>
+                  <strong>{trip.pickup.name}</strong>
+                </p>
+                <span className="dn-card__line" aria-hidden="true">
+                  <span>
+                    <Icon name="car" size={15} />
+                  </span>
+                </span>
+                <p>
+                  <small>To</small>
+                  <strong>{dropName}</strong>
+                </p>
               </div>
             </div>
-
-            <span className="dn-pass__tear" aria-hidden="true" />
-
-            <dl className="dn-pass__facts">
+            <dl className="dn-card__stub">
               <div>
                 <dt>Pickup date</dt>
                 <dd>{at ? formatDate(at) : '—'}</dd>
@@ -154,24 +133,64 @@ export function DonePage() {
                 <dd className="num">{at ? formatTime(at) : '—'}</dd>
               </div>
               <div>
-                <dt>Cab</dt>
-                <dd>{trip.categoryName}</dd>
+                <dt>Vehicle class</dt>
+                <dd>{tripCategoryName(categories, trip)}</dd>
               </div>
               <div>
-                <dt>Trip · Payment</dt>
+                <dt>Service · Settlement</dt>
                 <dd>
                   {tripTypeLabel(trip.tripType)} · {trip.paymentMethod === 'UPI' ? 'UPI to driver' : 'Cash to driver'}
                 </dd>
               </div>
             </dl>
-
-            <p className={`dn-status dn-status--${h.tone}`}>
-              <Icon name={h.tone === 'ok' ? 'check' : h.tone === 'bad' ? 'circle-xmark' : 'clock'} size={15} />
-              <span>
-                <small>Status</small> {h.tone === 'pending' ? 'Awaiting dispatch review' : h.title}
-              </span>
-            </p>
           </section>
+
+          {/* What happens next: booked → driver & cab → pickup */}
+          {cancelled ? null : (
+            <section className="dn-next" aria-label="Driver and cab details">
+              <h2>{driver ? 'Your driver and cab' : 'What happens next'}</h2>
+              <ol>
+                <li className={awaitingPayment ? 'is-now' : 'is-done'}>
+                  <strong>{awaitingPayment ? 'Payment to be completed' : 'Booking confirmed'}</strong>
+                  <p>Your trip is saved in My Bookings.</p>
+                </li>
+                <li className={driver ? 'is-done' : awaitingPayment ? '' : 'is-now'}>
+                  <strong>{driver ? 'Driver and cab assigned' : 'Driver and cab allocation'}</strong>
+                  <p>{note}</p>
+                  {driver ? (
+                    <div className="dn-driver">
+                      <Avatar name={driver.name} photoUrl={driver.photoUrl} size={48} />
+                      <div className="dn-driver__who">
+                        <strong>{driver.name}</strong>
+                        <small>
+                          {driver.rating != null ? `★ ${driver.rating.toFixed(1)} · ` : ''}
+                          {driver.vehicleModel || tripCategoryName(categories, trip)}
+                        </small>
+                      </div>
+                      {driver.vehicleNumber ? <span className="dn-driver__plate">{driver.vehicleNumber}</span> : null}
+                      {driverPhone ? (
+                        <div className="dn-driver__actions">
+                          <a href={`tel:+91${driverPhone}`}>
+                            <Icon name="phone" size={15} /> Call {formatPhone(driverPhone)}
+                          </a>
+                          <a href={`https://wa.me/91${driverPhone}`} target="_blank" rel="noopener noreferrer">
+                            <Icon name="chat" size={15} /> WhatsApp
+                          </a>
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </li>
+                <li>
+                  <strong>Pickup</strong>
+                  <p>
+                    {trip.pickup.name}
+                    {at ? `, ${formatTime(at)} on ${formatDate(at)}` : ''}
+                  </p>
+                </li>
+              </ol>
+            </section>
+          )}
 
           {trip.status !== 'Cancelled' && trip.status !== 'Rejected' ? (
             <section className="dn-pay" aria-label="Payment">
@@ -193,8 +212,8 @@ export function DonePage() {
         <BookingConfirmedOverlay
           logo={BRAND_LOGO}
           code={bookingRef(trip)}
-          message="We will share the driver details before pickup."
-          trip={{ from: trip.pickup.name, to: dropName, when: at ? `${formatDate(at)} · ${formatTime(at)}` : undefined, car: trip.categoryName }}
+          message={note}
+          trip={{ from: trip.pickup.name, to: dropName, when: at ? `${formatDate(at)} · ${formatTime(at)}` : undefined, car: tripCategoryName(categories, trip) }}
           primaryLabel="View booking"
           onPrimary={() => navigate(`/trips/${trip.id}`)}
           secondaryLabel="Done"

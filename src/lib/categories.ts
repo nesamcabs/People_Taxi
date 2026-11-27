@@ -29,6 +29,17 @@ export function tripCategoryPhoto(cats: RideCategory[], trip: { categoryId?: str
   return categoryPhoto(match ?? { name: trip.categoryName, seats: 4 });
 }
 
+/**
+ * The vehicle name the admin gave the cab type a booking was made with ("Wagon R or similar"), not the stored type word
+ * ("HATCHBACK"). Matched like the picture: by id, then by name; with no match the stored name stands. CNG stays marked.
+ */
+export function tripCategoryName(cats: RideCategory[], trip: { categoryId?: string; categoryName: string }): string {
+  const cng = /\s*\(cng\)\s*$/i;
+  const bare = (s: string) => s.replace(cng, '').trim().toLowerCase();
+  const match = cats.find((c) => trip.categoryId && c.id === trip.categoryId) ?? cats.find((c) => bare(c.name) === bare(trip.categoryName));
+  return match ? categoryName(match) + (cng.test(trip.categoryName) ? ' (CNG)' : '') : trip.categoryName;
+}
+
 /** Longest admin-written display text that is used as the main text; a longer description is treated as marketing copy. */
 const MAX_DISPLAY_TEXT = 48;
 

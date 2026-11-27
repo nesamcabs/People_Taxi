@@ -160,7 +160,7 @@ html body .topbar__mobile .hdr-btn.is-active { background: var(--brand-soft, #ed
 html body .topbar__mobile .hdr-btn .hdr-icon { filter: drop-shadow(0 3px 3px rgb(27 42 107 / 0.18)); }
 html body .topbar__mobile .hdr-btn__live { top: 4px; right: 3px; }
 html body .topbar__mobile .hdr-btn .count { top: -1px; right: -2px; }
-html body .topbar__mobile .hdr-btn:hover .hdr-icon--taxi { transform: rotate(-6deg); }
+html body .topbar__mobile .hdr-btn:hover .hdr-icon--booking { transform: rotate(-6deg); }
 html body .topbar__mobile .hdr-btn--help:hover .hdr-icon--support { transform: translateY(-1px) scale(1.05); }
 /* Very short screens: the header is 40px tall. */
 @media (max-width: 767.98px) and (max-height: 600px) {

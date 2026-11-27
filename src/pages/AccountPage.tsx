@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useCustomerData } from '@core/context/CustomerData';
 import { updateCustomerProfile } from '@core/services/userService';
@@ -8,6 +8,7 @@ import { describeError } from '@core/utils/retry';
 import { Avatar, Button, Dialog, EmptyState, Notice, PageHead } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { BrandIcon, type BrandIconName } from '@/components/BrandIcon';
+import { DrawerIcon, hasDrawerIcon } from '@/components/DrawerIcons';
 import { EmergencyContactForm, PersonalDetailsForm } from '@/components/ProfileForms';
 import { PhotoError, uploadProfilePhoto } from '@/lib/avatarUpload';
 import { useSeo } from '@/lib/seo';
@@ -24,12 +25,20 @@ const TONES: Record<string, string> = {
   support: 'blue', phone: 'green', info: 'gold', document: 'brand', jet: 'blue',
 };
 
-function Row({ icon, label, value, to, href, onPress, onNavigate, expanded }: { icon: string; label: string; value?: ReactNode; to?: string; href?: string; onPress?: () => void; onNavigate?: () => void; expanded?: boolean }) {
+/** Inside the side drawer, rows show the drawer's own line icons (one neat corporate set) in place of the artwork. */
+const LineIcons = createContext(false);
+
+function Row({ icon, label, hint, value, to, href, onPress, onNavigate, expanded }: { icon: string; label: string; hint?: string; value?: ReactNode; to?: string; href?: string; onPress?: () => void; onNavigate?: () => void; expanded?: boolean }) {
   const tone = TONES[icon] ?? 'brand';
+  const line = useContext(LineIcons);
   const cls = `setting setting--${tone}`;
   const inner = (
     <>
-      {ROW_ART[icon] ? (
+      {line && hasDrawerIcon(icon) ? (
+        <span className="setting__icon setting__icon--line">
+          <DrawerIcon name={icon} size={19} />
+        </span>
+      ) : ROW_ART[icon] ? (
         <span className="setting__icon setting__icon--art">
           <BrandIcon name={ROW_ART[icon]!} size={34} />
         </span>
@@ -38,7 +47,14 @@ function Row({ icon, label, value, to, href, onPress, onNavigate, expanded }: { 
           <Icon name={icon} size={20} />
         </span>
       )}
-      <span className="setting__label">{label}</span>
+      {hint ? (
+        <span className="setting__text">
+          <span className="setting__label">{label}</span>
+          <span className="setting__hint">{hint}</span>
+        </span>
+      ) : (
+        <span className="setting__label">{label}</span>
+      )}
       {value ? <span className="setting__value truncate">{value}</span> : null}
       {to || href || onPress ? <Icon name="chevron-right" size={18} /> : null}
     </>
@@ -64,8 +80,6 @@ function Row({ icon, label, value, to, href, onPress, onNavigate, expanded }: { 
   return <div className={cls}>{inner}</div>;
 }
 
-type ProfileEditView = 'details' | 'emergency';
-
 /** `drawer`: shown inside the profile side drawer (no page heading or page padding); its edit forms open in place, under the item tapped. */
 export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 'drawer'; onClose?: () => void }) {
   useSeo(variant === 'page' ? { title: 'My Account', noindex: true } : null);
@@ -76,9 +90,9 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState('');
   const [confirm, setConfirm] = useState(false);
-  // Drawer only: the edit form currently open in place (one at a time).
-  const [editing, setEditing] = useState<ProfileEditView | null>(null);
-  const toggleEdit = (view: ProfileEditView) => setEditing((now) => (now === view ? null : view));
+  // Drawer only: whether the profile editor is open in place.
+  const [editing, setEditing] = useState<'details' | null>(null);
+  const toggleEdit = (view: 'details') => setEditing((now) => (now === view ? null : view));
   useEffect(() => {
     if (!editing) return undefined;
     const t = window.setTimeout(() => document.querySelector<HTMLElement>('.inline-edit input:not([readonly])')?.focus(), 80);
@@ -88,6 +102,17 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
   if (!profile) {
     const signedOut = (
       <>
+        {inDrawer ? (
+          /* The drawer's welcome card: the same deep navy as the signed-in account card. */
+          <section className="drawer-welcome" aria-label="Sign in">
+            <span className="drawer-welcome__eyebrow">Welcome to People Taxi</span>
+            <strong className="drawer-welcome__title">Sign in to your account</strong>
+            <p className="drawer-welcome__text">Manage your bookings, payments and saved details in one place.</p>
+            <button type="button" className="drawer-welcome__btn" onClick={() => { onClose?.(); openLoginModal({ title: 'Sign in to account' }); }}>
+              Sign in
+            </button>
+          </section>
+        ) : (
         <div className="card card--center">
           <EmptyState
             art="welcome"
@@ -98,19 +123,27 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
               </Button>
             }
           >
-            Sign in to manage your profile, saved addresses and payment options.
+            Manage your bookings, payments and saved details in one place.
           </EmptyState>
         </div>
+        )}
         {/* Offers and Help are here too, because narrower desktop headers move them into this menu. */}
-        <div className="card card--list" style={{ marginTop: 16 }}>
-          <Row icon="offers" label="Offers" to="/offers" />
-          <Row icon="support" label="Help and support" to="/support" />
-          <Row icon="info" label="About People Taxi" to="/about" />
-          <Row icon="document" label="Terms, privacy & customer policies" to="/legal" />
-        </div>
+        <section className="group" style={inDrawer ? undefined : { marginTop: 16 }}>
+          <h2 className="eyebrow">Support &amp; information</h2>
+          <div className="card card--list">
+            <Row icon="offers" label="Offers & promotions" hint="Current fare offers" to="/offers" />
+            <Row icon="support" label="Customer support" hint="24/7 assistance by call or chat" to="/support" />
+            <Row icon="info" label="About People Taxi" hint="Company information" to="/about" />
+            <Row icon="document" label="Terms & policies" hint="Privacy, cancellation and refund policies" to="/legal" />
+          </div>
+        </section>
       </>
     );
-    return inDrawer ? <div className="account account--drawer">{signedOut}</div> : (
+    return inDrawer ? (
+      <LineIcons.Provider value>
+        <div className="account account--drawer">{signedOut}</div>
+      </LineIcons.Provider>
+    ) : (
       <>
         <PageHead title="Account" />
         <div className="page">{signedOut}</div>
@@ -139,12 +172,12 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
 
         <div className={`account ${inDrawer ? 'account--drawer' : ''}`}>
           <aside className="account__side">
-            {/* One profile card: photo, name and number on top (tap the name to edit, no separate pencil), then the emergency
-                contact as a row inside the same card. Each edit form opens in place, right under what was tapped. */}
+            {/* The profile card: photo, name and number (tap the name to edit, no separate pencil). The editor opens under it and
+                holds the personal details and the emergency contact. */}
             <section className="profile-card profile-card--combined" aria-label="Your profile">
               <div className="profile-card__head">
                 <button type="button" className="profile-card__photo" onClick={() => file.current?.click()} disabled={progress != null} aria-label="Change profile photo">
-                  <Avatar name={profile.name} photoUrl={profile.photoUrl} size={52} />
+                  <Avatar name={profile.name} photoUrl={profile.photoUrl} size={42} />
                   <span className="profile-card__cam">
                     <Icon name={progress != null ? 'document-upload' : 'camera'} size={12} />
                   </span>
@@ -154,6 +187,15 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
                   const info = (
                     <>
                       <span className="profile-card__info">
+                        {inDrawer ? (
+                          <span className="profile-card__eyebrow">
+                            My account
+                            <span className="profile-card__badge">
+                              <DrawerIcon name="verified" size={10} strokeWidth={3} />
+                              Verified
+                            </span>
+                          </span>
+                        ) : null}
                         <span className="profile-card__name truncate">{profile.name}</span>
                         <span className="profile-card__sub truncate">{progress != null ? `Uploading photo… ${progress}%` : formatPhone(profile.phone)}</span>
                         {profile.email && !inDrawer && progress == null ? <span className="profile-card__sub truncate">{profile.email}</span> : null}
@@ -175,16 +217,10 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
               {inDrawer && editing === 'details' ? (
                 <div className="inline-edit">
                   <PersonalDetailsForm onDone={() => setEditing(null)} onCancel={() => setEditing(null)} />
+                  <h3 className="profile-sub">Emergency contact</h3>
+                  <EmergencyContactForm onDone={() => setEditing(null)} />
                 </div>
               ) : null}
-              <div className="profile-card__extra">
-                <Row icon="emergency" label="Emergency contact" value={profile.emergencyContact || 'Not set'} {...(inDrawer ? { onPress: () => toggleEdit('emergency'), expanded: editing === 'emergency' } : { to: '/account/emergency' })} />
-                {inDrawer && editing === 'emergency' ? (
-                  <div className="inline-edit">
-                    <EmergencyContactForm onDone={() => setEditing(null)} onCancel={() => setEditing(null)} />
-                  </div>
-                ) : null}
-              </div>
             </section>
 
             {/* Refund credits live on the Payments page; the drawer stays a short menu. */}
@@ -199,28 +235,37 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
           </aside>
 
           <div className="account__groups">
-            <section className="group" aria-label="Trips and payments">
+            <section className="group">
+              <h2 className="eyebrow">Bookings &amp; payments</h2>
               <div className="card card--list">
-                <Row icon="trip-history" label="My trips" to="/trips" />
-                <Row icon="receipt" label="Payments and refunds" to="/account/payments" />
-                <Row icon="offers" label="Offers" to="/offers" />
+                <Row icon="trip-history" label="My bookings" hint="Upcoming and completed trips" to="/trips" />
+                <Row icon="receipt" label="Payments & refunds" hint="Receipts and refund status" to="/account/payments" />
+                <Row icon="offers" label="Offers & promotions" hint="Current fare offers" to="/offers" />
               </div>
             </section>
-            <section className="group" aria-label="Help">
+            <section className="group">
+              <h2 className="eyebrow">Support &amp; information</h2>
               <div className="card card--list">
-                <Row icon="support" label="Help and support" to="/support" />
-                <Row icon="info" label="About People Taxi" to="/about" />
-                <Row icon="document" label="Terms & policies" to="/legal" />
+                <Row icon="support" label="Customer support" hint="24/7 assistance by call or chat" to="/support" />
+                <Row icon="info" label="About People Taxi" hint="Company information" to="/about" />
+                <Row icon="document" label="Terms & policies" hint="Privacy, cancellation and refund policies" to="/legal" />
               </div>
             </section>
             <section className="group" aria-label="Session">
-              <div className="card card--list">
-                <button type="button" className="setting setting--action" onClick={() => setConfirm(true)}>
-                  <span className="setting__icon setting__icon--art"><BrandIcon name="logout" size={34} /></span>
-                  <span className="setting__label">Log out</span>
+              {inDrawer ? (
+                <button type="button" className="drawer-signout" onClick={() => setConfirm(true)}>
+                  <DrawerIcon name="logout" size={18} strokeWidth={2} />
+                  Log out
                 </button>
-              </div>
-              <p className="account__legal">© {COMPANY_LEGAL_NAME.replace(/NESAM/g, 'Nesam')}</p>
+              ) : (
+                <div className="card card--list">
+                  <button type="button" className="setting setting--action" onClick={() => setConfirm(true)}>
+                    <span className="setting__icon setting__icon--art"><BrandIcon name="logout" size={34} /></span>
+                    <span className="setting__label">Log out</span>
+                  </button>
+                </div>
+              )}
+              <p className="account__legal">© {new Date().getFullYear()} {COMPANY_LEGAL_NAME.replace(/NESAM/g, 'Nesam')}</p>
             </section>
           </div>
         </div>
@@ -229,7 +274,7 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
 
   return (
     <>
-      {inDrawer ? body : (
+      {inDrawer ? <LineIcons.Provider value>{body}</LineIcons.Provider> : (
         <>
           <PageHead title="Account" />
           <div className="page">{body}</div>

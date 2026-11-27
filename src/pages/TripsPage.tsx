@@ -1,15 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { TripRecord } from '@core/types';
 import { useCustomerData } from '@core/context/CustomerData';
-import { cancellationQuote } from '@core/services/rideService';
+import { cancellationQuote, subscribeToBoardingOtp } from '@core/services/rideService';
 import { formatDate, formatINR, formatTime } from '@core/utils/format';
 import { isValidLatLng } from '@core/utils/geo';
 import { paymentLabel, tabOfTrip, tripStatusChip, type TripTab } from '@core/utils/tripView';
 import { Button, EmptyState, LinkButton, Notice, PageHead } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { TourQuotes } from '@/components/TourQuotes';
-import { tripCategoryPhoto } from '@/lib/categories';
+import { tripCategoryName, tripCategoryPhoto } from '@/lib/categories';
+import { statusTag } from '@/lib/driverNote';
+import './trips-corp.css';
 import { useSeo } from '@/lib/seo';
 import { useAuth } from '@/state/Auth';
 import { useBooking } from '@/state/Booking';
@@ -19,75 +21,100 @@ const TABS: TripTab[] = ['Upcoming', 'Completed', 'Cancelled'];
 const PAGE = 12;
 
 const EMPTY: Record<TripTab, { title: string; text: string }> = {
-  Upcoming: { title: 'No upcoming trips', text: 'When you book a ride, it shows up here with live status.' },
-  Completed: { title: 'No completed trips yet', text: 'Your finished journeys and receipts will be kept here.' },
-  Cancelled: { title: 'No cancelled trips', text: 'Cancelled or declined bookings would appear here.' },
+  Upcoming: { title: 'No upcoming bookings', text: 'New reservations appear here with their live status.' },
+  Completed: { title: 'No completed journeys', text: 'Completed journeys and invoices will be listed here.' },
+  Cancelled: { title: 'No cancelled bookings', text: 'Cancelled or declined reservations will be listed here.' },
 };
 
-/** One booking as a single compact list row; the whole row opens the trip, small actions sit underneath. */
+/** The rider's boarding code for an open booking, once the booking has one (only the rider can read it). */
+function BoardingOtp({ id }: { id: string }) {
+  const [otp, setOtp] = useState<string | null>(null);
+  useEffect(() => subscribeToBoardingOtp(id, setOtp), [id]);
+  if (!otp) return null;
+  return (
+    <div className="bk__otp">
+      <span>
+        <strong>Boarding OTP</strong>
+        <small>Share only after you board the cab</small>
+      </span>
+      <b className="num" aria-label={`Boarding OTP ${otp.split('').join(' ')}`}>
+        {otp}
+      </b>
+    </div>
+  );
+}
+
+/** Corporate wording for what is still to be paid. */
+const SETTLEMENT: Record<string, string> = { 'Pay at drop': 'Payable at drop', 'Pay by UPI': 'Payable via UPI' };
+
+/** One booking, one card: date and status on top, the route, then vehicle and fare. The card opens the booking;
+ *  the actions sit on their own line underneath. */
 function TripRow({ trip, onCancel }: { trip: TripRecord; onCancel: (t: TripRecord) => void }) {
   const navigate = useNavigate();
   const { startFrom, categories } = useBooking();
   const chip = tripStatusChip(trip);
+  const tag = statusTag(trip);
   const pay = paymentLabel(trip);
   const when = trip.scheduledAt ?? trip.completedAt ?? trip.cancelledAt ?? trip.createdAt;
   const canCancel = trip.status !== 'Ongoing' && ['Pending', 'Approved', 'Confirmed', 'Assigned'].includes(trip.status) && cancellationQuote(trip).allowed;
   const total = trip.status === 'Completed' ? (trip.fareBreakdown?.total ?? trip.fare) + trip.tollCharges + (trip.extraCharges ?? 0) : trip.status === 'Cancelled' || trip.status === 'Rejected' ? trip.cancellationFee : trip.fare;
   const unrated = trip.status === 'Completed' && trip.rating == null;
   const canRebook = trip.status === 'Completed' && isValidLatLng(trip.pickup) && isValidLatLng(trip.drop);
+  const drop = trip.drop.id === 'place-local-disposal' ? 'Within the city' : trip.drop.name;
 
   return (
-    <li className="trow">
-      <Link className="trow__link" to={`/trips/${trip.id}`} aria-label={`Trip from ${trip.pickup.name} to ${trip.drop.name}, ${chip.label}`}>
-        <img className="trow__art" src={tripCategoryPhoto(categories, trip)} alt="" width={56} height={37} loading="lazy" decoding="async" />
-        <span className="trow__body">
-          <strong className="trow__route">
-            <span className="trow__place">{trip.pickup.name}</span>
-            <Icon name="arrow-right" size={14} />
-            <span className="trow__place">{trip.drop.name}</span>
-          </strong>
-          <span className="trow__status">
-            <span className="status-chip" style={{ color: chip.fg, background: chip.bg }}>
-              {chip.label}
-            </span>
-          </span>
-          <span className="trow__meta">
-            {trip.isScheduled && trip.status !== 'Completed' ? 'Pickup ' : ''}
-            {when ? `${formatDate(when)} · ${formatTime(when)}` : trip.date} · {trip.categoryName}
-            {trip.tripType && trip.tripType !== 'One Way' ? ` · ${trip.tripType}` : ''}
+    <li className="bk">
+      <Link className="bk__link" to={`/trips/${trip.id}`} aria-label={`Booking from ${trip.pickup.name} to ${drop}, ${tag}`}>
+        <span className="bk__top">
+          <span className="bk__when">{when ? `${formatDate(when)} · ${formatTime(when)}` : trip.date}</span>
+          <span className="bk__tag" style={{ color: chip.fg, background: chip.bg }}>
+            {tag}
           </span>
         </span>
-        <span className="trow__end">
-          <strong className="num trow__fare">{total > 0 || trip.status === 'Completed' ? formatINR(total) : ''}</strong>
-          <small className={`pay-${pay.tone}`}>{pay.text}</small>
+        <span className="bk__route">
+          <span className="bk__from">{trip.pickup.name}</span>
+          <span className="bk__to">{drop}</span>
+        </span>
+        <span className="bk__foot">
+          <img className="bk__art" src={tripCategoryPhoto(categories, trip)} alt="" width={52} height={34} loading="lazy" decoding="async" />
+          <span className="bk__cab">
+            <strong>{tripCategoryName(categories, trip)}</strong>
+            <small>{trip.tripType}</small>
+          </span>
+          <span className="bk__fare">
+            <strong className="num">{total > 0 || trip.status === 'Completed' ? formatINR(total) : ''}</strong>
+            <small className={`pay-${pay.tone}`}>{SETTLEMENT[pay.text] ?? pay.text}</small>
+          </span>
         </span>
       </Link>
-      {unrated || canRebook || canCancel ? (
-        <div className="trow__actions">
-          {unrated ? (
-            <Link className="trow__act" to={`/trips/${trip.id}`}>
-              Rate trip
-            </Link>
-          ) : null}
-          {canRebook ? (
-            <button
-              type="button"
-              className="trow__act"
-              onClick={() => {
-                startFrom(trip.pickup, trip.drop);
-                navigate('/book');
-              }}
-            >
-              Book again
-            </button>
-          ) : null}
-          {canCancel ? (
-            <button type="button" className="trow__act trow__act--danger" onClick={() => onCancel(trip)}>
-              Cancel booking
-            </button>
-          ) : null}
-        </div>
-      ) : null}
+      {tabOfTrip(trip) === 'Upcoming' ? <BoardingOtp id={trip.id} /> : null}
+      <div className="bk__actions">
+        {canCancel ? (
+          <button type="button" className="bk__act bk__act--danger" onClick={() => onCancel(trip)}>
+            Cancel booking
+          </button>
+        ) : null}
+        {unrated ? (
+          <Link className="bk__act" to={`/trips/${trip.id}`}>
+            Rate journey
+          </Link>
+        ) : null}
+        {canRebook ? (
+          <button
+            type="button"
+            className="bk__act"
+            onClick={() => {
+              startFrom(trip.pickup, trip.drop);
+              navigate('/book');
+            }}
+          >
+            Rebook
+          </button>
+        ) : null}
+        <Link className="bk__act bk__act--view" to={`/trips/${trip.id}`}>
+          View details <Icon name="arrow-right" size={13} />
+        </Link>
+      </div>
     </li>
   );
 }
@@ -145,7 +172,7 @@ export function TripsPage() {
         Track what’s coming up and find receipts for what you’ve taken.
       </PageHead>
 
-      <div className="page">
+      <div className="page page--bookings">
         <TourQuotes brand="people_taxi" />
         <div className="toolbar">
           <div className="tabs tabs--trips" role="tablist" aria-label="Trip status">
@@ -170,7 +197,7 @@ export function TripsPage() {
             <label className="sr-only" htmlFor="trip-search">
               Search trips
             </label>
-            <input id="trip-search" type="search" placeholder="Search place or booking ID" value={query} onChange={(e) => setQuery(e.target.value)} />
+            <input id="trip-search" type="search" placeholder="Search by location or reference" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
         </div>
 
@@ -225,7 +252,7 @@ export function TripsPage() {
             </div>
           ) : (
             <>
-              <ul className="trip-list">
+              <ul className="bk-list">
                 {shown.slice(0, limit).map((t) => (
                   <TripRow key={t.id} trip={t} onCancel={setCancelTrip} />
                 ))}

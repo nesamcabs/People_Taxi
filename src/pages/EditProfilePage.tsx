@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useCustomerData } from '@core/context/CustomerData';
 import { Button, EmptyState, PageHead } from '@/components/ui';
-import { PersonalDetailsForm } from '@/components/ProfileForms';
+import { EmergencyContactForm, PersonalDetailsForm } from '@/components/ProfileForms';
 import { useAuth } from '@/state/Auth';
 import { useSeo } from '@/lib/seo';
 
@@ -37,6 +37,8 @@ export function EditProfilePage() {
       <div className="page">
         <div className="card simple-form-wrap">
           <PersonalDetailsForm onDone={leave} onCancel={leave} />
+          <h3 className="profile-sub">Emergency contact</h3>
+          <EmergencyContactForm onDone={leave} />
         </div>
       </div>
     </>

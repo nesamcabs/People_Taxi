@@ -1,0 +1,153 @@
+/* ── Side drawer (menu), corporate style ─────────────────────────────────────────────────────────────────────────
+   The same visual language as the booking pages (ride-corp.css): a pale grey canvas, white cards with one thin border,
+   small uppercase section headings with a short brand-blue bar, and one set of line icons in soft blue tiles.
+   The account sits on top as a deep navy card (theme ink), with a "Verified" badge and the emergency contact on a white
+   strip below. Loaded last, so it settles the earlier drawer / account rules. */
+
+/* Menu button: crisp ink bars; the shorter blue middle bar slides out to full length on hover. */
+html body .topbar .menu-btn { border-radius: 12px; color: #0c1b3d; transition: background 0.18s ease; }
+html body .topbar .menu-btn:hover { background: #edf4ff; }
+html body .topbar .menu-btn:focus-visible { outline: 2px solid var(--brand, #1665e8); outline-offset: 2px; }
+html body .topbar .menu-btn .menu-icon { display: block; margin: auto; }
+html body .topbar .menu-btn .menu-icon__mid { transform-box: fill-box; transform-origin: left center; transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1); }
+html body .topbar .menu-btn:hover .menu-icon__mid,
+html body .topbar .menu-btn[aria-expanded='true'] .menu-icon__mid { transform: scaleX(1.6); }
+
+/* Panel, header and close button. */
+html body .drawer--profile .drawer__panel { background: #f4f6fb; }
+html body .drawer--profile .drawer__head { padding: 12px 12px 12px 18px; border-bottom: 1px solid #e3e8f1; background: #fff; }
+html body .drawer--profile .drawer__close {
+  width: 36px; height: 36px; border: 1px solid #e3e8f1; border-radius: 10px; background: #fff; color: #0f1f3d;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+html body .drawer--profile .drawer__close:hover { border-color: #a9c8fb; background: #edf4ff; color: var(--brand, #1665e8); }
+html body .drawer--profile .drawer__body { padding: 16px 14px 28px; }
+html body .drawer--profile .account--drawer,
+html body .drawer--profile .account--drawer .account__groups { gap: 18px; }
+
+/* Account card: deep navy with a soft blue glow, white type. */
+html body .drawer--profile .profile-card.profile-card--combined {
+  border: 0;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgb(42 123 255 / 0.42) 0%, rgb(42 123 255 / 0) 58%),
+    linear-gradient(135deg, #0c1b3d 0%, #13265a 60%, #1d3475 100%);
+  box-shadow: 0 16px 30px -20px rgb(12 27 61 / 0.75);
+}
+html body .drawer--profile .profile-card--combined .profile-card__head { padding: 18px 14px 18px 16px; background: transparent; }
+html body .drawer--profile .profile-card--combined .profile-card__photo { box-shadow: 0 0 0 2px rgb(255 255 255 / 0.9); }
+html body .drawer--profile .profile-card--combined .profile-card__cam { background: #fff; color: #0c1b3d; box-shadow: 0 0 0 2px #13265a; }
+html body .drawer--profile .profile-card__eyebrow {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 3px;
+  color: rgb(255 255 255 / 0.62); font-size: 0.625rem; font-weight: 900; letter-spacing: 0.16em; line-height: 1.4; text-transform: uppercase;
+}
+html body .drawer--profile .profile-card__badge {
+  display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px 1px 5px; border-radius: 999px;
+  background: rgb(34 197 94 / 0.18); color: #86efac; font-size: 0.5625rem; letter-spacing: 0.1em;
+}
+html body .drawer--profile .profile-card--combined .profile-card__name { color: #fff; font-size: 1.0625rem; font-weight: 800; }
+html body .drawer--profile .profile-card--combined .profile-card__sub { color: rgb(255 255 255 / 0.74); font-weight: 600; }
+html body .drawer--profile .profile-card--combined .profile-card__open > .icon { color: rgb(255 255 255 / 0.55); }
+html body .drawer--profile .profile-card--combined .profile-card__open:hover > .icon,
+html body .drawer--profile .profile-card--combined .profile-card__open.is-open > .icon { color: #fff; }
+html body .drawer--profile .profile-card--combined .profile-card__open:focus-visible { outline-color: #fff; }
+html body .drawer--profile .profile-card--combined .profile-card__head + .inline-edit { padding-top: 14px; }
+html body .drawer--profile .profile-card--combined .profile-card__extra { border-top: 0; background: #fff; }
+html body .drawer--profile .profile-card--combined .profile-card__extra .setting { min-height: 56px; padding: 8px 14px; }
+html body .drawer--profile .profile-card--combined .profile-card__extra .setting:hover { background: #f7f9fd; }
+
+/* Signed out: a compact welcome card in the same navy, with a white Sign in button. */
+html body .drawer--profile .drawer-welcome {
+  display: grid; justify-items: start; gap: 4px; padding: 20px 18px 18px; border-radius: 18px; color: #fff;
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgb(42 123 255 / 0.42) 0%, rgb(42 123 255 / 0) 58%),
+    linear-gradient(135deg, #0c1b3d 0%, #13265a 60%, #1d3475 100%);
+  box-shadow: 0 16px 30px -20px rgb(12 27 61 / 0.75);
+}
+html body .drawer--profile .drawer-welcome__eyebrow { color: rgb(255 255 255 / 0.62); font-size: 0.625rem; font-weight: 900; letter-spacing: 0.16em; text-transform: uppercase; }
+html body .drawer--profile .drawer-welcome__title { color: #fff; font-size: 1.125rem; font-weight: 800; line-height: 1.3; letter-spacing: -0.01em; }
+html body .drawer--profile .drawer-welcome__text { margin: 0 0 10px; color: rgb(255 255 255 / 0.74); font-size: 0.8125rem; font-weight: 600; line-height: 1.45; }
+html body .drawer--profile .drawer-welcome__btn {
+  min-height: 42px; padding: 0 22px; border: 0; border-radius: 12px; background: #fff; color: #0c1b3d;
+  font: inherit; font-size: 0.875rem; font-weight: 800; cursor: pointer; transition: background 0.18s ease, transform 0.18s ease;
+}
+html body .drawer--profile .drawer-welcome__btn:hover { background: #edf4ff; transform: translateY(-1px); }
+html body .drawer--profile .drawer-welcome__btn:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* Section headings: small caps with a short brand-blue bar. */
+html body .drawer--profile .account .group { gap: 8px; }
+html body .drawer--profile .account .group > h2.eyebrow {
+  position: relative; display: block; width: auto; margin: 0 0 0 2px; padding: 0 0 0 11px; background: none;
+  color: #5b6780; font-size: 0.65625rem; font-weight: 900; letter-spacing: 0.14em; line-height: 1.4;
+}
+html body .drawer--profile .account .group > h2.eyebrow::before {
+  content: ''; position: absolute; top: 50%; left: 0; width: 3px; height: 12px; margin-top: -6px; border-radius: 2px; background: var(--brand, #1665e8);
+}
+
+/* Menu cards and rows. */
+html body .drawer--profile .account .card--list { border: 1px solid #e3e8f1; border-radius: 16px; background: #fff; box-shadow: 0 1px 2px rgb(15 23 42 / 0.04); }
+html body .drawer--profile .account .setting { min-height: 62px; padding: 10px 14px; gap: 12px; color: #0f1f3d; }
+html body .drawer--profile .account .setting + .setting { border-top: 1px solid #eef1f6; }
+html body .drawer--profile .account a.setting:hover,
+html body .drawer--profile .account button.setting:hover { background: #f7f9fd; }
+html body .drawer--profile .account .setting__label { color: #0f1f3d; font-size: 0.90625rem; font-weight: 800; letter-spacing: -0.005em; }
+html body .drawer--profile .account .setting__value { color: #7b879d; font-size: 0.78rem; font-weight: 700; }
+html body .drawer--profile .account .setting > .icon:last-child { color: #a3adbf; }
+html body .drawer--profile .account .setting:hover > .icon:last-child { color: var(--brand, #1665e8); transform: translateX(3px); }
+
+/* Icon tiles: soft blue, filling blue on hover; the emergency row is red. */
+html body .drawer--profile .account .setting__icon--line {
+  display: grid; place-items: center; flex: none; width: 38px; height: 38px;
+  border: 1px solid #d6e6ff; border-radius: 11px; background: #edf4ff; color: var(--brand, #1665e8);
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease;
+}
+html body .drawer--profile .account .setting:hover .setting__icon--line { border-color: var(--brand, #1665e8); background: var(--brand, #1665e8); color: #fff; transform: none; }
+html body .drawer--profile .account .setting--red .setting__icon--line { border-color: #fbd5d1; background: #fff1f0; color: #d92d20; }
+html body .drawer--profile .account .setting--red:hover .setting__icon--line { border-color: #d92d20; background: #d92d20; color: #fff; }
+
+/* Log out: a quiet outlined button on its own. */
+html body .drawer--profile .drawer-signout {
+  display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 48px;
+  border: 1px solid #f3d0cd; border-radius: 14px; background: #fff; color: #b42318;
+  font: inherit; font-size: 0.90625rem; font-weight: 800; cursor: pointer;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+html body .drawer--profile .drawer-signout:hover { border-color: #e9a29b; background: #fff5f4; }
+html body .drawer--profile .drawer-signout:focus-visible { outline: 2px solid #b42318; outline-offset: 2px; }
+html body .drawer--profile .account__legal { margin: 12px 0 0; color: #8a94a8; font-size: 0.6875rem; font-weight: 600; letter-spacing: 0.02em; }
+
+/* Two-line rows (label + short description), here and on the account page. */
+.setting__text { display: grid; flex: 1 1 auto; gap: 1px; min-width: 0; }
+.setting__text .setting__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setting__hint { overflow: hidden; color: var(--muted, #5b6472); font-size: 0.75rem; font-weight: 600; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+html body .drawer--profile .setting__hint { color: #66728a; }
+
+@media (prefers-reduced-motion: reduce) {
+  html body .topbar .menu-btn .menu-icon__mid,
+  html body .drawer--profile .account .setting__icon--line { transition: none; }
+}
+
+/* Smaller photo, and the editor's second block */
+html body .drawer--profile .profile-card--combined .profile-card__head { padding: 14px 14px 14px 16px; }
+html body .drawer--profile .profile-card--combined .profile-card__photo { box-shadow: 0 0 0 2px rgb(255 255 255 / 0.9); }
+html body .drawer--profile .profile-card--combined .profile-card__cam { width: 20px; height: 20px; right: -3px; bottom: -3px; }
+html body .drawer--profile .profile-card--combined .inline-edit { background: #fff; }
+.profile-sub { margin: 16px 0 8px; padding-top: 14px; border-top: 1px solid #e3e8f1; color: #0f1f3d; font-size: .7rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.email-verify { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: -4px 0 0; color: #8a4b05; font-size: .75rem; font-weight: 700; }
+.email-verify button { min-height: 32px; padding: 0 12px; border: 1.5px solid var(--brand, #1665e8); border-radius: 9px; background: #fff; color: var(--brand, #1665e8); font: inherit; font-weight: 800; cursor: pointer; }
+.email-verify button:disabled { opacity: .6; cursor: progress; }
+.email-verify small { flex-basis: 100%; color: #b42318; font-size: .72rem; }
+.email-verify--ok { color: #14713c; }
+
+/* The initial sits in the middle of the smaller photo */
+html body .drawer--profile .profile-card--combined .profile-card__photo .avatar { display: grid; place-items: center; line-height: 1; }
+
+/* Compact editor: no blank stretches, Save and Cancel side by side with the field above */
+html body .drawer--profile .inline-edit .simple-form { gap: 10px; padding: 12px; }
+html body .drawer--profile .inline-edit .field { gap: 4px; margin: 0; min-height: 0; }
+html body .drawer--profile .inline-edit .field > :not(label):not(input):not(.input):not([class*="prefix"]):not([class*="wrap"]):not([class*="control"]):not([class*="error"]) { display: none; }
+html body .drawer--profile .inline-edit .btn { min-height: 44px; margin: 0; }
+html body .drawer--profile .inline-edit .btn--ghost { min-height: 36px; }
+html body .drawer--profile .inline-edit .simple-form__lead { display: none; }
+html body .drawer--profile .inline-edit .email-verify { margin: -4px 0 0; }
+html body .drawer--profile .inline-edit .profile-sub { margin: 10px 0 8px; }

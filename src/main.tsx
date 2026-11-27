@@ -46,6 +46,8 @@ import './styles/route-form.css';
 import './styles/logo-anim.css';
 import './styles/bookform-premium.css';
 import './styles/responsive-shell.css';
+import './styles/ride-corp.css';
+import './styles/drawer-corp.css';
 import { keepHomeBehindEveryScreen } from './lib/homeNav';
 import { installStaleVersionReload, installVersionCheck } from '@/shared/components/RouteErrorBoundary';
 import { prefetchWhenIdle, registerDeviceCache } from '@/lib/deviceCache';

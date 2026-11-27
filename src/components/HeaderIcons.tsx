@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 /** Full-colour flat icons for the phone header buttons (Help, My trips, Notifications), in the same two-tone style as the map
  *  icon on the location buttons: each shape is split into a lighter left half and a deeper right half. Fixed colours. */
 type P = { size?: number };
@@ -48,96 +50,142 @@ export function BellIcon({ size = 22 }: P) {
   );
 }
 
-/* ── Glossy sticker icons for the phone header ─────────────────────────────────────────────────────────────────
-   One set in the same style: a thick navy outline, a glossy blue body (light top-left to deep bottom-right, with a
-   white shine) and warm cream accents. Drawn on a 48-unit grid so the detail stays crisp at header size. */
-const NAVY = '#1b2a6b';
-const BlueFill = ({ id }: { id: string }) => (
+/* ── Sticker icons for the header (Help, My bookings, Notifications) ─────────────────────────────────────────────
+   One set in the app theme: the brand blue gradient (--brand-gradient) for the main shape, a dark ink outline (--ink) so
+   each shape stands out clearly on the white header, white / light brand-tint details, and the brand blue (--brand) for
+   accents. Drawn on a 48-unit grid so the detail stays crisp at header size.
+   Gradient ids are unique per copy: the header renders a desktop copy too (hidden on phones, and first in the page), and a
+   shared id would point the phone copy at that hidden gradient, which does not paint, so the shape would show empty. */
+const INK = '#0c1b3d';
+const BRAND = '#1665e8';
+const BrandFill = ({ id }: { id: string }) => (
   <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
-    <stop offset="0" stopColor="#6a96ff" />
-    <stop offset="0.5" stopColor="#2a58e4" />
-    <stop offset="1" stopColor="#1638a8" />
+    <stop offset="0" stopColor="#2a7bff" />
+    <stop offset="0.55" stopColor="#1451d6" />
+    <stop offset="1" stopColor="#0d3aa8" />
   </linearGradient>
 );
-const CreamFill = ({ id }: { id: string }) => (
+const TintFill = ({ id }: { id: string }) => (
   <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-    <stop offset="0" stopColor="#fffaf0" />
-    <stop offset="1" stopColor="#f0e0bd" />
+    <stop offset="0" stopColor="#ffffff" />
+    <stop offset="1" stopColor="#d6e6ff" />
   </linearGradient>
 );
 
-/** Help: a cream chat bubble with three dots, and a glossy blue phone handset in front of it. */
+/** Help: a white chat bubble with three brand-blue dots, and a brand-blue phone handset in front of it. */
 export function SupportChatIcon({ size = 34 }: P) {
+  const uid = useId();
+  const b = `${uid}sup-b`;
+  const t = `${uid}sup-t`;
   return (
     <svg {...base(size, 'hdr-icon--support', '0 0 48 48')}>
       <defs>
-        <BlueFill id="hi-sup-b" />
-        <CreamFill id="hi-sup-c" />
+        <BrandFill id={b} />
+        <TintFill id={t} />
       </defs>
-      <path d="M25 7.5h11a9.5 9.5 0 0 1 0 19h-5l-6.6 5.4.7-5.5A9.5 9.5 0 0 1 25 7.5z" fill="url(#hi-sup-c)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
-      <circle cx="25" cy="17" r="2" fill={NAVY} />
-      <circle cx="30.5" cy="17" r="2" fill={NAVY} />
-      <circle cx="36" cy="17" r="2" fill={NAVY} />
+      <path d="M25 7.5h11a9.5 9.5 0 0 1 0 19h-5l-6.6 5.4.7-5.5A9.5 9.5 0 0 1 25 7.5z" fill={`url(#${t})`} stroke={INK} strokeWidth="2.2" strokeLinejoin="round" />
+      <circle cx="25" cy="17" r="2.1" fill={BRAND} />
+      <circle cx="30.5" cy="17" r="2.1" fill={BRAND} />
+      <circle cx="36" cy="17" r="2.1" fill={BRAND} />
       <g transform="translate(-1 17) scale(1.25)">
         <path
           d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
-          fill="url(#hi-sup-b)"
-          stroke={NAVY}
+          fill={`url(#${b})`}
+          stroke={INK}
           strokeWidth="1.76"
           strokeLinejoin="round"
         />
-        <ellipse cx="5.4" cy="5.6" rx="0.9" ry="1.9" fill="#fff" opacity="0.6" transform="rotate(-24 5.4 5.6)" />
-        <path d="M6.6 11.6c1.4 2.4 3.4 4.4 5.8 5.8" fill="none" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.1" strokeLinecap="round" />
+        <ellipse cx="5.4" cy="5.6" rx="0.9" ry="1.9" fill="#fff" opacity="0.65" transform="rotate(-24 5.4 5.6)" />
+        <path d="M6.6 11.6c1.4 2.4 3.4 4.4 5.8 5.8" fill="none" stroke="#fff" strokeOpacity="0.4" strokeWidth="1.1" strokeLinecap="round" />
       </g>
     </svg>
   );
 }
 
-/** My trips: a glossy blue taxi (cream roof sign) in front of a cream ride ticket with a blue tick. */
-export function TaxiTicketIcon({ size = 34 }: P) {
+/** My bookings: a corporate look — a brand-blue executive sedan (side view, light glass, white trim) in front of a booking
+ *  calendar with a brand-blue header band and a confirmed tick. */
+export function BookingCarIcon({ size = 34 }: P) {
+  const uid = useId();
+  const body = `${uid}car-body`;
+  const glass = `${uid}car-glass`;
   return (
-    <svg {...base(size, 'hdr-icon--taxi', '0 0 48 48')}>
+    <svg {...base(size, 'hdr-icon--booking', '0 0 48 48')}>
       <defs>
-        <BlueFill id="hi-taxi-b" />
-        <CreamFill id="hi-taxi-c" />
+        <BrandFill id={body} />
+        <linearGradient id={glass} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#a9c8fb" />
+        </linearGradient>
       </defs>
-      <g transform="rotate(10 34 18)">
-        <path d="M23 6h20a2 2 0 0 1 2 2v6a3 3 0 0 0 0 6v6a2 2 0 0 1-2 2H23a2 2 0 0 1-2-2v-6a3 3 0 0 0 0-6V8a2 2 0 0 1 2-2z" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
-        <path d="M28 17.2l3.6 3.6 7.4-8" fill="none" stroke="#2453e0" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
-      </g>
-      <g transform="translate(-3 4)">
-        <rect x="17.5" y="9.6" width="9" height="4.6" rx="1.6" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="2" />
-        <rect x="8.5" y="34.5" width="6" height="5.5" rx="1.8" fill={NAVY} />
-        <rect x="29.5" y="34.5" width="6" height="5.5" rx="1.8" fill={NAVY} />
-        <path d="M5 34v-6.5c0-1.2.6-2.3 1.6-3l3.4-2.4 3-6.2c.6-1.2 1.8-1.9 3.1-1.9h11.8c1.3 0 2.5.7 3.1 1.9l3 6.2 3.4 2.4c1 .7 1.6 1.8 1.6 3V34c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2z" fill="url(#hi-taxi-b)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
-        <path d="M14.5 21.5l2.2-4.6c.3-.6.9-1 1.6-1h9.4c.7 0 1.3.4 1.6 1l2.2 4.6z" fill="#dce8ff" stroke={NAVY} strokeWidth="1.8" strokeLinejoin="round" />
-        <circle cx="10.6" cy="28.6" r="2.2" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="1.4" />
-        <circle cx="33.4" cy="28.6" r="2.2" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="1.4" />
-        <rect x="17.5" y="27.2" width="9" height="3.2" rx="1.6" fill={NAVY} />
-        <path d="M9 25.2h6" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.4" strokeLinecap="round" />
+      <g transform="translate(0 2.5)">
+        {/* Booking calendar: white card, brand-blue header band, white binder rings, brand-blue tick. */}
+        <rect x="22" y="4.5" width="22" height="20" rx="3" fill="#fff" stroke={INK} strokeWidth="2.2" />
+        <path d="M23.1 11.5v-4a1.9 1.9 0 0 1 1.9-1.9h16a1.9 1.9 0 0 1 1.9 1.9v4z" fill={BRAND} />
+        <path d="M22 11.5h22" stroke={INK} strokeWidth="1.6" />
+        <rect x="26.6" y="2" width="2.6" height="5.4" rx="1.3" fill="#fff" stroke={INK} strokeWidth="1.4" />
+        <rect x="36.8" y="2" width="2.6" height="5.4" rx="1.3" fill="#fff" stroke={INK} strokeWidth="1.4" />
+        <path d="M29 15.8l2.5 2.5 5-5.2" fill="none" stroke={BRAND} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+        {/* Executive sedan, facing right. */}
+        <path
+          d="M3 34v-2.6c0-1.2.8-2.2 2-2.5l6-1.3 4.4-5.2c.8-.9 1.9-1.4 3.1-1.4h10.1c1.2 0 2.3.5 3.1 1.4l4.5 5 5.6 1.2c1.3.3 2.2 1.4 2.2 2.8V34c0 1.1-.9 2-2 2h-1.8a5.2 5.2 0 0 0-10.4 0H17.2a5.2 5.2 0 0 0-10.4 0H5c-1.1 0-2-.9-2-2z"
+          fill={`url(#${body})`}
+          stroke={INK}
+          strokeWidth="2.2"
+          strokeLinejoin="round"
+        />
+        <path d="M15.9 27l3-3.6c.3-.4.8-.6 1.3-.6H28c.5 0 1 .2 1.3.6l3.3 3.6z" fill={`url(#${glass})`} stroke={INK} strokeWidth="1.4" strokeLinejoin="round" />
+        <path d="M24.4 22.8V27" stroke={INK} strokeWidth="1.8" />
+        <path d="M6.5 29.7H40.5" stroke="#fff" strokeOpacity="0.6" strokeWidth="1.1" strokeLinecap="round" />
+        <path d="M19.6 31.6h2.4M27.4 31.6h2.4" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
+        <rect x="40.8" y="30.2" width="2.6" height="1.6" rx="0.8" fill="#fff6d9" />
+        <rect x="3.6" y="30.4" width="1.8" height="1.6" rx="0.6" fill="#ff6b5e" />
+        <circle cx="12" cy="36" r="3.9" fill={INK} />
+        <circle cx="35" cy="36" r="3.9" fill={INK} />
+        <circle cx="12" cy="36" r="1.6" fill="#fff" />
+        <circle cx="35" cy="36" r="1.6" fill="#fff" />
       </g>
     </svg>
   );
 }
 
-/** Notifications: a glossy blue bell with a coral clapper and cream "ringing" marks. The `.hdr-icon__bell` group swings
- *  when something is unread. */
+/** Notifications: an upright brand-blue bell with a white band, a light clapper and brand-blue sound waves either side.
+ *  The `.hdr-icon__bell` group swings when something is unread (the waves stay still). */
 export function BellRingIcon({ size = 34 }: P) {
+  const uid = useId();
+  const body = `${uid}bell-body`;
+  const t = `${uid}bell-t`;
   return (
     <svg {...base(size, 'hdr-icon--bell', '0 0 48 48')}>
       <defs>
-        <BlueFill id="hi-bell-b" />
+        <BrandFill id={body} />
+        <TintFill id={t} />
       </defs>
+      <path d="M9.2 10.8C7.4 12.8 6.4 15.6 6.4 18.6M38.8 10.8c1.8 2 2.8 4.8 2.8 7.8" fill="none" stroke={BRAND} strokeWidth="2.8" strokeLinecap="round" />
       <g className="hdr-icon__bell">
-        <g transform="rotate(16 22 22)">
-          <circle cx="22" cy="39.4" r="3.9" fill="#ff6b5e" stroke={NAVY} strokeWidth="2" />
-          <path d="M22 5.5a3 3 0 0 0-3 3v1.1C13.2 11 10 16.2 10 22v7.6l-3.4 4.1c-.7.9-.1 2.2 1 2.2h28.8c1.1 0 1.7-1.3 1-2.2L34 29.6V22c0-5.8-3.2-11-9-12.4V8.5a3 3 0 0 0-3-3z" fill="url(#hi-bell-b)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
-          <path d="M10.5 31.2h23" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.6" strokeLinecap="round" />
-          <ellipse cx="16" cy="19" rx="1.9" ry="5.4" fill="#fff" opacity="0.5" transform="rotate(16 16 19)" />
-        </g>
+        <circle cx="24" cy="38.2" r="3.4" fill={`url(#${t})`} stroke={INK} strokeWidth="2" />
+        <circle cx="24" cy="7.6" r="2.6" fill={`url(#${body})`} stroke={INK} strokeWidth="2" />
+        <path
+          d="M24 9.6c-6.6 0-11 5-11 11.6v7.4l-3.2 4c-.7.9-.1 2.2 1 2.2h26.4c1.1 0 1.7-1.3 1-2.2l-3.2-4v-7.4c0-6.6-4.4-11.6-11-11.6z"
+          fill={`url(#${body})`}
+          stroke={INK}
+          strokeWidth="2.2"
+          strokeLinejoin="round"
+        />
+        <path d="M13.8 29.4h20.4" stroke="#fff" strokeOpacity="0.75" strokeWidth="1.4" strokeLinecap="round" />
+        <ellipse cx="18.6" cy="19.4" rx="1.5" ry="4.4" fill="#fff" opacity="0.5" transform="rotate(14 18.6 19.4)" />
       </g>
-      <path d="M37.2 9.6l3.4-3.8M40.6 15.6l4.4-1.6" stroke={NAVY} strokeWidth="4.6" strokeLinecap="round" />
-      <path d="M37.2 9.6l3.4-3.8M40.6 15.6l4.4-1.6" stroke="#f6e7c4" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+/** Menu (opens the side drawer): three crisp left-aligned bars in ink, the middle one shorter and in the brand blue.
+ *  On hover the middle bar slides out to full length (header-icons.css). */
+export function MenuIcon({ size = 26 }: P) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} className="menu-icon" aria-hidden="true" focusable="false" fill="none" strokeWidth="2.3" strokeLinecap="round">
+      <path d="M4 6.5h16" stroke={INK} />
+      <path className="menu-icon__mid" d="M4 12h10" stroke={BRAND} />
+      <path d="M4 17.5h13" stroke={INK} />
     </svg>
   );
 }
