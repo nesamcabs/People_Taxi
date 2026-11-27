@@ -94,33 +94,19 @@ export function DonePage() {
       : { title: 'Complete your payment to confirm', text: 'Your booking is saved. It is confirmed once your online payment is completed.', tone: 'pending' as const }
     : headline(trip);
   const at = trip.scheduledAt;
+  const dropName = trip.drop.id === 'place-local-disposal' ? 'Within the city' : trip.drop.name;
+  // The seal on the hero: a tick once the booking stands, a clock while a payment is still awaited, a cross if cancelled.
+  const seal = h.tone === 'bad' ? 'circle-xmark' : awaitingPayment ? 'clock' : 'check';
 
   return (
     <div className="flow-page flow-page--done">
       <div className="wrap flow-page__wrap">
         <div className="dn">
+          {/* Hero: corporate navy with a seal, the headline and a reassurance line */}
           <section className={`dn-hero dn-hero--${h.tone}`}>
-            <i className="dn-hero__spark" aria-hidden="true" />
-            <i className="dn-hero__spark" aria-hidden="true" />
-            <i className="dn-hero__spark" aria-hidden="true" />
-            <i className="dn-hero__spark" aria-hidden="true" />
-            {h.tone !== 'bad' ? (
-              <div className="dn-scene" aria-hidden="true">
-                <span className="dn-scene__stop" />
-                <span className="dn-scene__road" />
-                <span className="dn-scene__trail" />
-            <svg className="dn-scene__car" viewBox="0 0 120 52" focusable="false">
-              <path className="body" d="M6 36c0-4 2-6 6-7l14-3 14-14c2-2 4-3 7-3h26c4 0 7 1 9 4l11 13 12 3c4 1 6 3 6 7v4c0 2-2 4-4 4h-8a11 11 0 0 0-22 0H46a11 11 0 0 0-22 0H10c-2 0-4-2-4-4Z" />
-              <path className="glass" d="M40 26l9-10c1-1 2-2 4-2h22c2 0 3 1 4 2l8 10Z" />
-              <rect className="lamp" x="108" y="30" width="7" height="5" rx="2" />
-              <circle className="tyre" cx="35" cy="42" r="8.5" />
-              <circle className="tyre" cx="95" cy="42" r="8.5" />
-              <circle className="hub" cx="35" cy="42" r="3" />
-              <circle className="hub" cx="95" cy="42" r="3" />
-            </svg>
-                <span className="dn-scene__pin" />
-              </div>
-            ) : null}
+            <span className={`dn-hero__seal dn-hero__seal--${seal}`} aria-hidden="true">
+              <Icon name={seal} size={26} />
+            </span>
             <h1>{h.title}</h1>
             <p className="dn-hero__text">{h.text}</p>
             <p className="dn-hero__saved">
@@ -128,52 +114,62 @@ export function DonePage() {
             </p>
           </section>
 
-          <section className="dn-ticket" aria-label="Trip summary">
-            <header className="dn-ticket__head">
-              <span className="dn-ticket__brand">PEOPLE TAXI</span>
-              <span className="dn-ticket__id">
+          {/* Ride pass: booking ID, pickup → drop side by side, a tear line, then the trip facts and the status */}
+          <section className="dn-pass" aria-label="Trip summary">
+            <header className="dn-pass__head">
+              <span className="dn-pass__brand">People Taxi · Ride pass</span>
+              <span className="dn-pass__id">
                 <small>Booking ID</small>
                 <strong className="num">{bookingRef(trip)}</strong>
               </span>
             </header>
-            <ol className="dn-trip">
-              <li>
+
+            <div className="dn-pass__route">
+              <div className="dn-pass__end">
                 <small>Pickup</small>
                 <strong>{trip.pickup.name}</strong>
-              </li>
-              <li>
+              </div>
+              <div className="dn-pass__line" aria-hidden="true">
+                <i />
+                <span className="dn-pass__cab">
+                  <Icon name="car" size={16} />
+                </span>
+                <i />
+              </div>
+              <div className="dn-pass__end dn-pass__end--to">
                 <small>Drop</small>
-                <strong>{trip.drop.id === 'place-local-disposal' ? 'Within the city' : trip.drop.name}</strong>
-              </li>
-            </ol>
-            <div className="dn-facts">
-              <div className="dn-fact">
-                <Icon name="calendar" size={18} />
-                <span>
-                  <small>Pickup date</small>
-                  <strong>{at ? formatDate(at) : '—'}</strong>
-                </span>
-              </div>
-              <div className="dn-fact">
-                <Icon name="clock" size={18} />
-                <span>
-                  <small>Pickup time</small>
-                  <strong>{at ? formatTime(at) : '—'}</strong>
-                </span>
-              </div>
-              <div className="dn-fact dn-fact--wide">
-                <Icon name="car" size={18} />
-                <span>
-                  <strong>{trip.categoryName}</strong>
-                  <small>
-                    {tripTypeLabel(trip.tripType)} · {trip.paymentMethod === 'UPI' ? 'Pay driver by UPI' : 'Pay driver in cash'}
-                  </small>
-                </span>
+                <strong>{dropName}</strong>
               </div>
             </div>
+
+            <span className="dn-pass__tear" aria-hidden="true" />
+
+            <dl className="dn-pass__facts">
+              <div>
+                <dt>Pickup date</dt>
+                <dd>{at ? formatDate(at) : '—'}</dd>
+              </div>
+              <div>
+                <dt>Pickup time</dt>
+                <dd className="num">{at ? formatTime(at) : '—'}</dd>
+              </div>
+              <div>
+                <dt>Cab</dt>
+                <dd>{trip.categoryName}</dd>
+              </div>
+              <div>
+                <dt>Trip · Payment</dt>
+                <dd>
+                  {tripTypeLabel(trip.tripType)} · {trip.paymentMethod === 'UPI' ? 'UPI to driver' : 'Cash to driver'}
+                </dd>
+              </div>
+            </dl>
+
             <p className={`dn-status dn-status--${h.tone}`}>
-              <Icon name={h.tone === 'ok' ? 'check' : h.tone === 'bad' ? 'circle-xmark' : 'clock'} size={15} /> Status:{' '}
-              {h.tone === 'pending' ? 'Awaiting Dispatch Review' : h.title}
+              <Icon name={h.tone === 'ok' ? 'check' : h.tone === 'bad' ? 'circle-xmark' : 'clock'} size={15} />
+              <span>
+                <small>Status</small> {h.tone === 'pending' ? 'Awaiting dispatch review' : h.title}
+              </span>
             </p>
           </section>
 
@@ -198,6 +194,7 @@ export function DonePage() {
           logo={BRAND_LOGO}
           code={bookingRef(trip)}
           message="We will share the driver details before pickup."
+          trip={{ from: trip.pickup.name, to: dropName, when: at ? `${formatDate(at)} · ${formatTime(at)}` : undefined, car: trip.categoryName }}
           primaryLabel="View booking"
           onPrimary={() => navigate(`/trips/${trip.id}`)}
           secondaryLabel="Done"

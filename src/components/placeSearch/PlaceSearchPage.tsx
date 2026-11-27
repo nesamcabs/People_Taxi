@@ -235,7 +235,7 @@ export function PlaceSearchPage({ config, saved, recent, value, notice, onSelect
                 placeholder={config.placeholder ?? 'City, area or landmark'}
                 autoComplete="off"
                 autoCorrect="off"
-                autoCapitalize="words"
+                autoCapitalize="none"
                 spellCheck={false}
                 enterKeyHint="search"
                 onChange={(e) => {

@@ -1,0 +1,199 @@
+/* ── Responsive header, service selector and ride notes: every width from 320px to 1920px+ ───────────────────────
+   One set of rules, loaded last, so the earlier per-width tweaks in shell / theme / desktop files cannot cut labels off.
+   Below 900px: the phone header (menu, Upcoming chip, Help, My trips, Notifications or Sign in) and the bottom bar.
+   900px and wider: the desktop header. Each tier gives every control the room it needs instead of shrinking it:
+     900–1279   menu · logo · Book / Trips / Alerts (short names) · Upcoming chip · Help (icon) · account
+     1280–1439  full names (Book a ride · My trips · Notifications) · Help with its word (calling is Help → Call us)
+     1440–1679  + Offers in the header (below 1440 Offers is in the menu)
+     1680+      + the account name; the header grows to 1560px
+   No label is ever cut with "…": a name either shows whole or moves into the menu. */
+
+/* ─── Desktop header (900px and wider) ─── */
+@media (min-width: 900px) {
+  html body .topbar .topbar__inner {
+    gap: 8px;
+    padding: 0 10px 0 12px;
+  }
+  /* The menu button at every size: it opens the side drawer (account, Offers, Help, policies). */
+  html body .topbar .topbar__inner > .menu-btn {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 42px;
+    height: 42px;
+    margin: 0;
+  }
+  html body .topbar .topnav {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+    gap: 2px;
+  }
+  html body .topbar .topnav .topnav__link {
+    flex: none;
+    gap: 6px;
+    height: 44px;
+    padding: 0 10px;
+  }
+  html body .topbar .topnav .topnav__link .lbl-long,
+  html body .topbar .topnav .topnav__link .lbl-short {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
+  }
+  html body .topbar .topnav .topnav__link .lbl-long { display: none; }
+  html body .topbar .topnav .topnav__link .lbl-short { display: inline; }
+  html body .topbar .topnav .topnav__link--secondary { display: none; }
+  /* The glossy icon with the unread count on its corner (the same badge as on phones). */
+  html body .topbar .topnav__icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    flex: none;
+  }
+  html body .topbar .topnav__icon .hdr-icon { display: block; filter: drop-shadow(0 2px 2px rgb(27 42 107 / 0.16)); }
+  html body .topbar .topnav__link .count {
+    position: absolute;
+    top: -6px;
+    right: -9px;
+    display: grid;
+    place-items: center;
+    min-width: 17px;
+    height: 17px;
+    margin: 0;
+    padding: 0 4px;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: #e5484d;
+    color: #fff;
+    font-size: 0.6rem;
+    font-style: normal;
+    font-weight: 800;
+    line-height: 1;
+  }
+  html body .topbar .topnav__link .hdr-icon__bell { transform-box: fill-box; transform-origin: 50% 0; }
+  html body .topbar .topnav__link.has-unread .hdr-icon__bell { animation: hdr-ring 4s ease-in-out infinite; }
+
+  /* Upcoming chip: always shown on desktops (there is room for it), flexible width, a long route scrolls. */
+  html body .topbar .ride-chip {
+    display: flex;
+    flex: 0 1 230px;
+    min-width: 132px;
+  }
+  html body .topbar__right {
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+  }
+  /* Help: the glossy icon (with the online dot), and its word from 1280px. */
+  html body .topbar__right .support-menu__btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    width: auto;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 8px;
+    border-radius: 999px;
+    background: transparent;
+    color: var(--ink, #14171c);
+    font-weight: 800;
+  }
+  html body .topbar__right .support-menu__btn:hover,
+  html body .topbar__right .support-menu__btn.is-open { background: var(--brand-soft, #edf4ff); }
+  html body .topbar__right .support-menu__btn .hdr-icon { flex: none; filter: drop-shadow(0 2px 2px rgb(27 42 107 / 0.16)); }
+  html body .topbar__right .support-menu__btn .hdr-btn__live {
+    position: absolute;
+    top: 6px;
+    left: 31px;
+    width: 9px;
+    height: 9px;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    background: #22c55e;
+  }
+  html body .topbar__right .support-menu__label { display: none; }
+  html body .topbar__right .menu__name { display: none; }
+}
+
+@media (min-width: 1280px) {
+  html body .topbar .topnav .topnav__link .lbl-long { display: inline; }
+  html body .topbar .topnav .topnav__link .lbl-short { display: none; }
+  html body .topbar__right .support-menu__label { display: inline; padding-right: 4px; }
+}
+@media (min-width: 1440px) {
+  html body .topbar .topnav .topnav__link--secondary { display: inline-flex; }
+}
+@media (min-width: 1680px) {
+  html body .topbar .topbar__inner { max-width: 1560px; }
+  html body .topbar__right .menu__name { display: inline; }
+}
+
+/* ─── Upcoming chip: the heading stays still; a route wider than the chip scrolls on one line (RideBanner + theme.css).
+   These rules only keep it inside the chip: without them a long route stretches the chip over the header icons. ─── */
+html body .topbar .ride-chip { overflow: hidden; }
+html body .topbar .ride-chip .ride-chip__text {
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: minmax(0, 1fr);
+}
+html body .topbar .ride-chip .ride-chip__text > * { min-width: 0; max-width: 100%; }
+html body .topbar .ride-chip .ride-chip__text small.ride-chip__route {
+  justify-self: stretch;
+  width: 100%;
+  white-space: nowrap;
+}
+@media (max-width: 899.98px) {
+  html body .topbar .ride-chip { min-width: 0; padding: 3px 10px; }
+  html body .topbar .ride-chip .ride-chip__text small.ride-chip__route { font-size: 0.7rem; line-height: 1.15; }
+}
+
+/* ─── Service selector in the booking form (900px and wider): the same five services as the phone bottom bar ─── */
+@media (min-width: 900px) {
+  html body .bf .bf-services.bf-services--five {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 5px;
+  }
+  html body .bf .bf-services--five .bf-service {
+    min-height: 90px;
+    padding: 8px 2px;
+    gap: 6px;
+    font-size: 12.5px;
+    text-decoration: none;
+  }
+  html body .bf .bf-services--five .bf-service:hover { text-decoration: none; }
+  html body .bf .bf-services--five .bf-service__icon img { width: 44px; height: 44px; object-fit: contain; }
+  html body .bf .bf-services--five .bf-service.is-off { opacity: 0.55; cursor: not-allowed; }
+  html body .bf .bf-services--five .bf-service__off { font-size: 10px; line-height: 1.2; }
+}
+
+/* ─── Ride notes: the one-line running strip (serviceNote.css) stays inside its box at every width. ─── */
+html body .bf .svc-note.svc-note--ticker { min-width: 0; max-width: 100%; overflow: hidden; }
+
+/* ─── Home hero tagline (narrow laptops, 900–1180px): the logo panel sits beside the booking form with less room, so
+   the two-line tagline wraps (balanced) inside its panel instead of running on under the form. ─── */
+@media (min-width: 900px) {
+  html body .home .home-hero .hero-copy h1,
+  html body .home .home-hero .hero-copy h1 .hero-accent {
+    white-space: normal;
+    text-wrap: balance;
+    overflow-wrap: break-word;
+  }
+}
+
+/* ─── Very narrow phones (below 360px, e.g. 320px): the header buttons step down to 36px and the chip text a size, so
+   the Upcoming chip keeps its room and everything stays inside the header. ─── */
+@media (max-width: 359.98px) {
+  html body .topbar .topbar__inner { gap: 4px; padding: 0 6px 0 8px; }
+  html body .topbar .topbar__inner > .menu-btn { width: 34px; height: 34px; min-width: 34px; }
+  html body .topbar__mobile { gap: 0; }
+  html body .topbar__mobile .hdr-btn { width: 36px; height: 36px; min-width: 36px; }
+  html body .topbar__mobile .hdr-btn .hdr-icon { width: 28px; height: 28px; }
+  html body .topbar .ride-chip { padding: 2px 7px; }
+  html body .topbar .ride-chip .ride-chip__text strong { font-size: 0.5rem; }
+  html body .topbar .ride-chip .ride-chip__text small.ride-chip__route { font-size: 0.64rem; }
+}

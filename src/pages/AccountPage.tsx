@@ -101,7 +101,10 @@ export function AccountPage({ variant = 'page', onClose }: { variant?: 'page' | 
             Sign in to manage your profile, saved addresses and payment options.
           </EmptyState>
         </div>
+        {/* Offers and Help are here too, because narrower desktop headers move them into this menu. */}
         <div className="card card--list" style={{ marginTop: 16 }}>
+          <Row icon="offers" label="Offers" to="/offers" />
+          <Row icon="support" label="Help and support" to="/support" />
           <Row icon="info" label="About People Taxi" to="/about" />
           <Row icon="document" label="Terms, privacy & customer policies" to="/legal" />
         </div>

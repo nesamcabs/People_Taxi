@@ -1,0 +1,85 @@
+/* ── People Taxi wordmark animation ──
+   The logo is one picture (/brand/peopletaxi-transparent.webp), so it animates as a whole:
+   1. On load the "P" symbol pops in, then "eopleTaxi" is revealed left to right along the road.
+   2. Every few seconds a light shine sweeps across the letters. The shine is masked by the logo itself,
+      so it lights only the letters and the P, never the background around them.
+   The P covers the left 22% of the picture, which is why the reveal starts at inset(… 78% …). */
+
+.logo-anim {
+  position: relative;
+  display: inline-flex;
+  min-width: 0;
+  max-width: 100%;
+  line-height: 0;
+  vertical-align: middle;
+}
+/* On a narrow phone the header squeezes the logo: the picture shrinks (object-fit: contain) instead of being cut off. */
+.logo-anim > img {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .logo-anim > img {
+    transform-origin: 12% 55%;
+    animation: logo-write 1.5s cubic-bezier(0.25, 0.8, 0.3, 1) 0.15s backwards;
+  }
+
+  .logo-anim::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 38%, rgb(255 255 255 / 0.85) 50%, transparent 62%) no-repeat;
+    background-size: 260% 100%;
+    background-position: 160% 0;
+    /* contain + center matches the picture's object-fit, so the shine stays on the letters when the logo is squeezed. */
+    -webkit-mask: url('/brand/peopletaxi-transparent.webp') center / contain no-repeat;
+    mask: url('/brand/peopletaxi-transparent.webp') center / contain no-repeat;
+    animation: logo-shine 6s ease-in-out 1.8s infinite;
+  }
+
+  /* The header's own hover lift moves the wrapper, so the shine stays exactly on the letters. */
+  .brand:hover .logo-anim > img {
+    transform: none;
+  }
+  .brand .logo-anim {
+    transition: transform var(--dur, 0.2s) var(--ease, ease);
+  }
+  .brand:hover .logo-anim {
+    transform: scale(1.03);
+  }
+}
+
+@keyframes logo-write {
+  0% {
+    opacity: 0;
+    transform: scale(0.4) rotate(-12deg);
+    clip-path: inset(0 78% 0 0);
+  }
+  22% {
+    opacity: 1;
+    transform: scale(1.12) rotate(3deg);
+    clip-path: inset(0 78% 0 0);
+  }
+  34% {
+    transform: scale(1) rotate(0);
+    clip-path: inset(0 78% 0 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes logo-shine {
+  0% {
+    background-position: 160% 0;
+  }
+  28%,
+  100% {
+    background-position: -60% 0;
+  }
+}

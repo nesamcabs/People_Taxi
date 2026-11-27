@@ -7,6 +7,7 @@ import { breakupFromFare } from '@core/utils/fareBreakup';
 import { formatDate, formatDistance, formatDuration, formatINR, formatTime } from '@core/utils/format';
 import { BackButton, Badge, Button, EmptyState, Notice } from '@/components/ui';
 import { Icon } from '@/components/Icon';
+import { StrikeOffer } from '@/components/StrikeOffer';
 import { useBooking, useBookingQuote } from '@/state/Booking';
 import { useOnline } from '@/lib/hooks';
 import { categoryGroup, categoryName, categoryPhoto, type CategoryGroup } from '@/lib/categories';
@@ -368,7 +369,7 @@ export function ChooseStep() {
                     <ul className="fcab__facts">
                       <li><Icon name="seats" size={14} /> <span><b>{c.seats}</b> seats</span></li>
                       <li><Icon name="snowflake" size={14} /> <span><b>AC</b> cab</span></li>
-                      <li><Icon name="luggage" size={14} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
+                      <li><Icon name="trolley-bag" size={14} /> <span><b>{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> bags</span></li>
                     </ul>
 
                     {fq ? (
@@ -394,7 +395,7 @@ export function ChooseStep() {
                           <span className="fcab__price">
                             {fare ? (
                               <>
-                                {strike > 0 ? <s>{formatINR(strike)}</s> : null}
+                                <StrikeOffer was={strike} now={fare.taxableAmount} />
                                 <b>{formatINR(fare.taxableAmount)}</b>
                                 {fare.gst > 0 ? <small>+ {formatINR(fare.gst)} GST</small> : null}
                               </>

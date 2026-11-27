@@ -1,0 +1,74 @@
+/* ── Booking form: premium white ──
+   A clean white card that lifts off the page with a soft, layered shadow (no tinted panels inside it).
+   The One Way / Round Trip track and the Trip days box were light blue; they are white now, framed by thin lines.
+   Imported last in main.tsx, so these same-specificity rules win over the earlier theme.css ones. */
+
+.bf.bf {
+  background: #fff;
+  border: 1px solid rgb(15 23 42 / 0.06);
+  box-shadow:
+    0 1px 2px rgb(15 23 42 / 0.05),
+    0 10px 28px -10px rgb(15 35 80 / 0.18),
+    0 30px 60px -28px rgb(22 101 232 / 0.28);
+}
+
+/* One Way / Round Trip (and To / From airport): white track, the blue frame stays. */
+.bf .bf-journey.tabs {
+  background: #fff;
+}
+
+/* Trip days (Round Trip): plain white instead of the blue gradient. */
+.bf .bf-form .bf-row--round-schedule .bf-round-days {
+  background: #fff;
+  border-color: var(--bfx-line, #d9dfe9);
+}
+
+/* The running note under the tabs: every point is bold, not only the first. */
+.svc-note--ticker .svc-tick__item {
+  font-weight: 800;
+}
+
+/* Field labels (PICKUP LOCATION, DROP LOCATION, STOP n, PICKUP DATE, PICKUP TIME): small, extra-bold, slightly spaced,
+   in a deep navy, so they read clearly without competing with the values under them. The same colour whether
+   the field is empty or filled. The selectors are long on purpose: they must outrank phone-fit.css and the
+   empty-field rules in theme.css. */
+html body .bf.bf .bf-form .bf-route .bf-field .bf-label.bf-label,
+html body .bf.bf .bf-form .bf-cell--schedule > .bf-label--out.bf-label,
+html body .bf.bf .bf-multicity .bf-field .bf-label.bf-label,
+html body .bf.bf .bf-multicity .bf-cell--schedule > .bf-label--out.bf-label {
+  color: #0f1f3d;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+/* The quick day button above the pickup date ("Tomorrow", or "Today" once the date is tomorrow). It used to be a label that
+   let taps fall through to the date box (so the calendar opened). Now it is a real button: a tap changes only the date,
+   and the calendar opens only from the date box. The invisible ::before widens the small pill into a finger-sized target. */
+html body .bf .bf-chip.bf-chip--switch {
+  z-index: 3;
+  border: 0;
+  background: var(--bfx, var(--brand, #1665e8));
+  box-shadow: 0 3px 8px -3px rgb(22 101 232 / 0.6);
+  color: #fff;
+  font: inherit;
+  font-size: 0.6875rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.3;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+html body .bf .bf-chip.bf-chip--switch::before {
+  content: '';
+  position: absolute;
+  inset: -8px -6px;
+}
+html body .bf .bf-chip.bf-chip--switch:hover { background: var(--brand-hover, #0f52c4); }
+html body .bf .bf-chip.bf-chip--switch:active { transform: scale(0.94); }
+html body .bf .bf-chip.bf-chip--switch:focus-visible { outline: 2px solid var(--bfx, #1665e8); outline-offset: 2px; }

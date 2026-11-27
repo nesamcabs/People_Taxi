@@ -76,6 +76,15 @@ function rateTile(l: FareLine): { value: string; unit: string; sub: string } | n
   return { value: rate, unit, sub: '' };
 }
 
+/** "₹400 per trip when hill travel applies" → { value: "₹400 / trip", rest: "When hill travel applies" }, so the charge can sit
+ *  in the right-hand column and the condition under the name. Anything else returns null and is shown as written. */
+function splitRate(detail: string): { value: string; rest: string } | null {
+  const m = /^(₹\s?[\d,]+(?:\.\d+)?)\s*(?:per|\/)\s*([a-z]+)\b[\s,.:-]*(.*)$/i.exec(detail.trim());
+  if (!m) return null;
+  const rest = m[3]!.trim();
+  return { value: `${m[1]!.replace(/\s/g, '')} / ${m[2]!.toLowerCase()}`, rest: rest ? rest[0]!.toUpperCase() + rest.slice(1) : '' };
+}
+
 export function AdditionalCharges({ lines, policy, footnote }: { lines: FareLine[]; policy?: ReactNode; footnote?: string }) {
   const tiles = lines.filter((l) => (l.key === 'extraKm' || l.key === 'waiting') && rateTile(l));
   // The carrier / luggage charge is not shown in this card.
@@ -83,8 +92,10 @@ export function AdditionalCharges({ lines, policy, footnote }: { lines: FareLine
   return (
     <section className="addl" aria-label="Extra Charges">
       <span className="addl__bar" aria-hidden="true" />
-      <h3 className="addl__title">Extra Charges</h3>
-      <p className="addl__sub">Payable separately • Not included in total</p>
+      <header className="addl__head">
+        <h3 className="addl__title">Extra Charges</h3>
+        <p className="addl__sub">Not included in your fare · Pay only if it applies</p>
+      </header>
 
       {tiles.length ? (
         <div className="addl__tiles">
@@ -109,15 +120,23 @@ export function AdditionalCharges({ lines, policy, footnote }: { lines: FareLine
         <div className="addl__group">
           <ul className="addl__chips">
             {chips.map((l) => {
+              // Each row reads like an invoice line: the name on the left, the charge on the right.
+              // Paid on the day at the real cost → "As per receipt"; a fixed amount → that amount; a rate such as
+              // "₹400 per trip when …" → "₹400 / trip" on the right and the condition under the name.
+              // A rate row stays on one line ("Hill travel ··· ₹400 / trip"); its condition ("When hill travel applies")
+              // is the row's tooltip. Only a detail that is not a plain rate is written under the name.
               const actuals = l.amount === null && (!l.detail || /at actuals/i.test(l.detail));
-              const note = l.amount !== null ? money(l.amount) : actuals ? '' : l.detail ?? '';
+              const rate = l.amount === null && !actuals && l.detail ? splitRate(l.detail) : null;
+              const charge = l.amount !== null ? money(l.amount) : actuals ? 'As per receipt' : rate ? rate.value : '';
+              const note = l.amount === null && !actuals && !rate ? l.detail ?? '' : '';
               return (
-                <li key={l.key} className="addl__chip">
+                <li key={l.key} className="addl__chip" title={rate?.rest || undefined}>
                   <span className="addl__chip-icon">{iconFor(l.key)}</span>
                   <span className="addl__chip-text">
                     <span>{l.label.replace(/\s*\/\s*permit/i, '')}</span>
-                    {note ? <small className="num">{note}</small> : null}
+                    {note ? <small>{note}</small> : null}
                   </span>
+                  {charge ? <span className={`addl__chip-tag num ${actuals ? 'is-receipt' : 'is-amount'}`}>{charge}</span> : null}
                 </li>
               );
             })}

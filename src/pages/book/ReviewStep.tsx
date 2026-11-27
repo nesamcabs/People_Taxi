@@ -22,6 +22,7 @@ import { payBookingOnline, usePaymentChoices } from '@/lib/onlinePayment';
 import { advanceOf, type PayChoiceId } from '@core/services/paymentService';
 import { PaymentChoice } from './PaymentChoice';
 import { holdBookingConfirmed } from '@/lib/paymentHold';
+import { primeChime } from '@/lib/confirmChime';
 import { DIAL_CODES, splitPhone } from '@/lib/countryCodes';
 import './review.css';
 
@@ -210,6 +211,8 @@ export function ReviewStep() {
       return;
     }
     submittingRef.current = true;
+    // Unlock audio inside this tap, so the "booking confirmed" chime can play on the next screen (iPhones need this).
+    primeChime();
     setSubmitting(true);
     setSubmitError('');
     try {

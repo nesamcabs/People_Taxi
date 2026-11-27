@@ -23,6 +23,8 @@ const BookPage = lazy(() => loadBookPage().then((m) => ({ default: m.BookPage })
 // The site opens on the booking home: fetch it alongside the account check, not after it.
 if (typeof window !== 'undefined' && isHomePath(window.location.pathname)) void loadBookPage();
 const DonePage = lazy(() => import('@/pages/book/DonePage'));
+/** Development only: a preview of the "Booking confirmed" moment (left out of the production build). */
+const ConfirmPreview = import.meta.env.DEV ? lazy(() => import('@/pages/dev/ConfirmPreview')) : null;
 const RidePage = page(() => import('@/pages/ride/RidePage'), 'RidePage');
 const TripsPage = page(() => import('@/pages/TripsPage'), 'TripsPage');
 const LocalRentalsPage = page(() => import('@/pages/localRentals/LocalRentalsPage'), 'LocalRentalsPage');
@@ -127,6 +129,7 @@ export function AppRoutes() {
         <Route path="/book/ride" element={<BookPage step="choose" />} />
         <Route path="/book/confirm" element={<BookPage step="review" />} />
         <Route path="/book/done/:id" element={<DonePage />} />
+        {ConfirmPreview ? <Route path="/dev/booking-confirmed" element={<ConfirmPreview />} /> : null}
         <Route path="/ride/:id" element={<RidePage />} />
         <Route path="/local-taxi/*" element={<Navigate to="/local-rentals?mode=pickup" replace />} />
         <Route path="/local-rentals" element={<LocalRentalsPage />} />

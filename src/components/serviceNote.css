@@ -102,3 +102,48 @@
 .svc-dialog__mark.is-no { background: var(--danger-soft, #fef1f0); color: var(--danger-ink, #b42318); }
 .svc-dialog__ok { width: 100%; min-height: 48px; border: 0; border-radius: 12px; background: linear-gradient(135deg, color-mix(in srgb, var(--brand, #c8181f) 85%, #fff), var(--brand, #c8181f)); box-shadow: 0 8px 18px -8px color-mix(in srgb, var(--brand, #c8181f) 70%, transparent); color: #fff; font: inherit; font-size: 1rem; font-weight: 800; cursor: pointer; }
 .svc-dialog__ok:hover { background: var(--brand-hover, #b3141a); }
+
+/* ── Details popup: corporate terms sheet ────────────────────────────────────────────────────────────────────────
+   Centred title; a quiet summary with a navy edge; a numbered list (01, 02 …) split by hairlines, each clause with a
+   small status tag; "Additional charges" closes the sheet as a navy band with a gold label. */
+html body .dialog.svc-dialog .dialog__head { position: relative; justify-content: center; padding-inline: 52px; }
+html body .dialog.svc-dialog .dialog__head > div { flex: 1; min-width: 0; text-align: center; }
+html body .dialog.svc-dialog .dialog__head > .icon-btn { position: absolute; top: 50%; right: 10px; translate: 0 -40%; }
+
+html body .svc-dialog .svc-dialog__intro {
+  margin: 0 0 12px; padding: 11px 16px 12px; border: 0; border-top: 3px solid #0f1f3d; border-radius: 0 0 14px 14px; background: #f4f6fb; text-align: center;
+}
+.svc-dialog__intro small { display: block; margin-bottom: 3px; color: #8a6d1d; font-size: .6rem; font-weight: 900; letter-spacing: .18em; text-transform: uppercase; }
+.svc-dialog__intro p { margin: 0; color: #0f1f3d; font-size: .86rem; font-weight: 700; line-height: 1.45; }
+
+html body .svc-dialog .svc-dialog__list {
+  display: block; list-style: none; margin: 0; padding: 0; overflow: hidden; border: 1px solid #dfe5ef; border-radius: 16px; background: #fff; counter-reset: svc-clause;
+}
+html body .svc-dialog .svc-dialog__list li {
+  position: relative; display: block; margin: 0; padding: 10px 14px 10px 48px; border: 0; border-radius: 0; background: none; counter-increment: svc-clause;
+}
+html body .svc-dialog .svc-dialog__list li + li { border-top: 1px solid #e8ecf4; }
+html body .svc-dialog .svc-dialog__list li::before {
+  content: counter(svc-clause, decimal-leading-zero); position: absolute; top: 11px; left: 14px;
+  color: #aab6cc; font-size: 1.02rem; font-weight: 900; line-height: 1.1; font-variant-numeric: tabular-nums;
+}
+.svc-dialog__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+html body .svc-dialog .svc-dialog__list strong { color: #0f1f3d; font-size: .7rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+html body .svc-dialog .svc-dialog__list p { margin: 4px 0 0; color: #475569; font-size: .8rem; font-weight: 600; line-height: 1.45; }
+html body .svc-dialog .svc-dialog__mark {
+  display: inline-block; flex: none; width: auto; height: auto; margin: 0; padding: 2px 7px; border: 1px solid; border-radius: 6px;
+  font-size: .56rem; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap;
+}
+html body .svc-dialog .svc-dialog__mark.is-ok { border-color: #b7e4c7; background: #effaf3; color: #14713c; }
+html body .svc-dialog .svc-dialog__mark.is-no { border-color: #f6c6cd; background: #fdf1f3; color: #a81e35; }
+html body .svc-dialog .svc-dialog__mark.is-extra { border-color: #f1dba3; background: #fdf8e9; color: #86620a; }
+
+html body .svc-dialog .svc-dialog__list li.is-band { border-top: 3px solid #d4a72c; padding: 11px 14px 13px; background: #0f1f3d; text-align: center; }
+html body .svc-dialog .svc-dialog__list li.is-band::before { content: none; }
+html body .svc-dialog .svc-dialog__list li.is-band .svc-dialog__row { justify-content: center; }
+html body .svc-dialog .svc-dialog__list li.is-band strong { color: #f4cf6a; font-size: .6rem; letter-spacing: .18em; }
+html body .svc-dialog .svc-dialog__list li.is-band p { color: #fff; font-size: .95rem; font-weight: 900; letter-spacing: .01em; }
+
+html body .svc-dialog .svc-dialog__ok,
+html body .svc-dialog .svc-dialog__ok:hover { min-height: 48px; border: 0; border-radius: 12px; background: #0f1f3d; box-shadow: 0 12px 22px -14px rgb(15 31 61 / .85); color: #fff; letter-spacing: .03em; }
+html body .svc-dialog .svc-dialog__ok:hover { background: #1a2f58; }

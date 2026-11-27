@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scheduleProblem } from '@core/utils/bookingRules';
-import { combineDateTime, earliestPickup, earliestSlot, latestPickup, pickupTimeOptions, toDateInput, toTimeInput } from './schedule';
+import { combineDateTime, earliestPickup, earliestSlot, latestPickup, pickupDayFor, pickupTimeOptions, quickDaySwitch, timeForDay, toDateInput, toTimeInput } from './schedule';
 
 describe('pickup scheduling', () => {
   it('round-trips the date and time inputs', () => {
@@ -47,5 +47,53 @@ describe('pickup time options', () => {
     expect(pickupTimeOptions('2026-11-10', SLOTS, now)).toEqual([]);
     expect(toDateInput(earliestSlot(now))).toBe('2026-11-11');
     expect(pickupTimeOptions('2026-11-11', SLOTS, now)[0]).toBe('00:20');
+  });
+});
+
+describe('pickupDayFor: the date follows a picked time', () => {
+  // 26 Nov 2026, 11:35 PM local time.
+  const night = new Date(2026, 10, 26, 23, 35).getTime();
+  // 26 Nov 2026, 2:00 PM local time.
+  const noon = new Date(2026, 10, 26, 14, 0).getTime();
+
+  it('moves a form-set day to the first day the time can be booked', () => {
+    expect(pickupDayFor('2026-11-26', '00:05', false, night)).toBe('2026-11-27');
+    expect(pickupDayFor('2026-11-27', '00:05', false, night)).toBe('2026-11-27');
+    expect(pickupDayFor('2026-11-26', '09:00', false, noon)).toBe('2026-11-27');
+    expect(pickupDayFor('2026-11-26', '20:00', false, noon)).toBe('2026-11-26');
+    // Tomorrow set by the form, but the time still fits today: back to today.
+    expect(pickupDayFor('2026-11-27', '20:00', false, noon)).toBe('2026-11-26');
+  });
+
+  it('keeps a day the rider picked, except today with a time already gone', () => {
+    expect(pickupDayFor('2026-11-27', '20:00', true, noon)).toBe('2026-11-27');
+    expect(pickupDayFor('2026-11-26', '09:00', true, noon)).toBe('2026-11-27');
+    expect(pickupDayFor('2026-11-26', '20:00', true, noon)).toBe('2026-11-26');
+    expect(pickupDayFor('2026-11-30', '09:00', true, noon)).toBe('2026-11-30');
+  });
+
+  it('treats a day left in the past as today', () => {
+    expect(pickupDayFor('2026-11-25', '20:00', true, noon)).toBe('2026-11-26');
+    expect(pickupDayFor('2026-11-25', '09:00', true, noon)).toBe('2026-11-27');
+  });
+});
+
+describe('quick day button above the pickup date', () => {
+  const noon = new Date(2026, 10, 26, 14, 0).getTime();
+  const night = new Date(2026, 10, 26, 23, 50).getTime();
+
+  it('offers Tomorrow, and Today back while today can still be booked', () => {
+    expect(quickDaySwitch('2026-11-26', noon)).toEqual({ label: 'Tomorrow', to: '2026-11-27' });
+    expect(quickDaySwitch('2026-11-27', noon)).toEqual({ label: 'Today', to: '2026-11-26' });
+    expect(quickDaySwitch('2026-11-30', noon)).toEqual({ label: 'Tomorrow', to: '2026-11-27' });
+    // 11:50 PM: nothing can be booked today any more, so a date of tomorrow gets no button.
+    expect(quickDaySwitch('2026-11-27', night)).toBeNull();
+  });
+
+  it('keeps the time when it fits the new day, else uses the earliest slot that day', () => {
+    expect(timeForDay('2026-11-27', '09:00', noon)).toBe('09:00');
+    expect(timeForDay('2026-11-26', '18:00', noon)).toBe('18:00');
+    // 9:00 AM today has gone at 2 PM: the earliest slot today (2:30 PM).
+    expect(timeForDay('2026-11-26', '09:00', noon)).toBe('14:30');
   });
 });

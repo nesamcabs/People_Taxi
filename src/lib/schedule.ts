@@ -1,5 +1,6 @@
 import { SCHEDULE_MAX_DAYS, SCHEDULE_MIN_LEAD_MIN } from '@core/config/constants';
 import type { LocationErrorKind } from '@core/services/geoService';
+import { scheduleProblem } from '@core/utils/bookingRules';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -14,6 +15,47 @@ export function combineDateTime(date: string, time: string): Date | null {
   const [hh, mm] = time.split(':').map(Number) as [number, number];
   const out = new Date(y, m - 1, d, hh, mm, 0, 0);
   return Number.isNaN(out.getTime()) ? null : out;
+}
+
+/**
+ * The pickup day for a time picked on the clock wheel, so the rider never has to fix the date by hand:
+ * - A day the form filled in itself (the default, or an earlier automatic move) becomes the first of today and tomorrow on
+ *   which that time can still be booked: 9:00 AM picked in the evening is tomorrow morning, 8:00 PM picked at noon stays today.
+ * - A day the rider picked is kept, except today with a time that has already gone (or is under the minimum lead away):
+ *   that time tomorrow instead.
+ * A day left in the past (the page stayed open over midnight) counts as today. Any other case keeps the date, and the
+ * picker's usual check explains what is wrong.
+ */
+export function pickupDayFor(date: string, time: string, riderPickedDay: boolean, now = Date.now()): string {
+  const base = new Date(now);
+  const today = toDateInput(base);
+  const tomorrow = toDateInput(new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1));
+  const day = date && date < today ? today : date;
+  const bookable = (d: string) => !scheduleProblem(combineDateTime(d, time), now);
+  if (!riderPickedDay && (day === today || day === tomorrow)) return bookable(today) ? today : bookable(tomorrow) ? tomorrow : day;
+  if (day === today && !bookable(today) && bookable(tomorrow)) return tomorrow;
+  return day;
+}
+
+/**
+ * The quick day button above the pickup date. "Tomorrow" moves the date to tomorrow; once the date is tomorrow it offers
+ * "Today" instead, but only while a pickup can still be booked today (late at night there is none, so no button).
+ */
+export function quickDaySwitch(date: string, now = Date.now()): { label: 'Today' | 'Tomorrow'; to: string } | null {
+  const base = new Date(now);
+  const today = toDateInput(base);
+  const tomorrow = toDateInput(new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1));
+  if (date !== tomorrow) return { label: 'Tomorrow', to: tomorrow };
+  return toDateInput(earliestSlot(now)) === today ? { label: 'Today', to: today } : null;
+}
+
+/** The pickup time to keep when the day is switched: the same time when it can still be booked on that day, otherwise the
+ *  earliest slot when that falls on the day, otherwise unchanged (the usual check then explains what is wrong). */
+export function timeForDay(day: string, time: string, now = Date.now()): string {
+  const at = combineDateTime(day, time);
+  if (at && !scheduleProblem(at, now)) return time;
+  const first = earliestSlot(now);
+  return toDateInput(first) === day ? toTimeInput(first) : time;
 }
 
 /** The earliest pickup the booking server accepts, rounded up to the next 5 minutes. */

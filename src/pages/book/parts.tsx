@@ -91,7 +91,7 @@ export function FareDialog({
   const finalLines: FareLine[] = lines ?? ((fare as any)?.lines ?? []);
   const finalTotal: number = total ?? ((fare as any)?.packageTotal ?? (fare as any)?.total ?? 0);
   return (
-    <Dialog title={title} onClose={onClose} variant="sheet">
+    <Dialog title={title} onClose={onClose} variant="sheet" className="fare-sheet">
       {note ? <p className="fare-note">{note}</p> : null}
       <FareBreakdown lines={finalLines} total={finalTotal} estimated={estimated} />
     </Dialog>

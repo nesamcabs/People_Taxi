@@ -47,3 +47,97 @@ export function BellIcon({ size = 22 }: P) {
     </svg>
   );
 }
+
+/* ── Glossy sticker icons for the phone header ─────────────────────────────────────────────────────────────────
+   One set in the same style: a thick navy outline, a glossy blue body (light top-left to deep bottom-right, with a
+   white shine) and warm cream accents. Drawn on a 48-unit grid so the detail stays crisp at header size. */
+const NAVY = '#1b2a6b';
+const BlueFill = ({ id }: { id: string }) => (
+  <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stopColor="#6a96ff" />
+    <stop offset="0.5" stopColor="#2a58e4" />
+    <stop offset="1" stopColor="#1638a8" />
+  </linearGradient>
+);
+const CreamFill = ({ id }: { id: string }) => (
+  <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stopColor="#fffaf0" />
+    <stop offset="1" stopColor="#f0e0bd" />
+  </linearGradient>
+);
+
+/** Help: a cream chat bubble with three dots, and a glossy blue phone handset in front of it. */
+export function SupportChatIcon({ size = 34 }: P) {
+  return (
+    <svg {...base(size, 'hdr-icon--support', '0 0 48 48')}>
+      <defs>
+        <BlueFill id="hi-sup-b" />
+        <CreamFill id="hi-sup-c" />
+      </defs>
+      <path d="M25 7.5h11a9.5 9.5 0 0 1 0 19h-5l-6.6 5.4.7-5.5A9.5 9.5 0 0 1 25 7.5z" fill="url(#hi-sup-c)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
+      <circle cx="25" cy="17" r="2" fill={NAVY} />
+      <circle cx="30.5" cy="17" r="2" fill={NAVY} />
+      <circle cx="36" cy="17" r="2" fill={NAVY} />
+      <g transform="translate(-1 17) scale(1.25)">
+        <path
+          d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"
+          fill="url(#hi-sup-b)"
+          stroke={NAVY}
+          strokeWidth="1.76"
+          strokeLinejoin="round"
+        />
+        <ellipse cx="5.4" cy="5.6" rx="0.9" ry="1.9" fill="#fff" opacity="0.6" transform="rotate(-24 5.4 5.6)" />
+        <path d="M6.6 11.6c1.4 2.4 3.4 4.4 5.8 5.8" fill="none" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.1" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+/** My trips: a glossy blue taxi (cream roof sign) in front of a cream ride ticket with a blue tick. */
+export function TaxiTicketIcon({ size = 34 }: P) {
+  return (
+    <svg {...base(size, 'hdr-icon--taxi', '0 0 48 48')}>
+      <defs>
+        <BlueFill id="hi-taxi-b" />
+        <CreamFill id="hi-taxi-c" />
+      </defs>
+      <g transform="rotate(10 34 18)">
+        <path d="M23 6h20a2 2 0 0 1 2 2v6a3 3 0 0 0 0 6v6a2 2 0 0 1-2 2H23a2 2 0 0 1-2-2v-6a3 3 0 0 0 0-6V8a2 2 0 0 1 2-2z" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
+        <path d="M28 17.2l3.6 3.6 7.4-8" fill="none" stroke="#2453e0" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+      <g transform="translate(-3 4)">
+        <rect x="17.5" y="9.6" width="9" height="4.6" rx="1.6" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="2" />
+        <rect x="8.5" y="34.5" width="6" height="5.5" rx="1.8" fill={NAVY} />
+        <rect x="29.5" y="34.5" width="6" height="5.5" rx="1.8" fill={NAVY} />
+        <path d="M5 34v-6.5c0-1.2.6-2.3 1.6-3l3.4-2.4 3-6.2c.6-1.2 1.8-1.9 3.1-1.9h11.8c1.3 0 2.5.7 3.1 1.9l3 6.2 3.4 2.4c1 .7 1.6 1.8 1.6 3V34c0 1.1-.9 2-2 2H7c-1.1 0-2-.9-2-2z" fill="url(#hi-taxi-b)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
+        <path d="M14.5 21.5l2.2-4.6c.3-.6.9-1 1.6-1h9.4c.7 0 1.3.4 1.6 1l2.2 4.6z" fill="#dce8ff" stroke={NAVY} strokeWidth="1.8" strokeLinejoin="round" />
+        <circle cx="10.6" cy="28.6" r="2.2" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="1.4" />
+        <circle cx="33.4" cy="28.6" r="2.2" fill="url(#hi-taxi-c)" stroke={NAVY} strokeWidth="1.4" />
+        <rect x="17.5" y="27.2" width="9" height="3.2" rx="1.6" fill={NAVY} />
+        <path d="M9 25.2h6" stroke="#fff" strokeOpacity="0.45" strokeWidth="1.4" strokeLinecap="round" />
+      </g>
+    </svg>
+  );
+}
+
+/** Notifications: a glossy blue bell with a coral clapper and cream "ringing" marks. The `.hdr-icon__bell` group swings
+ *  when something is unread. */
+export function BellRingIcon({ size = 34 }: P) {
+  return (
+    <svg {...base(size, 'hdr-icon--bell', '0 0 48 48')}>
+      <defs>
+        <BlueFill id="hi-bell-b" />
+      </defs>
+      <g className="hdr-icon__bell">
+        <g transform="rotate(16 22 22)">
+          <circle cx="22" cy="39.4" r="3.9" fill="#ff6b5e" stroke={NAVY} strokeWidth="2" />
+          <path d="M22 5.5a3 3 0 0 0-3 3v1.1C13.2 11 10 16.2 10 22v7.6l-3.4 4.1c-.7.9-.1 2.2 1 2.2h28.8c1.1 0 1.7-1.3 1-2.2L34 29.6V22c0-5.8-3.2-11-9-12.4V8.5a3 3 0 0 0-3-3z" fill="url(#hi-bell-b)" stroke={NAVY} strokeWidth="2.2" strokeLinejoin="round" />
+          <path d="M10.5 31.2h23" stroke="#fff" strokeOpacity="0.35" strokeWidth="1.6" strokeLinecap="round" />
+          <ellipse cx="16" cy="19" rx="1.9" ry="5.4" fill="#fff" opacity="0.5" transform="rotate(16 16 19)" />
+        </g>
+      </g>
+      <path d="M37.2 9.6l3.4-3.8M40.6 15.6l4.4-1.6" stroke={NAVY} strokeWidth="4.6" strokeLinecap="round" />
+      <path d="M37.2 9.6l3.4-3.8M40.6 15.6l4.4-1.6" stroke="#f6e7c4" strokeWidth="2.4" strokeLinecap="round" />
+    </svg>
+  );
+}

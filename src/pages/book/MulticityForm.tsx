@@ -14,9 +14,9 @@ import { useBooking } from '@/state/Booking';
 import { setPendingReturn } from '@/lib/pendingReturn';
 import { saveDraft } from '@/lib/draft';
 import { loadMulticityDraft, multicityInstant, validMulticityDate, validMulticityPlace, type MulticityDraft } from '@core/utils/multicityDraft';
-import { useDeviceLocation, useLivePickupDefault, useOnline } from '@/lib/hooks';
+import { useDeviceLocation, useLivePickupDefault, useOnline, useToday } from '@/lib/hooks';
 import { reverseGeocode } from '@core/services/geoService';
-import { combineDateTime, defaultPickup, latestPickup, toDateInput } from '@/lib/schedule';
+import { combineDateTime, defaultPickup, latestPickup, pickupDayFor, quickDaySwitch, timeForDay, toDateInput } from '@/lib/schedule';
 import { Button } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import type { PickerConfig } from '@/components/LocationPicker';
@@ -43,16 +43,6 @@ function saveStoredState(state: StoredMulticityState) {
   }
 }
 
-/** "Today", "Tomorrow" or the weekday, shown on the date field. */
-const dayHint = (iso: string): string => {
-  const d = new Date(`${iso}T00:00:00`);
-  if (Number.isNaN(d.getTime())) return '';
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diff = Math.round((d.getTime() - today.getTime()) / 86400000);
-  return diff === 0 ? 'Today' : diff === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'long' });
-};
-
 /** A form with no pickup time chosen (or one that can no longer be booked) starts at today, 30 minutes from now. */
 function withDefaultSchedule(s: StoredMulticityState): StoredMulticityState {
   const at = s.date && s.time ? combineDateTime(s.date, s.time) : null;
@@ -61,9 +51,12 @@ function withDefaultSchedule(s: StoredMulticityState): StoredMulticityState {
   return { ...s, date: next.date, time: next.time };
 }
 
+/** No recent-place suggestions in the booking form. One stable empty list. */
+const NO_RECENT: GeoPlace[] = [];
+
 export function MulticityForm() {
   const { state: auth, openLoginModal } = useAuth();
-  const { savedPlaces, trips } = useCustomerData();
+  const { savedPlaces } = useCustomerData();
   const { online } = useOnline();
   const navigate = useNavigate();
   const { draft, update } = useBooking();
@@ -71,6 +64,18 @@ export function MulticityForm() {
   const [state, setState] = useState<StoredMulticityState>(() => withDefaultSchedule(loadStoredState()));
   // Until the rider picks a date or time, the default keeps following the clock (always 30 minutes from now).
   const scheduleTouched = useRef(false);
+  // True once the rider picks the date themselves; until then a picked time also moves the date (a time gone today means tomorrow).
+  const datePicked = useRef(false);
+  // Re-renders at midnight, so the "Today" / "Tomorrow" button on the date follows the calendar.
+  useToday();
+  // The quick day button above the date: moves the date only (the time is kept while it can be booked).
+  const switchDay = (to: string) => {
+    scheduleTouched.current = true;
+    datePicked.current = true;
+    setState((s) => ({ ...s, date: to, time: timeForDay(to, s.time) }));
+    setErrors((x) => ({ ...x, date: '', time: '' }));
+  };
+  const quickDay = state.date ? quickDaySwitch(state.date) : null;
   useLivePickupDefault(scheduleTouched, (next) => {
     setState((s) => (s.date === next.date && s.time === next.time ? s : { ...s, date: next.date, time: next.time }));
   });
@@ -93,21 +98,8 @@ export function MulticityForm() {
     saveStoredState(state);
   }, [state]);
 
-  const recentPlaces = useMemo<GeoPlace[]>(() => {
-    const out: GeoPlace[] = [];
-    const seen = new Set<string>();
-    for (const t of trips) {
-      for (const p of [t.drop, t.pickup]) {
-        if (!p || !p.lat || !p.lng) continue;
-        const key = `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        out.push(p);
-        if (out.length >= 6) return out;
-      }
-    }
-    return out;
-  }, [trips]);
+  // Recent places (from past trips) are not suggested in the booking form, same as the main form.
+  const recentPlaces = NO_RECENT;
 
   const scheduled = useMemo(() => {
     if (!state.date || !state.time) return null;
@@ -350,6 +342,7 @@ export function MulticityForm() {
               <input
                 id="mc-date"
                 type="date"
+                autoComplete="off"
                 className="input bf-input"
                 min={todayStr}
                 max={maxDateStr}
@@ -364,12 +357,19 @@ export function MulticityForm() {
                 }}
                 onChange={(e) => {
                   scheduleTouched.current = true;
+                  datePicked.current = true;
                   setState((s) => ({ ...s, date: e.target.value }));
                   setErrors((x) => ({ ...x, date: '', time: '' }));
                 }}
                 required
               />
-              {state.date ? <span className="bf-chip">{dayHint(state.date)}</span> : null}
+              {/* Quick day button: "Tomorrow" (or "Today" when the date is tomorrow). It changes only the date; the
+                  calendar opens only from the date box itself. */}
+              {quickDay ? (
+                <button type="button" className="bf-chip bf-chip--switch" aria-label={`Change the pickup date to ${quickDay.label.toLowerCase()}`} onClick={() => switchDay(quickDay.to)}>
+                  {quickDay.label}
+                </button>
+              ) : null}
             </div>
             {errors.date ? <p className="bf-error">{errors.date}</p> : null}
           </div>
@@ -420,11 +420,12 @@ export function MulticityForm() {
           value={state.time}
           validate="pickup"
           notBefore={null}
+          resolveDate={(t) => pickupDayFor(state.date, t, datePicked.current)}
           onClose={() => setTimeFor(null)}
-          onConfirm={(t) => {
+          onConfirm={(t, day) => {
             scheduleTouched.current = true;
-            setState((s) => ({ ...s, time: t }));
-            setErrors((x) => ({ ...x, time: '' }));
+            setState((s) => ({ ...s, time: t, date: day || s.date }));
+            setErrors((x) => ({ ...x, date: '', time: '' }));
             setTimeFor(null);
           }}
         />

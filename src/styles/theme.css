@@ -1740,6 +1740,8 @@ html[data-hero-logo='in'] .topbar .brand {
   width: min(100%, 340px);
   padding: 5px;
   background: color-mix(in srgb, var(--bfx) 11%, #fff);
+  /* A thin brand-blue line frames the switch (One Way / Round Trip, To / From airport). */
+  border: 1.5px solid color-mix(in srgb, var(--bfx) 60%, #fff);
   box-shadow: none;
 }
 .bf .bf-journey.tabs .tab {
