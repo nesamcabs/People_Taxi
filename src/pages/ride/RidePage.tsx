@@ -11,11 +11,11 @@ import { cancellationQuote, subscribeToBoardingOtp, subscribeToBooking } from '@
 import { isLocalBooking } from '@core/utils/localTrip';
 import { getRoute } from '@core/services/geoService';
 import { PRESENCE_STALE_MS, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@core/config/constants';
-import { formatDate, formatDateTime, formatDistance, formatDuration, formatINR, formatPhone, formatTime, localMobile, timeAgo } from '@core/utils/format';
+import { formatDate, formatDateTime, formatDistance, formatDuration, formatINR, formatTime, timeAgo } from '@core/utils/format';
 import { haversineKm, isValidLatLng } from '@core/utils/geo';
 import { describeError } from '@core/utils/retry';
 import { paymentLabel } from '@core/utils/tripView';
-import { Avatar, Badge, Button, IconButton, Notice, PageLoader } from '@/components/ui';
+import { Button, IconButton, Notice, PageLoader } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { RoutePoints } from '@/components/RoutePoints';
 import { RouteMap } from '@/components/RouteMap';
@@ -29,6 +29,7 @@ import { useDeviceLocation, useOnline } from '@/lib/hooks';
 import { useSeo } from '@/lib/seo';
 import { useToasts } from '@/state/Toasts';
 import { useBooking } from '@/state/Booking';
+import { useQuietBookingConfirmed } from '@/state/Inbox';
 import { CancelDialog, SafetyDialog } from './dialogs';
 import { RatingCard } from './Rating';
 import { markRideDismissed, unmarkRideDismissed } from '@/state/rideFocus';
@@ -36,6 +37,7 @@ import { driverNote, statusTag } from '@/lib/driverNote';
 import { tripCategoryName } from '@/lib/categories';
 import '@/pages/book/done.css';
 import { RideKindIcon } from '@/components/RideKindIcon';
+import { DriverCard } from '@/components/DriverCard';
 import { forKind, rideKind } from '@/lib/rideKind';
 import { msg, useT } from '@/i18n';
 import './findCab.css';
@@ -121,6 +123,8 @@ export function RidePage() {
   const [tripRoute, setTripRoute] = useState<{ key: string; info: RouteInfo } | null>(null);
 
   useSeo({ title: t(trip ? titleOf(trip) : 'Your ride'), noindex: true });
+  // No "Booking confirmed" popup while the radar is still finding a cab.
+  useQuietBookingConfirmed(!!trip && isRideNow(trip) && trip.status !== 'Rejected' && ['awaiting_review', 'arranging', 'partner_confirmed'].includes(trip.phase));
 
   // Leaving this page (back, minimise) stops it re-opening automatically.
   useEffect(() => {
@@ -271,7 +275,6 @@ export function RidePage() {
   const minutesAway = eta ? Math.max(1, Math.round(eta.durationMin)) : null;
   const straightKm = driverLoc && isValidLatLng(trip.pickup) ? haversineKm(driverLoc, trip.pickup) : null;
   const sharePoint: LatLng | null = phase === 'in_trip' && driverLoc ? driverLoc : position;
-  const driverPhone = trip.driver ? localMobile(trip.driver.phone) : '';
   const chipLabel = statusTag(trip);
   const finished = phase === 'completed' || phase === 'cancelled';
   const due = amountDue(trip);
@@ -548,21 +551,11 @@ export function RidePage() {
           {findCard}
 
           {withDriver && trip.driver ? (
-            <section className="lride-card lride-driver" aria-label={t('Your driver')}>
+            <>
+            <section className="lride-card lride-driver" aria-label={t('Trip status')}>
               <p className={`lride-driver__status ${phase === 'driver_arrived' ? 'is-arrived' : ''}`} role="status">
                 <Icon name={phase === 'in_trip' ? 'navigation' : 'check-circle'} size={18} /> {driverLine}
               </p>
-              <div className="lride-driver__row">
-                <Avatar name={trip.driver.name} photoUrl={trip.driver.photoUrl} size={52} />
-                <div className="lride-driver__who">
-                  <strong>{trip.driver.name}</strong>
-                  <small>
-                    {trip.driver.rating != null ? `★ ${trip.driver.rating.toFixed(1)} · ` : ''}
-                    {trip.driver.vehicleModel || tripCategoryName(categories, trip)}
-                  </small>
-                </div>
-                {trip.driver.vehicleNumber ? <span className="plate">{trip.driver.vehicleNumber}</span> : null}
-              </div>
               {showOtp ? (
                 <div className={`lride-otp ${phase === 'driver_arrived' ? 'is-arrived' : ''}`}>
                   <span>
@@ -572,18 +565,10 @@ export function RidePage() {
                   <span className="lride-otp__code num" aria-label={`${t('Ride OTP')} ${otp ? otp.split('').join(' ') : t('not available yet')}`}>{otp ?? '····'}</span>
                 </div>
               ) : null}
-              {driverPhone && phase !== 'in_trip' ? (
-                <div className="lride-driver__actions">
-                  <a className="btn btn--primary btn--sm" href={`tel:+91${driverPhone}`}>
-                    <Icon name="phone" /> {t('Call')}
-                  </a>
-                  <a className="btn btn--secondary btn--sm" href={`https://wa.me/91${driverPhone}`} target="_blank" rel="noopener noreferrer">
-                    <Icon name="chat" /> WhatsApp
-                  </a>
-                </div>
-              ) : null}
               {streamingNote ? <p className="muted small">{streamingNote}</p> : null}
             </section>
+            <DriverCard trip={trip} categories={categories} actions={phase !== 'in_trip'} />
+            </>
           ) : null}
 
           {phase === 'cancelled' ? (
@@ -776,34 +761,7 @@ export function RidePage() {
             </div>
           ) : null}
 
-          {showDriver && trip.driver ? (
-            <section className="driver-card" aria-label={t('Your driver')}>
-              <Avatar name={trip.driver.name} photoUrl={trip.driver.photoUrl} size={60} />
-              <div className="driver-card__text">
-                <strong>{trip.driver.name}</strong>
-                <small className="muted">
-                  {trip.driver.rating != null ? `★ ${trip.driver.rating.toFixed(1)} · ` : ''}
-                  {trip.driver.vehicleModel || tripCategoryName(categories, trip)}
-                </small>
-              </div>
-              {trip.driver.vehicleNumber ? <span className="plate">{trip.driver.vehicleNumber}</span> : null}
-              {driverPhone ? (
-                <div className="driver-actions">
-                  <a className="btn btn--primary btn--sm" href={`tel:+91${driverPhone}`}>
-                    <Icon name="phone" /> {t('Call {name}', { name: trip.driver.name.split(' ')[0] || t('driver') })}
-                  </a>
-                  <a className="btn btn--secondary btn--sm" href={`https://wa.me/91${driverPhone}`} target="_blank" rel="noopener noreferrer">
-                    <Icon name="chat" /> WhatsApp
-                  </a>
-                  <p className="muted small driver-actions__note">{t('Calls go to {phone}.', { phone: formatPhone(driverPhone) })}</p>
-                </div>
-              ) : (
-                <div className="driver-actions">
-                  <Badge>{t('No phone number on file for this driver')}</Badge>
-                </div>
-              )}
-            </section>
-          ) : null}
+          {showDriver && trip.driver ? <DriverCard trip={trip} categories={categories} /> : null}
 
           {/* Cancelled */}
           {phase === 'cancelled' ? (

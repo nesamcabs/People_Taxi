@@ -63,6 +63,15 @@ export const TA_BOOKING: Record<string, string> = {
   '{n} hours': '{n} மணி நேரம்',
   hr: 'மணி',
   hrs: 'மணி',
+  'No drivers nearby right now': 'இப்போது அருகில் ஓட்டுநர்கள் இல்லை',
+  '1 driver nearby': 'அருகில் 1 ஓட்டுநர்',
+  '{n} drivers nearby': 'அருகில் {n} ஓட்டுநர்கள்',
+  'Verified driver': 'சரிபார்க்கப்பட்ட ஓட்டுநர்',
+  'Selfie taken at {time}': 'செல்ஃபி {time}-க்கு எடுக்கப்பட்டது',
+  'Open driver photo': 'ஓட்டுநர் புகைப்படத்தைத் திற',
+  'Open cab photo': 'கேப் புகைப்படத்தைத் திற',
+  'Live cab photo appears after the driver’s pre-trip check.': 'ஓட்டுநர் பயணத்துக்கு முந்தைய சோதனை முடித்ததும் கேப்பின் நேரடி புகைப்படம் இங்கே வரும்.',
+  '{n} seat': '{n} இருக்கை',
   '{n} seats': '{n} இருக்கைகள்',
 
   // ── Booking form (home) ──────────────────────────────────────────────────────────────────────────────────────────

@@ -15,6 +15,7 @@ export function categoryGroup(c: Pick<RideCategory, 'name' | 'seats'>): Category
 
 export function categoryPhoto(c: Pick<RideCategory, 'name' | 'seats'> & { imageUrl?: string }): string {
   if (c.imageUrl) return c.imageUrl;
+  if (isLocalOnlyCategory(c)) return `/vehicles/${/auto|rickshaw/i.test(c.name) ? 'auto' : 'bike'}.svg`;
   const art = vehicleArtFor(c);
   return `/vehicles/${art}.webp`;
 }

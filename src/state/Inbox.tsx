@@ -13,6 +13,8 @@ interface InboxValue {
   live: PartnerNotification | null;
   /** Hide the current popup (the next queued arrival, if any, follows). */
   dismissLive: () => void;
+  /** Keep the "Booking confirmed" popup away until the returned release is called. */
+  quietBookingConfirmed: () => () => void;
 }
 
 const Ctx = createContext<InboxValue | null>(null);
@@ -21,6 +23,15 @@ export function useInbox(): InboxValue {
   const v = useContext(Ctx);
   if (!v) throw new Error('InboxProvider is missing');
   return v;
+}
+
+/**
+ * While `active` (a cab is still being found), no "Booking confirmed" popup is shown: it would say the ride is settled
+ * while the screen below is still looking for a driver. The notification stays on the Notifications page.
+ */
+export function useQuietBookingConfirmed(active: boolean): void {
+  const { quietBookingConfirmed } = useInbox();
+  useEffect(() => (active ? quietBookingConfirmed() : undefined), [active, quietBookingConfirmed]);
 }
 
 /** Where a notification's call-to-action leads (page keys come from the server's `cta.page`). */
@@ -75,14 +86,25 @@ export function InboxProvider({ userId, children }: { userId?: string | null; ch
     }, { site: 'people_taxi' });
   }, [userId]);
 
+  // Screens still finding a cab ask for no "Booking confirmed" popup; one already waiting is dropped, not shown later.
+  const [quiet, setQuiet] = useState(0);
+  const quietBookingConfirmed = useCallback(() => {
+    setQuiet((n) => n + 1);
+    return () => setQuiet((n) => n - 1);
+  }, []);
+  const muted = useCallback((n: PartnerNotification) => quiet > 0 && n.title === 'Booking confirmed', [quiet]);
+  useEffect(() => {
+    if (queue.some(muted)) setQueue((q) => q.filter((n) => !muted(n)));
+  }, [queue, muted]);
+
   // A popup whose notification was read elsewhere (e.g. on the Notifications page) is skipped.
-  const live = queue.find((q) => !notifications.find((n) => n.id === q.id)?.read) ?? null;
+  const live = queue.find((q) => !muted(q) && !notifications.find((n) => n.id === q.id)?.read) ?? null;
   useEffect(() => {
     if (queue.length && queue[0] !== live) setQueue((q) => (live ? q.slice(q.indexOf(live)) : []));
   }, [queue, live]);
   const value = useMemo<InboxValue>(
-    () => ({ notifications, loaded, unreadCount: notifications.filter((n) => !n.read).length, live, dismissLive }),
-    [notifications, loaded, live, dismissLive],
+    () => ({ notifications, loaded, unreadCount: notifications.filter((n) => !n.read).length, live, dismissLive, quietBookingConfirmed }),
+    [notifications, loaded, live, dismissLive, quietBookingConfirmed],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

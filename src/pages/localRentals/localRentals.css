@@ -186,6 +186,35 @@
 .lr-locate.is-busy svg { animation: lr-spin 1s linear infinite; }
 @keyframes lr-spin { to { transform: rotate(360deg); } }
 
+/* Drivers on local duty nearby: small top-down cars on the map, and how many beside the locate button. */
+.lr-cabwrap { display: grid; place-items: center; border: 0; background: none; pointer-events: none; }
+.lr-cabwrap--g { position: absolute; width: 32px; height: 32px; margin: -16px 0 0 -16px; }
+.lr-cabdot { display: grid; place-items: center; width: 32px; height: 32px; filter: drop-shadow(0 2px 2px rgb(15 23 42 / 0.35)); }
+.lr-near {
+  position: absolute;
+  z-index: 5;
+  left: 14px;
+  bottom: calc(var(--lr-sheet, 240px) + 18px);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  max-width: calc(100% - 92px);
+  margin: 0;
+  padding: 6px 13px 6px 6px;
+  border-radius: 999px;
+  background: var(--surface, #fff);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.2);
+  color: #0f1f3d;
+  font-size: 0.8rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lr-near__icon { display: grid; flex: none; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--brand, #1665e8); color: #fff; }
+.lr-near.is-none { color: #55627a; }
+.lr-near.is-none .lr-near__icon { background: #94a3b8; }
+
 /* The rider's own position on the Leaflet map (Google draws its own blue dot). */
 .lr-mewrap { background: none; border: 0; }
 .lr-me { display: block; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; border: 3px solid #fff; background: #1a73e8; box-shadow: 0 0 0 0 rgb(26 115 232 / 0.45), 0 1px 4px rgb(0 0 0 / 0.35); animation: lr-me 2s ease-out infinite; }

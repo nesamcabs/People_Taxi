@@ -62,16 +62,8 @@
 .dn-next li > p { margin: 2px 0 0; color: #55627a; font-size: .78rem; font-weight: 600; line-height: 1.45; }
 .dn-next li.is-now > p { color: #1b3a8a; font-weight: 700; }
 
-/* Assigned driver and cab */
-.dn-driver { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 8px 10px; margin-top: 10px; padding: 12px; border: 1px solid #d6e3fb; border-radius: 14px; background: #f5f9ff; }
-.dn-driver__who { min-width: 0; }
-.dn-driver__who strong { display: block; font-size: .92rem; font-weight: 900; }
-.dn-driver__who small { display: block; color: #55627a; font-size: .74rem; font-weight: 700; }
-.dn-driver__plate { grid-column: 1 / -1; justify-self: center; padding: 4px 14px; border: 2px solid #0f1f3d; border-radius: 7px; background: #ffd23f; color: #111827; font-size: .95rem; font-weight: 900; letter-spacing: .08em; }
-.dn-driver__actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr; gap: 8px; }
-.dn-driver__actions a:first-child { white-space: nowrap; }
-.dn-driver__actions a { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 8px; border: 1.5px solid var(--brand, #1665e8); border-radius: 11px; background: #fff; color: var(--brand, #1665e8); font-size: .78rem; font-weight: 800; text-decoration: none; }
-.dn-driver__actions a:first-child { background: var(--brand, #1665e8); color: #fff; }
+/* Assigned driver and cab: the shared driver card (components/driverCard.css). */
+.dn-driver { margin-top: 10px; }
 
 @media (prefers-reduced-motion: no-preference) {
   .dn-card, .dn-next { animation: dn-rise .45s cubic-bezier(.2, .8, .3, 1) both; }

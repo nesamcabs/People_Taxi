@@ -80,6 +80,8 @@
 .fcab.is-on .fcab__tick { border-color: var(--a); background: var(--a); transform: scale(1.06); box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--a) 70%, transparent); }
 
 .fcab__facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 0; padding: 0; list-style: none; }
+/* Bike / Auto have no AC chip, so the two that remain share the row. */
+.fcab__facts:not(:has(li:nth-child(3))) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .fcab__facts li { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; padding: 4px 5px; border-radius: 9px; background: rgb(255 255 255 / .86); color: var(--muted); font-size: .7rem; font-weight: 600; white-space: nowrap; box-shadow: 0 0 0 1px color-mix(in srgb, var(--a) 14%, transparent); }
 .fcab__facts li > .icon { flex: none; color: var(--a); }
 .fcab__facts b { color: var(--ink); font-weight: 800; }

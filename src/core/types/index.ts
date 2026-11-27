@@ -147,6 +147,8 @@ export interface DriverCard {
   rating: number | null;
   vehicleModel: string;
   vehicleNumber: string;
+  /** When the driver's pre-trip selfie and cab photos were taken (empty until then); the card reloads them when it changes. */
+  checkedAt?: string;
 }
 
 export interface DriverPresence {

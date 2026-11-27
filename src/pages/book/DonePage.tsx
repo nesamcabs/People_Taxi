@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useCustomerData } from '@/state/customer';
-import { formatDate, formatPhone, formatTime, localMobile } from '@core/utils/format';
-import { Avatar, Button, PageLoader } from '@/components/ui';
+import { formatDate, formatTime } from '@core/utils/format';
+import { Button, PageLoader } from '@/components/ui';
+import { DriverCard } from '@/components/DriverCard';
 import { Icon } from '@/components/Icon';
 import { useBooking } from '@/state/Booking';
 import type { TripRecord, TripType } from '@core/types';
@@ -86,7 +87,6 @@ export function DonePage() {
   const cancelled = h.tone === 'bad';
   // The trip list is live, so the driver card appears here the moment a driver is assigned.
   const driver = cancelled ? null : trip.driver;
-  const driverPhone = driver ? localMobile(driver.phone) : '';
   const note = t(driverNote(trip));
   const title = t(cancelled || awaitingPayment ? h.title : driver ? 'Driver assigned' : 'Booking confirmed');
   const tag = t(cancelled ? 'Cancelled' : awaitingPayment ? 'Payment pending' : 'Confirmed');
@@ -162,25 +162,7 @@ export function DonePage() {
                   <p>{note}</p>
                   {driver ? (
                     <div className="dn-driver">
-                      <Avatar name={driver.name} photoUrl={driver.photoUrl} size={48} />
-                      <div className="dn-driver__who">
-                        <strong>{driver.name}</strong>
-                        <small>
-                          {driver.rating != null ? `★ ${driver.rating.toFixed(1)} · ` : ''}
-                          {driver.vehicleModel || tripCategoryName(categories, trip)}
-                        </small>
-                      </div>
-                      {driver.vehicleNumber ? <span className="dn-driver__plate">{driver.vehicleNumber}</span> : null}
-                      {driverPhone ? (
-                        <div className="dn-driver__actions">
-                          <a href={`tel:+91${driverPhone}`}>
-                            <Icon name="phone" size={15} /> {t('Call {phone}', { phone: formatPhone(driverPhone) })}
-                          </a>
-                          <a href={`https://wa.me/91${driverPhone}`} target="_blank" rel="noopener noreferrer">
-                            <Icon name="chat" size={15} /> WhatsApp
-                          </a>
-                        </div>
-                      ) : null}
+                      <DriverCard trip={trip} categories={categories} />
                     </div>
                   ) : null}
                 </li>

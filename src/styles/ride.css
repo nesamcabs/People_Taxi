@@ -201,28 +201,6 @@
   letter-spacing: 0.2em;
 }
 
-.driver-card {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px 16px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  box-shadow: var(--shadow-1);
-}
-.driver-card__text {
-  display: grid;
-  flex: 1 1 140px;
-  min-width: 0;
-}
-.driver-card__text strong {
-  color: var(--ink);
-  font-size: var(--fs-lg);
-  font-weight: 900;
-  overflow-wrap: anywhere;
-}
 .plate {
   padding: 6px 14px;
   border: 2px solid var(--ink);
@@ -231,18 +209,6 @@
   color: var(--ink);
   font-weight: 900;
   letter-spacing: 0.06em;
-}
-.driver-actions {
-  display: flex;
-  flex: 1 1 100%;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  padding-top: 12px;
-  border-top: 1px solid var(--line);
-}
-.driver-actions__note {
-  flex-basis: 100%;
 }
 
 .done-card {

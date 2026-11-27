@@ -176,6 +176,7 @@ export function mapBooking(id: string, d: Record<string, unknown>): TripRecord {
         rating: typeof d.driverRating === 'number' ? d.driverRating : null,
         vehicleModel: str(d.assignedVehicleModel),
         vehicleNumber: str(d.assignedVehicleNumber),
+        checkedAt: d.preTrip && typeof d.preTrip === 'object' ? str((d.preTrip as Record<string, unknown>).capturedAt || (d.preTrip as Record<string, unknown>).sessionId) : '',
       }
     : null;
 
@@ -488,6 +489,21 @@ export async function rateTrip(trip: TripRecord, _profile: UserProfile, rating: 
   const stars = Math.round(rating.stars);
   if (stars < 1 || stars > 5) throw new Error('Choose between 1 and 5 stars.');
   await callFunction<Record<string, unknown>, { rated: boolean }>('rateDriver', { ...rating, stars, bookingId: trip.id }, 30000);
+}
+
+/** The driver's live selfie and the cab's front photo from the pre-trip check, and the driver's profile photo ('' when not available). */
+export interface DriverPhotos {
+  selfieUrl: string;
+  carUrl: string;
+  profileUrl: string;
+  checkedAt: string;
+}
+
+/** Only the booking's own rider gets these; the server checks it. */
+export async function fetchDriverPhotos(bookingId: string): Promise<DriverPhotos> {
+  const r = await callFunction<{ bookingId: string }, Partial<DriverPhotos>>('customerDriverPhotos', { bookingId }, 20000);
+  const url = (v: unknown) => (typeof v === 'string' && /^https:\/\//.test(v) ? v : '');
+  return { selfieUrl: url(r?.selfieUrl), carUrl: url(r?.carUrl), profileUrl: url(r?.profileUrl), checkedAt: typeof r?.checkedAt === 'string' ? r.checkedAt : '' };
 }
 
 // ── SOS ─────────────────────────────────────────────────────────────────────

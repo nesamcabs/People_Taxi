@@ -99,11 +99,6 @@
   font-weight: 800;
 }
 .lride-driver__status.is-arrived { background: #fff7e6; color: #9a5b00; }
-.lride-driver__row { display: flex; align-items: center; gap: 12px; }
-.lride-driver__who { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.lride-driver__who strong { overflow: hidden; color: #0f1f3d; font-size: 1rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-.lride-driver__who small { overflow: hidden; color: #66728a; font-size: 0.78rem; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
-.lride-driver .plate { flex: none; }
 .lride-otp {
   display: flex;
   align-items: center;
@@ -120,8 +115,6 @@
 .lride-otp__code { flex: none; color: var(--brand, #1665e8); font-size: 1.5rem; font-weight: 900; letter-spacing: 0.22em; }
 .lride-otp.is-arrived { border-color: #16a34a; background: #eefaf2; }
 .lride-otp.is-arrived .lride-otp__code { color: #067647; }
-.lride-driver__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.lride-driver__actions .btn { justify-content: center; }
 
 /* Trip: status tag and reference, pickup → drop, then cab · fare · payment on one line. */
 .lride-trip { display: grid; gap: 12px; }

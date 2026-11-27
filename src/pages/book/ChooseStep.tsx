@@ -371,8 +371,8 @@ export function ChooseStep() {
                     </div>
 
                     <ul className="fcab__facts">
-                      <li><Icon name="seats" size={14} /> <span>{richText(t('{n} seats'), { n: <b key="n">{c.seats}</b> })}</span></li>
-                      <li><Icon name="snowflake" size={14} /> <span>{richText(t('{ac} cab'), { ac: <b key="ac">AC</b> })}</span></li>
+                      <li><Icon name="seats" size={14} /> <span>{richText(t(c.seats === 1 ? '{n} seat' : '{n} seats'), { n: <b key="n">{c.seats}</b> })}</span></li>
+                      {isLocalOnlyCategory(c) ? null : <li><Icon name="snowflake" size={14} /> <span>{richText(t('{ac} cab'), { ac: <b key="ac">AC</b> })}</span></li>}
                       <li><Icon name="trolley-bag" size={14} /> <span>{richText(t('{n} bags'), { n: <b key="n">{(c as any).luggage ?? (c.seats >= 6 ? 4 : 2)}</b> })}</span></li>
                     </ul>
 
@@ -454,7 +454,7 @@ export function ChooseStep() {
                 <div className="sel-card__car">
                   <div>
                     <strong>{categoryName(selected)}</strong>
-                    <small className="muted">{t('{n} seats', { n: selected.seats })} · AC</small>
+                    <small className="muted">{t(selected.seats === 1 ? '{n} seat' : '{n} seats', { n: selected.seats })}{isLocalOnlyCategory(selected) ? '' : ' · AC'}</small>
                   </div>
                   <img src={categoryPhoto(selected)} alt={selected.name} decoding="async" />
                 </div>

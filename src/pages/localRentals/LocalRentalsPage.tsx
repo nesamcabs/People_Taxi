@@ -37,10 +37,13 @@ import { SERVICES, serviceHref } from '@/lib/services';
 import { loadGoogleMaps, hasGoogleMapsWebKey, onGoogleMapsFailure } from '@/lib/googleMaps';
 import { CancelDialog } from '@/pages/ride/dialogs';
 import { useToasts } from '@/state/Toasts';
+import { useQuietBookingConfirmed } from '@/state/Inbox';
 import { FareDialog } from '@/pages/book/parts';
 import { OutstationDialog } from './OutstationDialog';
 import { RideKindIcon } from '@/components/RideKindIcon';
 import { forKind, rideKind } from '@/lib/rideKind';
+import { useNearbyDrivers, type NearbyDot } from '@/lib/nearbyDrivers';
+import { cabDotHtml, cabDotKey } from './cabDots';
 import './localRentals.css';
 
 type Mode = 'hourly' | 'pickup';
@@ -103,10 +106,11 @@ const ROAD_COLOR = '#1665e8';
 /** Finding a cab: a small radar sweeping round the pickup (two rings spreading out and a turning beam). Pure CSS (.lr-radar). */
 const RADAR_HTML = '<span class="lr-radar" aria-hidden="true"><i></i><i></i><b></b></span>';
 
-function LeafletPinMap({ picking, target, pins, sheetH, onPick, me, road, pulse }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null; road: Road; pulse: LatLng | null }) {
+function LeafletPinMap({ picking, target, pins, sheetH, onPick, me, road, pulse, cabs }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null; road: Road; pulse: LatLng | null; cabs: NearbyDot[] }) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<L.Map | null>(null);
   const layer = useRef<L.LayerGroup | null>(null);
+  const cabLayer = useRef<L.LayerGroup | null>(null);
   const meMarker = useRef<L.Marker | null>(null);
   const programmatic = useRef(false);
   const gesture = useRef(false); // true only after the rider dragged or pinched: a resize of the map must never count as moving the pin
@@ -118,6 +122,7 @@ function LeafletPinMap({ picking, target, pins, sheetH, onPick, me, road, pulse 
     if (!el || map.current) return undefined;
     const m = L.map(el, { zoomControl: false, attributionControl: true }).setView([STATE_VIEW.lat, STATE_VIEW.lng], STATE_VIEW.zoom);
     L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(m);
+    cabLayer.current = L.layerGroup().addTo(m);
     layer.current = L.layerGroup().addTo(m);
     map.current = m;
     m.on('dragstart', () => { gesture.current = true; });
@@ -134,8 +139,18 @@ function LeafletPinMap({ picking, target, pins, sheetH, onPick, me, road, pulse 
     });
     const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => m.invalidateSize()) : null;
     ro?.observe(el);
-    return () => { ro?.disconnect(); m.remove(); map.current = null; meMarker.current = null; };
+    return () => { ro?.disconnect(); m.remove(); map.current = null; meMarker.current = null; cabLayer.current = null; };
   }, []);
+
+  // Drivers on duty nearby: small cars under the pins.
+  useEffect(() => {
+    const g = cabLayer.current;
+    if (!g) return;
+    g.clearLayers();
+    for (const d of cabs) {
+      L.marker([d.lat, d.lng], { icon: L.divIcon({ className: 'lr-cabwrap', html: cabDotHtml(d), iconSize: [32, 32], iconAnchor: [16, 16] }), keyboard: false, interactive: false, zIndexOffset: -50 }).addTo(g);
+    }
+  }, [cabDotKey(cabs)]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Finding a cab: the radar on the pickup.
   useEffect(() => {
@@ -197,10 +212,11 @@ function LeafletPinMap({ picking, target, pins, sheetH, onPick, me, road, pulse 
 
 // ── Google Maps (the map the sites use everywhere else) ─────────────────────────────────────────────────────────────────────
 // The map ends at the top of the sheet, so Google's own logo and terms stay visible and the pin is simply the middle of the map.
-function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me, road, pulse }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; onFail: () => void; me: LatLng | null; road: Road; pulse: LatLng | null }) {
+function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me, road, pulse, cabs }: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; onFail: () => void; me: LatLng | null; road: Road; pulse: LatLng | null; cabs: NearbyDot[] }) {
   const host = useRef<HTMLDivElement>(null);
   const map = useRef<any>(null);
   const overlays = useRef<any[]>([]);
+  const cabMarks = useRef<any[]>([]);
   const meMarker = useRef<any>(null);
   const last = useRef<LatLng | null>(null);
   const placed = useRef(false); // set once the first position has been applied: Google's first idle event is not the rider moving the pin
@@ -239,6 +255,8 @@ function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me, road,
       stopFailureListener();
       overlays.current.forEach((o) => o.setMap?.(null));
       overlays.current = [];
+      cabMarks.current.forEach((o) => o.setMap?.(null));
+      cabMarks.current = [];
       meMarker.current?.setMap(null);
       meMarker.current = null;
       if (map.current) window.google?.maps?.event?.clearInstanceListeners(map.current);
@@ -268,6 +286,28 @@ function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me, road,
     if (meMarker.current) meMarker.current.setPosition(pos);
     else meMarker.current = new maps.Marker({ map: m, position: pos, clickable: false, zIndex: 4, title: 'Your location', icon: { path: maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#1a73e8', fillOpacity: 1, strokeColor: '#fff', strokeWeight: 3 } });
   }, [me?.lat, me?.lng, ready]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Drivers on duty nearby: small cars (HTML overlays under the pins), redrawn when the list changes.
+  useEffect(() => {
+    const m = map.current;
+    const maps = window.google?.maps;
+    if (!m || !maps || !ready) return;
+    cabMarks.current.forEach((o) => o.setMap(null));
+    cabMarks.current = cabs.map((d) => {
+      const holder = document.createElement('div');
+      holder.className = 'lr-cabwrap lr-cabwrap--g';
+      holder.innerHTML = cabDotHtml(d);
+      const ov = new maps.OverlayView();
+      ov.onAdd = () => ov.getPanes().overlayLayer.appendChild(holder);
+      ov.draw = () => {
+        const pt = ov.getProjection()?.fromLatLngToDivPixel(new maps.LatLng(d.lat, d.lng));
+        if (pt) { holder.style.left = `${pt.x}px`; holder.style.top = `${pt.y}px`; }
+      };
+      ov.onRemove = () => holder.remove();
+      ov.setMap(m);
+      return ov;
+    });
+  }, [cabDotKey(cabs), ready]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Finding a cab: the radar on the pickup (a small HTML overlay, under the pickup marker).
   useEffect(() => {
@@ -339,10 +379,10 @@ function GooglePinMap({ picking, target, pins, sheetH, onPick, onFail, me, road,
 }
 
 /** Google Maps with the sites' key. If Google cannot load, or rejects the key, the same page keeps working on the open map. */
-function PinMap(props: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null; road: Road; pulse: LatLng | null }) {
+function PinMap(props: { picking: boolean; target: Target | null; pins: Pin[]; sheetH: number; onPick: (ll: LatLng) => void; me: LatLng | null; road: Road; pulse: LatLng | null; cabs: NearbyDot[] }) {
   const [provider, setProvider] = useState<'google' | 'leaflet'>(hasGoogleMapsWebKey ? 'google' : 'leaflet');
   return provider === 'google'
-    ? <GooglePinMap picking={props.picking} target={props.target} pins={props.pins} sheetH={props.sheetH} onPick={props.onPick} me={props.me} road={props.road} pulse={props.pulse} onFail={() => setProvider('leaflet')} />
+    ? <GooglePinMap picking={props.picking} target={props.target} pins={props.pins} sheetH={props.sheetH} onPick={props.onPick} me={props.me} road={props.road} pulse={props.pulse} cabs={props.cabs} onFail={() => setProvider('leaflet')} />
     : <LeafletPinMap {...props} />;
 }
 
@@ -454,6 +494,12 @@ function LocalRentalsSheet() {
   useEffect(() => (rideId ? subscribeToBoardingOtp(rideId, setRideOtp) : undefined), [rideId]);
 
   const picking = !rideId && stage !== 'when';
+
+  // Drivers on local duty for this service near the pickup (the place under the pin while the pickup is being chosen).
+  // Not while a ride is booked: then the map follows that ride.
+  const nearAt = rideId ? null : stage === 'pickup' ? cand ?? pickup : pickup;
+  const nearby = useNearbyDrivers(nearAt ? { lat: nearAt.lat, lng: nearAt.lng } : null, mode === 'hourly' ? 'rental' : 'pickup_drop', !rideId);
+  const nearbyCabs = useMemo(() => nearby?.drivers ?? [], [nearby]);
 
   const flyTo = useCallback((ll: LatLng, zoom = 16) => setTarget({ lat: ll.lat, lng: ll.lng, zoom, n: ++seq.current }), []);
 
@@ -765,6 +811,8 @@ function LocalRentalsSheet() {
   const rideClosed = rideGone || ridePhase === 'cancelled' || ride?.status === 'Rejected';
   const rideFinding = !!rideId && !rideClosed && (ridePhase === 'awaiting_review' || ridePhase === 'arranging' || ridePhase === 'partner_confirmed');
   const pulse = rideFinding && rideFrom ? { lat: rideFrom.lat, lng: rideFrom.lng } : null;
+  // No "Booking confirmed" popup over the search (from the tap on Book until a driver accepts).
+  useQuietBookingConfirmed(rideFinding || (booking && when === 'now'));
 
   const pins: Pin[] = useMemo(() => {
     const out: Pin[] = [];
@@ -1012,7 +1060,7 @@ function LocalRentalsSheet() {
                 <button type="button" role="radio" aria-checked={on} disabled={!fq} className="lr-cab__pick" onClick={pick}>
                   <span className="lr-cab__text">
                     <strong>{categoryName(c)}</strong>
-                    <small>{[`${c.seats} seats`, 'AC', hrs, km].filter(Boolean).join(' · ')}</small>
+                    <small>{[`${c.seats} ${c.seats === 1 ? 'seat' : 'seats'}`,isLocalOnlyCategory(c) ? '' : 'AC', hrs, km].filter(Boolean).join(' · ')}</small>
                   </span>
                   <span className="lr-cab__price">
                     {fq ? (
@@ -1034,7 +1082,7 @@ function LocalRentalsSheet() {
 
   return (
     <div className="lr" style={style} role="dialog" aria-label={t('Local Rentals')}>
-      <PinMap picking={picking} target={target} pins={pins} sheetH={sheetH} onPick={onPick} me={position ? { lat: position.lat, lng: position.lng } : null} road={road} pulse={pulse} />
+      <PinMap picking={picking} target={target} pins={pins} sheetH={sheetH} onPick={onPick} me={position ? { lat: position.lat, lng: position.lng } : null} road={road} pulse={pulse} cabs={nearbyCabs} />
 
       <header className="lr-top">
         <div className="lr-top__row">
@@ -1079,6 +1127,13 @@ function LocalRentalsSheet() {
       <button type="button" className={`lr-locate ${locating ? 'is-busy' : ''} ${position ? 'is-on' : ''}`} aria-label={t('Detect my current location')} title={t('Detect my current location')} onClick={() => void useMyLocation()} disabled={locating}>
         <Icon name="navigation" size={20} />
       </button>
+
+      {nearby ? (
+        <p className={`lr-near ${nearby.count ? '' : 'is-none'}`} role="status">
+          <span className="lr-near__icon" aria-hidden="true"><Icon name="car" size={14} /></span>
+          {nearby.count === 0 ? t('No drivers nearby right now') : nearby.count === 1 ? t('1 driver nearby') : t('{n} drivers nearby', { n: nearby.count })}
+        </p>
+      ) : null}
 
       <div className="lr-dock" ref={dock}>
         {rideSheet ?? (stage !== 'when' ? (
