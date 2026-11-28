@@ -15,7 +15,7 @@ import { AccountHold, AuthFlow, LoadError, ProfileSetup } from '@/pages/auth/Aut
 import { LegalGate } from '@/pages/auth/LegalGate';
 import { LoginModal } from '@/components/LoginModal';
 
-// Pages load on demand: the booking map (Leaflet) and the other screens stay out of the first download.
+// Page load on demand: the booking map (Leaflet) and the other screens stay out of the first download.
 const page = <K extends string>(load: () => Promise<Record<K, React.ComponentType<never>>>, name: K) =>
   lazy(async () => ({ default: (await load())[name] as React.ComponentType }));
 const loadBookPage = () => import('@/pages/book/BookPage');
