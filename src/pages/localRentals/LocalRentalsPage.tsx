@@ -43,7 +43,7 @@ import { OutstationDialog } from './OutstationDialog';
 import { RideKindIcon } from '@/components/RideKindIcon';
 import { forKind, rideKind } from '@/lib/rideKind';
 import { useNearbyDrivers, type NearbyDot } from '@/lib/nearbyDrivers';
-import { cabDotHtml, cabDotKey } from './cabDots';
+import { cabArt, cabDotHtml, cabDotKey, mostKind } from './cabDots';
 import './localRentals.css';
 
 type Mode = 'hourly' | 'pickup';
@@ -500,6 +500,8 @@ function LocalRentalsSheet() {
   const nearAt = rideId ? null : stage === 'pickup' ? cand ?? pickup : pickup;
   const nearby = useNearbyDrivers(nearAt ? { lat: nearAt.lat, lng: nearAt.lng } : null, mode === 'hourly' ? 'rental' : 'pickup_drop', !rideId);
   const nearbyCabs = useMemo(() => nearby?.drivers ?? [], [nearby]);
+  const nearbyArt = useMemo(() => ({ __html: cabArt(mostKind(nearbyCabs)) }), [nearbyCabs]);
+  const nearestKm = nearby?.count && nearby.nearestKm !== null ? (nearby.nearestKm < 10 ? nearby.nearestKm.toFixed(1) : String(Math.round(nearby.nearestKm))) : null;
 
   const flyTo = useCallback((ll: LatLng, zoom = 16) => setTarget({ lat: ll.lat, lng: ll.lng, zoom, n: ++seq.current }), []);
 
@@ -1080,6 +1082,18 @@ function LocalRentalsSheet() {
     </section>
   );
 
+  const locateButton = (
+    <button type="button" className={`lr-locate ${locating ? 'is-busy' : ''} ${position ? 'is-on' : ''}`} aria-label={t('Detect my current location')} title={t('Detect my current location')} onClick={() => void useMyLocation()} disabled={locating}>
+      <Icon name="navigation" size={nearby ? 17 : 20} />
+    </button>
+  );
+
+  // The plan sheet's collapse handle belongs at the top of the card: in the status row when that is joined on, else in the sheet.
+  const gripButton = (
+    <button type="button" className="lr-gripbtn" aria-label={t(peek ? 'Show the trip details' : 'Show more of the map')} aria-expanded={!peek} onClick={() => setPeek((p) => !p)} />
+  );
+  const gripInBar = !!nearby && !rideSheet && stage === 'when';
+
   return (
     <div className="lr" style={style} role="dialog" aria-label={t('Local Rentals')}>
       <PinMap picking={picking} target={target} pins={pins} sheetH={sheetH} onPick={onPick} me={position ? { lat: position.lat, lng: position.lng } : null} road={road} pulse={pulse} cabs={nearbyCabs} />
@@ -1124,18 +1138,24 @@ function LocalRentalsSheet() {
         </>
       ) : null}
 
-      <button type="button" className={`lr-locate ${locating ? 'is-busy' : ''} ${position ? 'is-on' : ''}`} aria-label={t('Detect my current location')} title={t('Detect my current location')} onClick={() => void useMyLocation()} disabled={locating}>
-        <Icon name="navigation" size={20} />
-      </button>
-
-      {nearby ? (
-        <p className={`lr-near ${nearby.count ? '' : 'is-none'}`} role="status">
-          <span className="lr-near__icon" aria-hidden="true"><Icon name="car" size={14} /></span>
-          {nearby.count === 0 ? t('No drivers nearby right now') : nearby.count === 1 ? t('1 driver nearby') : t('{n} drivers nearby', { n: nearby.count })}
-        </p>
-      ) : null}
+      {nearby ? null : <div className="lr-mapbar">{locateButton}</div>}
 
       <div className="lr-dock" ref={dock}>
+        {/* Part of the dock, not floating on the map: it joins the top of the sheet, and the map (with its logo) ends above it. */}
+        {nearby ? (
+          <div className="lr-mapbar has-near">
+            {gripInBar ? gripButton : null}
+            <div className={`lr-near ${nearby.count ? 'is-live' : 'is-none'}`} role="status">
+              {/* Fixed artwork from cabDots, the same little car that is on the map. */}
+              <span className="lr-near__radar" aria-hidden="true"><span className="lr-near__art" dangerouslySetInnerHTML={nearbyArt} /></span>
+              <span className="lr-near__text">
+                <small className="lr-near__eyebrow"><i /><span>{nearby.count === 0 ? t('Searching nearby') : nearestKm ? t('Live · {km} km away', { km: nearestKm }) : t('Live')}</span></small>
+                <b>{nearby.count === 0 ? t('No drivers nearby right now') : nearby.count === 1 ? t('1 driver nearby') : t('{n} drivers nearby', { n: nearby.count })}</b>
+              </span>
+            </div>
+            {locateButton}
+          </div>
+        ) : null}
         {rideSheet ?? (stage !== 'when' ? (
           <section key={stage} className="lr-sheet" aria-label={t(stage === 'drop' ? 'Set drop location' : 'Set pickup location')}>
             {approx && !locating ? <p className="lr-hint" role="status">{t(approx)}</p> : null}
@@ -1170,7 +1190,7 @@ function LocalRentalsSheet() {
           </section>
         ) : (
           <section key="when" className={`lr-sheet lr-sheet--tall ${peek ? 'is-peek' : ''}`} aria-label={t('Plan your trip')}>
-            <button type="button" className="lr-gripbtn" aria-label={t(peek ? 'Show the trip details' : 'Show more of the map')} aria-expanded={!peek} onClick={() => setPeek((p) => !p)} />
+            {gripInBar ? null : gripButton}
 
             <div className="lr-body">
             <div className="lr-trip">

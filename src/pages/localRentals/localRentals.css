@@ -165,12 +165,21 @@
 .lr-tag--to i { border-radius: 3px; background: var(--lr-red); }
 .lr-tag span { overflow: hidden; text-overflow: ellipsis; }
 
-.lr-locate {
+/* The locate button floating above the sheet, kept clear of the map's logo and attribution. With the drivers-nearby status
+   (Pickup & Drop and Rental) the two make one row, same-size tiles, that is the top part of the sheet's card. */
+.lr-mapbar {
   position: absolute;
   z-index: 5;
   right: 14px;
-  bottom: calc(var(--lr-sheet, 240px) + 14px);
+  bottom: calc(var(--lr-sheet, 240px) + 28px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.lr-locate {
+  position: relative;
   display: grid;
+  flex: none;
   place-items: center;
   width: 46px;
   height: 46px;
@@ -180,6 +189,7 @@
   color: var(--brand, #1665e8);
   box-shadow: 0 6px 18px rgb(15 23 42 / 0.2);
   cursor: pointer;
+  transition: background-color 0.2s, color 0.2s;
 }
 .lr-locate:disabled { opacity: 0.6; cursor: progress; }
 .lr-locate.is-on { background: var(--brand, #1665e8); color: #fff; }
@@ -190,30 +200,127 @@
 .lr-cabwrap { display: grid; place-items: center; border: 0; background: none; pointer-events: none; }
 .lr-cabwrap--g { position: absolute; width: 32px; height: 32px; margin: -16px 0 0 -16px; }
 .lr-cabdot { display: grid; place-items: center; width: 32px; height: 32px; filter: drop-shadow(0 2px 2px rgb(15 23 42 / 0.35)); }
-.lr-near {
-  position: absolute;
-  z-index: 5;
-  left: 14px;
-  bottom: calc(var(--lr-sheet, 240px) + 18px);
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  max-width: calc(100% - 92px);
-  margin: 0;
-  padding: 6px 13px 6px 6px;
-  border-radius: 999px;
+/* The bar: a radar with the same car that is on the map, a LIVE / searching line and the count, then the locate button.
+   Live: brand radar with rings going out. None: a pale radar that keeps sweeping, so it reads as "still looking". */
+.lr-mapbar.has-near {
+  position: relative;
+  z-index: 1;
+  right: auto;
+  bottom: auto;
+  flex: none;
+  width: 100%;
+  max-width: 560px;
+  box-sizing: border-box;
+  padding: 8px 14px 6px;
+  border-radius: 20px 20px 0 0;
   background: var(--surface, #fff);
-  box-shadow: 0 6px 18px rgb(15 23 42 / 0.2);
-  color: #0f1f3d;
-  font-size: 0.8rem;
-  font-weight: 800;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  box-shadow: 0 -8px 22px -12px rgb(15 23 42 / 0.3);
+  pointer-events: auto;
 }
-.lr-near__icon { display: grid; flex: none; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--brand, #1665e8); color: #fff; }
-.lr-near.is-none { color: #55627a; }
-.lr-near.is-none .lr-near__icon { background: #94a3b8; }
+.lr-mapbar.has-near { flex-wrap: wrap; row-gap: 2px; }
+.lr-mapbar.has-near .lr-gripbtn { flex: 0 0 100%; margin-top: -6px; }
+/* A hairline under the row, and the sheet below loses its own top corners so the two read as one card. */
+.lr-mapbar.has-near::after { content: ''; position: absolute; right: 14px; bottom: 0; left: 14px; height: 1px; background: var(--line, #e8edf4); }
+.lr-dock .lr-mapbar.has-near ~ .lr-sheet { max-height: calc(var(--lr-max) - 50px); border-top-left-radius: 0; border-top-right-radius: 0; }
+.lr-mapbar.has-near .lr-locate {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--brand, #1665e8) 10%, var(--surface, #fff));
+  box-shadow: none;
+}
+.lr-mapbar.has-near .lr-locate.is-on { background: var(--brand, #1665e8); color: #fff; box-shadow: 0 4px 10px -2px color-mix(in srgb, var(--brand, #1665e8) 55%, transparent); }
+/* A thin line between the status and the button. */
+.lr-mapbar.has-near .lr-locate::before { content: ''; position: absolute; top: 7px; bottom: 7px; left: -6px; width: 1px; background: var(--line, #e2e8f0); }
+
+.lr-near {
+  --near: var(--brand, #1665e8);
+  --near-tone: var(--lr-green);
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: var(--ink, #0f1f3d);
+}
+.lr-near.is-none { --near: #64748b; --near-tone: #d97706; }
+
+.lr-near__radar {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--near) 82%, #fff), var(--near) 55%, color-mix(in srgb, var(--near) 78%, #000));
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.28), 0 4px 10px -2px color-mix(in srgb, var(--near) 55%, transparent);
+  isolation: isolate;
+}
+/* Two rings that leave the tile one after the other, like a ping. */
+.lr-near__radar::before,
+.lr-near__radar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  border: 2px solid var(--near);
+  opacity: 0;
+  animation: lr-near-ping 2.4s ease-out infinite;
+}
+.lr-near__radar::after { animation-delay: 1.2s; }
+.lr-near__art { display: grid; place-items: center; width: 100%; height: 100%; }
+.lr-near__art svg { width: auto; height: 22px; filter: drop-shadow(0 1px 1.5px rgb(15 23 42 / 0.4)); }
+
+/* None: a pale radar with a turning beam, and the car greyed inside it. */
+.lr-near.is-none .lr-near__radar {
+  overflow: hidden;
+  background:
+    radial-gradient(circle, transparent 0 34%, color-mix(in srgb, var(--near) 22%, transparent) 35% 37%, transparent 38% 64%, color-mix(in srgb, var(--near) 22%, transparent) 65% 67%, transparent 68%),
+    color-mix(in srgb, var(--near) 10%, #fff);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--near) 28%, transparent);
+}
+.lr-near.is-none .lr-near__radar::before {
+  inset: -30%;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0 70%, color-mix(in srgb, var(--near-tone) 55%, transparent) 100%);
+  opacity: 1;
+  animation: lr-spin 2.2s linear infinite;
+  z-index: 0;
+}
+.lr-near.is-none .lr-near__radar::after { display: none; }
+.lr-near.is-none .lr-near__art { position: relative; z-index: 1; }
+.lr-near.is-none .lr-near__art svg { height: 19px; filter: grayscale(1) opacity(0.55); }
+
+.lr-near__text { display: grid; gap: 0; min-width: 0; padding: 1px 0; line-height: 1.2; }
+.lr-near__eyebrow span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* Up to two lines, so a longer Tamil line wraps instead of being cut. */
+.lr-near__text b { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: 0.78rem; font-weight: 800; letter-spacing: -0.01em; }
+.lr-near.is-none .lr-near__text b { color: #334155; }
+.lr-near__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding-left: 1px;
+  color: color-mix(in srgb, var(--near-tone) 88%, #000);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.lr-near__eyebrow i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--near-tone); box-shadow: 0 0 0 0 color-mix(in srgb, var(--near-tone) 55%, transparent); animation: lr-near-dot 1.6s ease-out infinite; }
+
+@keyframes lr-near-ping { 0% { opacity: 0.55; transform: scale(1); } 100% { opacity: 0; transform: scale(1.35); } }
+@keyframes lr-near-dot { 70% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--near-tone) 0%, transparent); } 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--near-tone) 0%, transparent); } }
+@media (prefers-reduced-motion: reduce) {
+  .lr-near__radar::before,
+  .lr-near__radar::after,
+  .lr-near__eyebrow i { animation: none; }
+  .lr-near.is-none .lr-near__radar::before { opacity: 0.6; }
+}
 
 /* The rider's own position on the Leaflet map (Google draws its own blue dot). */
 .lr-mewrap { background: none; border: 0; }
@@ -228,7 +335,8 @@
   right: 0;
   bottom: 0;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
   pointer-events: none;
 }
 .lr-sheet {
@@ -420,7 +528,7 @@
   .lr { --lr-max: calc(100dvh - var(--nav-h, 72px) - var(--tabbar-occupied, 80px) - 80px); }
   .lr-dock { padding: 0 12px var(--tabbar-occupied, 76px); }
   .lr-sheet { border-radius: 24px; box-shadow: 0 10px 34px rgb(15 23 42 / 0.26); padding-bottom: 18px; }
-  .lr-locate { right: 16px; }
+  .lr-mapbar:not(.has-near) { right: 16px; }
 }
 @media (min-width: 900px) {
   .lr-find { left: 20px; }

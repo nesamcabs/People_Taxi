@@ -32,5 +32,15 @@ const angleOf = (d: NearbyDot) => Math.abs(Math.round((d.lat * 7919 + d.lng * 10
 
 export const cabDotKey = (cabs: NearbyDot[]) => cabs.map((d) => `${d.kind}:${d.lat},${d.lng}`).join('|');
 
+/** The plain artwork for one kind, upright (the "drivers nearby" card shows it). */
+export const cabArt = (kind: NearbyKind) => SVG[kind];
+
+/** The kind most of the nearby drivers are, so the card shows a bike when only bikes are out. */
+export function mostKind(cabs: NearbyDot[]): NearbyKind {
+  const n: Record<NearbyKind, number> = { cab: 0, auto: 0, bike: 0 };
+  for (const d of cabs) n[d.kind] += 1;
+  return n.bike > n.cab && n.bike >= n.auto ? 'bike' : n.auto > n.cab && n.auto > n.bike ? 'auto' : 'cab';
+}
+
 /** The marker's inner HTML: fixed artwork only. */
 export const cabDotHtml = (d: NearbyDot) => `<span class="lr-cabdot lr-cabdot--${d.kind}" style="transform:rotate(${angleOf(d)}deg)">${SVG[d.kind]}</span>`;
