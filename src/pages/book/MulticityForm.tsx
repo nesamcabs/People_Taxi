@@ -16,12 +16,13 @@ import { saveDraft } from '@/lib/draft';
 import { loadMulticityDraft, multicityInstant, validMulticityDate, validMulticityPlace, type MulticityDraft } from '@core/utils/multicityDraft';
 import { useDeviceLocation, useLivePickupDefault, useOnline, useToday } from '@/lib/hooks';
 import { reverseGeocode } from '@core/services/geoService';
-import { combineDateTime, defaultPickup, latestPickup, pickupDayFor, quickDaySwitch, timeForDay, toDateInput } from '@/lib/schedule';
+import { combineDateTime, defaultPickup, latestPickup, quickDaySwitch, timeForDay, toDateInput } from '@/lib/schedule';
 import { Button } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import type { PickerConfig } from '@/components/LocationPicker';
 import { PlaceField } from '@/components/PlaceField';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
+import { DatePicker, opensDatePicker } from '@/components/DatePicker';
 import { QUICK_CITIES } from './content';
 import { msg, useT } from '@/i18n';
 
@@ -44,10 +45,8 @@ function saveStoredState(state: StoredMulticityState) {
   }
 }
 
-/** A form with no pickup time chosen (or one that can no longer be booked) starts at today, 30 minutes from now. */
+/** Every time the form opens the pickup starts at today, 30 minutes from now (a time from an earlier visit is not kept). */
 function withDefaultSchedule(s: StoredMulticityState): StoredMulticityState {
-  const at = s.date && s.time ? combineDateTime(s.date, s.time) : null;
-  if (at && !scheduleProblem(at)) return s;
   const next = defaultPickup();
   return { ...s, date: next.date, time: next.time };
 }
@@ -66,14 +65,11 @@ export function MulticityForm() {
   const [state, setState] = useState<StoredMulticityState>(() => withDefaultSchedule(loadStoredState()));
   // Until the rider picks a date or time, the default keeps following the clock (always 30 minutes from now).
   const scheduleTouched = useRef(false);
-  // True once the rider picks the date themselves; until then a picked time also moves the date (a time gone today means tomorrow).
-  const datePicked = useRef(false);
   // Re-renders at midnight, so the "Today" / "Tomorrow" button on the date follows the calendar.
   useToday();
   // The quick day button above the date: moves the date only (the time is kept while it can be booked).
   const switchDay = (to: string) => {
     scheduleTouched.current = true;
-    datePicked.current = true;
     setState((s) => ({ ...s, date: to, time: timeForDay(to, s.time) }));
     setErrors((x) => ({ ...x, date: '', time: '' }));
   };
@@ -93,6 +89,7 @@ export function MulticityForm() {
   }, [position, state.pickup]);
   const [addingStop, setAddingStop] = useState(false);
   const [timeFor, setTimeFor] = useState<'pickup' | 'return' | null>(null);
+  const [dateOpen, setDateOpen] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Synchronize draft changes into sessionStorage
@@ -238,6 +235,7 @@ export function MulticityForm() {
       tripType: 'Round Trip' as const,
       multicity: true,
       scheduledAt: scheduled,
+      scheduleByRider: scheduleTouched.current,
       // No return date is asked: the tour is quoted from the pickup instant.
       tripEndAt: scheduled,
       promoCode: '',
@@ -349,20 +347,7 @@ export function MulticityForm() {
                 min={todayStr}
                 max={maxDateStr}
                 value={state.date}
-                onClick={(e) => {
-                  // The browser's calendar button is hidden: tapping anywhere on the field opens the calendar.
-                  try {
-                    e.currentTarget.showPicker?.();
-                  } catch {
-                    /* the browser opens it itself */
-                  }
-                }}
-                onChange={(e) => {
-                  scheduleTouched.current = true;
-                  datePicked.current = true;
-                  setState((s) => ({ ...s, date: e.target.value }));
-                  setErrors((x) => ({ ...x, date: '', time: '' }));
-                }}
+                {...opensDatePicker(() => setDateOpen(true))}
                 required
               />
               {/* Quick day button: "Tomorrow" (or "Today" when the date is tomorrow). It changes only the date; the
@@ -414,6 +399,21 @@ export function MulticityForm() {
         </Button>
       </div>
 
+      {dateOpen ? (
+        <DatePicker
+          title={t('Pickup date')}
+          value={state.date}
+          min={todayStr}
+          max={maxDateStr}
+          onClose={() => setDateOpen(false)}
+          onSelect={(iso) => {
+            scheduleTouched.current = true;
+            setState((s) => ({ ...s, date: iso }));
+            setErrors((x) => ({ ...x, date: '', time: '' }));
+            setDateOpen(false);
+          }}
+        />
+      ) : null}
       {/* ── Time Picker Modal ── */}
       {timeFor ? (
         <TimePicker
@@ -422,7 +422,6 @@ export function MulticityForm() {
           value={state.time}
           validate="pickup"
           notBefore={null}
-          resolveDate={(t) => pickupDayFor(state.date, t, datePicked.current)}
           onClose={() => setTimeFor(null)}
           onConfirm={(t, day) => {
             scheduleTouched.current = true;

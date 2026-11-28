@@ -201,17 +201,16 @@ export function FlowBar({
   );
 }
 
-/** The blue banner at the top of every "choose your fare" screen: a headline with its middle words in yellow, a line under it, and the car. */
-export function ChooseHero({ title, sub, photo, id }: { title: [string, string, string]; sub: string; photo?: string; id?: string }) {
+/** The slim heading card at the top of a "choose your fare" screen: an icon tile, the headline and a line under it. */
+export function ChooseHero({ title, sub, id }: { title: string; sub: string; id?: string }) {
   const t = useT();
-  // Translated as one sentence with the highlighted words as {em}, so the highlight can move (Tamil word order).
   return (
     <header className="chero">
+      <span className="chero__icon" aria-hidden="true"><Icon name="car" size={18} /></span>
       <div className="chero__text">
-        <h2 id={id} className="chero__title">{richText(t(`${title[0]}{em}${title[2]}`), { em: <em key="em">{t(title[1])}</em> })}</h2>
+        <h2 id={id} className="chero__title">{t(title)}</h2>
         <p>{t(sub)}</p>
       </div>
-      {photo ? <img className="chero__img" src={photo} alt="" decoding="async" /> : null}
     </header>
   );
 }

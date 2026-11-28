@@ -7,6 +7,7 @@ import { formatDate } from '@core/utils/format';
 import { Dialog } from '@/components/ui';
 import { Icon } from '@/components/Icon';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
+import { DatePicker, opensDatePicker } from '@/components/DatePicker';
 import { useBooking } from '@/state/Booking';
 import { combineDateTime, earliestSlot, latestPickup, toDateInput, toTimeInput } from '@/lib/schedule';
 import { isOvernightPickup } from '@core/utils/timePackages';
@@ -31,6 +32,7 @@ export function EditTripDialog({ onClose }: { onClose: () => void }) {
   const [days, setDays] = useState(() => Math.max(1, draft.tripDays || 1));
   const [auto, setAuto] = useState(false);
   const [timeOpen, setTimeOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   const [error, setError] = useState('');
   const t = useT();
 
@@ -60,8 +62,8 @@ export function EditTripDialog({ onClose }: { onClose: () => void }) {
     if (problem) return setError(problem);
     update(
       round
-        ? { scheduledAt: at, tripEndAt: combineDateTime(addDaysISO(date, days - 1), time), tripDays: days, daysAuto: false, timePackage: '' }
-        : { scheduledAt: at, tripEndAt: null, timePackage: '' },
+        ? { scheduledAt: at, scheduleByRider: true, tripEndAt: combineDateTime(addDaysISO(date, days - 1), time), tripDays: days, daysAuto: false, timePackage: '' }
+        : { scheduledAt: at, scheduleByRider: true, tripEndAt: null, timePackage: '' },
     );
     onClose();
   };
@@ -78,7 +80,7 @@ export function EditTripDialog({ onClose }: { onClose: () => void }) {
         <div className="etd__grid">
           <label className="etd__field">
             <span>{t('Pickup date')}</span>
-            <input type="date" value={date} min={firstDay} max={lastDay} onChange={(e) => { if (e.target.value) { setDate(e.target.value); setError(''); } }} />
+            <input type="date" value={date} min={firstDay} max={lastDay} {...opensDatePicker(() => setDateOpen(true))} />
           </label>
           <div className="etd__field">
             <span>{t('Pickup time')}</span>
@@ -103,6 +105,7 @@ export function EditTripDialog({ onClose }: { onClose: () => void }) {
 
         {error ? <p className="etd__error" role="alert">{t(error)}</p> : null}
       </Dialog>
+      {dateOpen ? <DatePicker title={t('Pickup date')} value={date} min={firstDay} max={lastDay} onClose={() => setDateOpen(false)} onSelect={(iso) => { setDate(iso); setError(''); setDateOpen(false); }} /> : null}
       {timeOpen ? <TimePicker title={t('Pickup time')} date={date} value={time} validate="pickup" onClose={() => setTimeOpen(false)} onConfirm={(t) => { chooseTime(t); setTimeOpen(false); }} /> : null}
     </>
   );

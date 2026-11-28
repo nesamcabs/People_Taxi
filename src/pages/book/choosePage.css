@@ -9,26 +9,22 @@
 .flow-page--choose .flow-bar .flow-bar__icon:active { transform: translateY(1px); background: var(--brand-soft); }
 @media (prefers-reduced-motion: reduce) { .flow-page--choose .flow-bar .btn, .flow-page--choose .flow-bar .flow-bar__icon { transition: none; } }
 
-/* ── Banner (all choose screens) ───────────────────────────────────────────────────────────── */
+/* ── Heading card (choose screens): a slim white card with a theme-colour edge and icon tile ─── */
 .chero {
-  position: relative; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 78px; margin: 0 0 10px; padding: 10px 10px 10px 16px; overflow: hidden; border-radius: 16px; color: #fff;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 120' preserveAspectRatio='xMaxYMax slice'%3E%3Ccircle cx='318' cy='34' r='52' fill='%23fff' opacity='.1'/%3E%3Ccircle cx='318' cy='34' r='28' fill='%23fff' opacity='.1'/%3E%3Cpath d='M0 96 70 54l50 30 70-44 70 48 60-30 80 40v26H0z' fill='%23fff' opacity='.1'/%3E%3Cpath d='M0 108l80-30 70 22 80-30 80 30 90-20v40H0z' fill='%23052466' opacity='.5'/%3E%3C/svg%3E") right bottom / cover no-repeat,
-    linear-gradient(120deg, #0a2f86 0%, #1451d6 55%, #2a8bff 100%);
-  box-shadow: 0 12px 26px -10px rgb(20 81 214 / .55);
+  position: relative; display: flex; align-items: center; gap: 11px; margin: 0 0 10px; padding: 9px 12px 9px 14px; overflow: hidden; border: 1px solid var(--brand-line, #a9c8fb); border-radius: 12px;
+  background: linear-gradient(90deg, var(--brand-soft, #edf4ff) 0%, var(--surface, #fff) 70%);
 }
+.chero::before { content: ''; position: absolute; top: 0; bottom: 0; left: 0; width: 4px; background: var(--brand-gradient); }
 .rvp .chero { margin: 0; }
-.chero__text { position: relative; z-index: 1; display: grid; gap: 3px; min-width: 0; max-width: 58%; }
-.chero__title { margin: 0; color: #fff; font-size: 1.1rem; font-weight: 900; letter-spacing: -0.02em; line-height: 1.12; }
-.chero__title em { color: var(--sun); font-style: normal; }
-.chero p { margin: 0; color: rgb(255 255 255 / .88); font-size: .72rem; font-weight: 600; line-height: 1.35; }
-.chero__img { position: absolute; right: 6px; bottom: -4px; z-index: 1; width: 36%; max-width: 190px; height: auto; max-height: 108%; object-fit: contain; filter: drop-shadow(0 12px 12px rgb(3 20 70 / .45)); }
-@media (max-width: 420px) { .chero { min-height: 72px; padding: 9px 8px 9px 14px; } .chero__title { font-size: 1.02rem; } }
+.chero__icon { display: grid; flex: none; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: var(--brand-gradient); color: #fff; }
+.chero__text { display: grid; gap: 1px; min-width: 0; }
+.chero__title { margin: 0; color: var(--ink, #0f1f3d); font-size: .95rem; font-weight: 800; letter-spacing: -0.01em; line-height: 1.25; }
+.chero p { margin: 0; color: var(--muted, #5b6472); font-size: .7rem; font-weight: 500; line-height: 1.35; }
 @media (min-width: 680px) {
-  .chero { min-height: 104px; padding: 16px 22px 16px 26px; }
-  .chero__title { font-size: 1.5rem; }
-  .chero p { font-size: .85rem; }
-  .chero__img { right: 24px; width: 34%; }
+  .chero { padding: 12px 18px 12px 20px; }
+  .chero__icon { width: 44px; height: 44px; }
+  .chero__title { font-size: 1.15rem; }
+  .chero p { font-size: .8rem; }
 }
 
 /* ── Vehicle cards (One Way · Airport · Rental · Multicity) ────────────────────────────────── */

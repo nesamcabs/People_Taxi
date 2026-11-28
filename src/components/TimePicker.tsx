@@ -1,14 +1,19 @@
-// The pickup-time sheet: three scrolling wheels — hour 1–12, every minute 00–59 and AM/PM. The chosen
-// time is checked again when confirmed, so a time that became too soon while the sheet was open is refused.
+// The pickup-time sheet: three scrolling wheels — hour, minutes (every 5: 00, 05 … 55) and AM/PM. For a pickup the wheels
+// hold only times that can still be booked, so this afternoon offers PM alone and tomorrow offers both. The picker never
+// changes the date. The chosen time is checked again when confirmed, so a time that became too soon while the sheet was
+// open is refused.
 import { useLayoutEffect, useRef, useState, type KeyboardEvent } from 'react';
 import { scheduleProblem } from '@core/utils/bookingRules';
 import { Button, Dialog } from './ui';
-import { combineDateTime } from '@/lib/schedule';
+import { combineDateTime, pickerSlots, toDateInput } from '@/lib/schedule';
+import { msg, useT } from '@/i18n';
 
+const ALL_SLOTS = Array.from({ length: 288 }, (_, i) => `${String(Math.floor(i / 12)).padStart(2, '0')}:${String((i % 12) * 5).padStart(2, '0')}`);
 const HOURS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
-const MINUTES = Array.from({ length: 60 }, (_, i) => i);
-const MERIDIEMS = ['AM', 'PM'];
 const ITEM_H = 44;
+const isPm = (hhmm: string) => hhmm >= '12:00';
+const hour12 = (hhmm: string) => Number(hhmm.slice(0, 2)) % 12 || 12;
+const minuteOf = (hhmm: string) => hhmm.slice(3);
 
 export const formatTime12 = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number) as [number, number];
@@ -16,18 +21,17 @@ export const formatTime12 = (hhmm: string) => {
   return `${h % 12 === 0 ? 12 : h % 12}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
 };
 
-function split(hhmm: string) {
-  const [h, m] = hhmm ? (hhmm.split(':').map(Number) as [number, number]) : [18, 0];
-  return { hour: h % 12 === 0 ? 12 : h % 12, minute: Number.isFinite(m) ? Math.min(59, Math.max(0, m)) : 0, pm: h >= 12 };
-}
-
 /** One vertically scrolling column; the item snapped to the centre band is the selected value. */
 function Wheel<T extends string | number>({ label, items, value, format = String, onChange }: { label: string; items: T[]; value: T; format?: (item: T) => string; onChange: (item: T) => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const at = items.indexOf(value);
 
+  // Opens on the chosen item, and follows it when it changes from elsewhere (another wheel narrowed this one's list).
+  // While the rider scrolls this wheel it is already in place, so nothing moves under them.
   useLayoutEffect(() => {
-    ref.current?.scrollTo({ top: items.indexOf(value) * ITEM_H });
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    const el = ref.current;
+    if (el && at >= 0 && Math.round(el.scrollTop / ITEM_H) !== at) el.scrollTo({ top: at * ITEM_H });
+  }, [at, items.join('|')]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onScroll = () => {
     const el = ref.current;
@@ -40,7 +44,6 @@ function Wheel<T extends string | number>({ label, items, value, format = String
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
     const steps: Record<string, number | undefined> = { ArrowDown: 1, ArrowUp: -1, PageDown: 5, PageUp: -5 };
     const step = steps[e.key];
-    const at = items.indexOf(value);
     const to = step !== undefined ? at + step : e.key === 'Home' ? 0 : e.key === 'End' ? items.length - 1 : null;
     if (to === null) return;
     e.preventDefault();
@@ -60,8 +63,6 @@ function Wheel<T extends string | number>({ label, items, value, format = String
   );
 }
 
-import { msg, useT } from '@/i18n';
-
 export function TimePicker({
   title = 'Pickup time',
   date,
@@ -70,37 +71,60 @@ export function TimePicker({
   onClose,
   validate = 'pickup',
   notBefore,
-  resolveDate,
 }: {
   title?: string;
   date: string;
   value: string;
-  /** Called with the time and the day it is for (the `date` prop, or the day `resolveDate` chose). */
+  /** Called with the time and the day it is for: the `date` prop (today, if that day has already passed). */
   onConfirm: (hhmm: string, date: string) => void;
   onClose: () => void;
   validate?: 'pickup' | 'after';
   notBefore?: Date | null;
-  /** Optional: picks the day for the chosen time before it is checked (the booking form moves a gone time to tomorrow). */
-  resolveDate?: (hhmm: string) => string;
 }) {
-  const init = split(value);
   const t = useT();
-  const [hour, setHour] = useState(init.hour);
-  const [minute, setMinute] = useState(init.minute);
-  const [pm, setPm] = useState(init.pm);
   const [error, setError] = useState('');
+  // A day left in the past (the page stayed open over midnight) counts as today.
+  const today = toDateInput(new Date());
+  const day = date && date < today ? today : date;
+  const slots = validate === 'pickup'
+    ? day ? pickerSlots(day) : ALL_SLOTS
+    : ALL_SLOTS.filter((s) => {
+        const when = day ? combineDateTime(day, s) : null;
+        return !notBefore || !when || when.getTime() > notBefore.getTime();
+      });
+  // The choice starts at the form's time (30 minutes from now unless the rider changed it), or the first offered time after it.
+  const [picked, setPicked] = useState(() => slots.find((s) => s >= value) ?? slots[0] ?? '');
+  // The list moves on with the clock: a choice that has dropped off it becomes the first one left.
+  const chosen = slots.includes(picked) ? picked : slots[0] ?? '';
+  const showPm = isPm(chosen);
+  const chosenHour = chosen ? hour12(chosen) : 0;
+  const chosenMinute = chosen ? minuteOf(chosen) : '';
 
-  const pick = <T,>(set: (v: T) => void) => (v: T) => {
-    set(v);
+  // What each wheel offers: only the halves of the day, hours and quarters that still have a bookable time.
+  const periods = (['AM', 'PM'] as const).filter((p) => slots.some((s) => isPm(s) === (p === 'PM')));
+  const shown = slots.filter((s) => isPm(s) === showPm);
+  const hours = HOURS.filter((h) => shown.some((s) => hour12(s) === h));
+  const ofHour = shown.filter((s) => hour12(s) === chosenHour);
+  const minutes = ofHour.map(minuteOf);
+
+  const choose = (hhmm: string | undefined) => {
+    if (!hhmm) return;
+    setPicked(hhmm);
     setError('');
   };
-
-  const hhmm = () => `${String((hour % 12) + (pm ? 12 : 0)).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  // An hour keeps the chosen minutes when it can, else takes its first bookable quarter.
+  const chooseHour = (h: number) => {
+    const list = shown.filter((s) => hour12(s) === h);
+    choose(list.find((s) => minuteOf(s) === chosenMinute) ?? list[0]);
+  };
+  // AM / PM keeps the same clock time when it can, else takes that half's first bookable time.
+  const choosePeriod = (p: string) => {
+    const list = slots.filter((s) => isPm(s) === (p === 'PM'));
+    choose(list.find((s) => hour12(s) === chosenHour && minuteOf(s) === chosenMinute) ?? list[0]);
+  };
 
   const confirm = () => {
-    const hm = hhmm();
-    const day = resolveDate ? resolveDate(hm) : date;
-    const at = day ? combineDateTime(day, hm) : null;
+    const at = day && chosen ? combineDateTime(day, chosen) : null;
     if (at) {
       const problem = validate === 'pickup' ? scheduleProblem(at) : notBefore && at.getTime() <= notBefore.getTime() ? msg('The return must be after the pickup.') : '';
       if (problem) {
@@ -108,7 +132,7 @@ export function TimePicker({
         return;
       }
     }
-    onConfirm(hm, day);
+    onConfirm(chosen, day);
   };
 
   return (
@@ -121,21 +145,29 @@ export function TimePicker({
           <Button variant="secondary" onClick={onClose}>
             {t('Close')}
           </Button>
-          <Button icon="check" onClick={confirm}>
+          <Button icon="check" onClick={confirm} disabled={!chosen}>
             {t('Confirm time')}
           </Button>
         </>
       }
     >
       <div className="timepick">
-        <p className="timepick__now num" aria-live="polite">
-          {hour}:{String(minute).padStart(2, '0')} <span>{pm ? 'PM' : 'AM'}</span>
-        </p>
-        <div className="timepick__wheels">
-          <Wheel label={t('Hour')} items={HOURS} value={hour} onChange={pick(setHour)} />
-          <Wheel label={t('Minutes')} items={MINUTES} value={minute} format={(m) => String(m).padStart(2, '0')} onChange={pick(setMinute)} />
-          <Wheel label={t('AM or PM')} items={MERIDIEMS} value={pm ? 'PM' : 'AM'} onChange={pick<string>((m) => setPm(m === 'PM'))} />
-        </div>
+        {chosen ? (
+          <>
+            <p className="timepick__now num" aria-live="polite">
+              {chosenHour}:{chosenMinute} <span>{showPm ? 'PM' : 'AM'}</span>
+            </p>
+            <div className="timepick__wheels">
+              <Wheel label={t('Hour')} items={hours} value={chosenHour} onChange={chooseHour} />
+              <Wheel label={t('Minutes')} items={minutes} value={chosenMinute} onChange={(m) => choose(ofHour.find((s) => minuteOf(s) === m))} />
+              <Wheel label={t('AM or PM')} items={periods as unknown as string[]} value={showPm ? 'PM' : 'AM'} onChange={choosePeriod} />
+            </div>
+          </>
+        ) : (
+          <p className="timepick__note" role="status">
+            {t('No pickup times left on this day. Please choose another date.')}
+          </p>
+        )}
         {error ? (
           <p className="field__error" role="alert">
             {t(error)}

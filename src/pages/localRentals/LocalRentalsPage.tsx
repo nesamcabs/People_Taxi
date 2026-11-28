@@ -20,6 +20,7 @@ import { Icon } from '@/components/Icon';
 import { Avatar } from '@/components/ui';
 import { LocationPicker } from '@/components/LocationPicker';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
+import { DatePicker, opensDatePicker } from '@/components/DatePicker';
 import { useBooking, useBookingQuote } from '@/state/Booking';
 import { useAuth } from '@/state/Auth';
 import { useCustomerData } from '@/state/customer';
@@ -417,7 +418,9 @@ function LocalRentalsSheet() {
   // starts fresh: a drop is never taken from another service's search (an outstation drop is not a city drop), and the pickup
   // is asked first.
   const resume = !!draft.pickupWhen && !!real(draft.pickup) && (mode === 'hourly' ? draft.tripType === 'Local Rental' : draft.tripType === 'One Way' && !!real(draft.drop));
-  const future = draft.scheduledAt && draft.scheduledAt.getTime() > Date.now() ? draft.scheduledAt : null;
+  const upcoming = draft.scheduledAt && draft.scheduledAt.getTime() > Date.now() ? draft.scheduledAt : null;
+  // The pickup time always starts again from the clock (30 minutes from now); a time from an earlier visit is not brought back.
+  const future: Date | null = null;
   const [pickup, setPickup] = useState<GeoPlace | null>(resume ? real(draft.pickup) : null);
   const [drop, setDrop] = useState<GeoPlace | null>(resume && mode === 'pickup' ? real(draft.drop) : null);
   const [hours, setHours] = useState<number | null>(draft.tripType === 'Local Rental' ? draft.rentalHours ?? null : null);
@@ -433,7 +436,7 @@ function LocalRentalsSheet() {
   const [nowMs, setNowMs] = useState(() => Date.now());
   // Ola / Uber style: Ride now (the earliest pickup the server accepts) or Schedule (a date and time).
   // Ride now unless the rider scheduled this trip last time.
-  const [when, setWhen] = useState<'now' | 'later'>(draft.pickupWhen === 'later' && future ? 'later' : 'now');
+  const [when, setWhen] = useState<'now' | 'later'>(draft.pickupWhen === 'later' && upcoming ? 'later' : 'now');
   const [stage, setStage] = useState<Stage>(resume ? 'when' : 'pickup');
   // A drop outside the city: ask whether to book it as Outstation instead (the place is kept until the rider answers).
   const [outstationAsk, setOutstationAsk] = useState<GeoPlace | null>(null);
@@ -444,6 +447,7 @@ function LocalRentalsSheet() {
   const [target, setTarget] = useState<Target | null>(null);
   const [picker, setPicker] = useState<'pickup' | 'drop' | null>(null);
   const [timeOpen, setTimeOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   // The plan sheet can be pulled down to its button so the whole map shows.
   const [peek, setPeek] = useState(false);
   // Rental duration: a strip of hour tiles that scrolls sideways; the chosen tile is kept centred in view.
@@ -680,6 +684,7 @@ function LocalRentalsSheet() {
   const picked = when === 'later' ? combineDateTime(date, time) : null;
   const pickedOk = !!picked && !scheduleProblem(picked, nowMs);
   const scheduleKey = when === 'now' ? 'now' : pickedOk ? picked.toISOString() : '';
+  const byRider = when === 'later' && scheduleTouched.current;
   useEffect(() => {
     // Not while a booked ride is on screen: the draft was cleared when it was booked, and is set again when the rider books another.
     if (rideId || stage !== 'when' || !pickup || (mode === 'pickup' && !drop)) return;
@@ -689,13 +694,14 @@ function LocalRentalsSheet() {
       tripType: mode === 'hourly' ? 'Local Rental' : 'One Way',
       rentalHours: mode === 'hourly' ? hours : null,
       scheduledAt: when === 'now' ? ridenowPickup(Date.now(), rideNowLead) : pickedOk ? picked : null,
+      scheduleByRider: byRider,
       tripEndAt: null,
       stops: [],
       multicity: false,
       fuelType: '',
       pickupWhen: when,
     });
-  }, [rideId, stage, mode, pickup?.lat, pickup?.lng, pickup?.name, drop?.lat, drop?.lng, drop?.name, hours, scheduleKey, rideNowLead]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rideId, stage, mode, pickup?.lat, pickup?.lng, pickup?.name, drop?.lat, drop?.lng, drop?.name, hours, scheduleKey, byRider, rideNowLead]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Cab types the office turned off here are not shown. Each cab shows the server's fare (Diesel rate card), or why it has none.
   const localTrip = localOnlyTrip({ tripType: draft.tripType, multicity: false, distanceKm: route?.distanceKm });
@@ -853,7 +859,7 @@ function LocalRentalsSheet() {
     <>
       <label className="lr-field lr-field--schedule">
         <span>{t('Pickup Date')}</span>
-        <input type="date" className="lr-date" value={date} min={firstDay} max={lastDay} onChange={(e) => { if (e.target.value) pickDate(e.target.value); }} />
+        <input type="date" className="lr-date" value={date} min={firstDay} max={lastDay} {...opensDatePicker(() => setDateOpen(true))} />
       </label>
       <label className="lr-field lr-field--schedule">
         <span>{t('Pickup Time')}</span>
@@ -1301,6 +1307,7 @@ function LocalRentalsSheet() {
       ) : null}
 
       {pickerFor}
+      {dateOpen ? <DatePicker title={t('Pickup Date')} value={date} min={firstDay} max={lastDay} onClose={() => setDateOpen(false)} onSelect={(iso) => { pickDate(iso); setDateOpen(false); }} /> : null}
       {timeOpen ? (
         <TimePicker title={t('Pickup time')} date={date} value={time} validate="pickup" onClose={() => setTimeOpen(false)} onConfirm={(t) => { scheduleTouched.current = true; setTime(t); setError(''); setTimeOpen(false); }} />
       ) : null}

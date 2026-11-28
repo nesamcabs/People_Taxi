@@ -10,6 +10,9 @@ export interface BookingDraft {
   tripType: TripType;
   /** Pickup instant. Required to continue: every booking is an advance booking. */
   scheduledAt: Date | null;
+  /** True only when the rider chose that pickup time. A time the form filled in itself (30 minutes from now) is worked
+   *  out again each time a form opens, so it never stays behind the clock. */
+  scheduleByRider: boolean;
   /** Round trips only: when the trip ends (billing counts Indian calendar dates from pickup to here). */
   tripEndAt: Date | null;
   /** Round trips: how many calendar days the trip lasts. The return time is never asked; the package decides it. */
@@ -60,6 +63,7 @@ export const EMPTY_DRAFT: BookingDraft = {
   stops: [],
   tripType: 'One Way',
   scheduledAt: null,
+  scheduleByRider: false,
   tripEndAt: null,
   tripDays: 1,
   daysAuto: false,
@@ -119,6 +123,7 @@ export function loadDraft(): BookingDraft {
         : 'One Way',
       // A schedule that has already passed is dropped rather than kept as a blocker.
       scheduledAt: scheduled,
+      scheduleByRider: !!scheduled && d.scheduleByRider === true,
       // The end only makes sense after a still-valid pickup.
       tripDays: typeof d.tripDays === 'number' && Number.isInteger(d.tripDays) && d.tripDays >= 1 && d.tripDays <= 60 ? d.tripDays : 1,
       daysAuto: d.daysAuto === true,

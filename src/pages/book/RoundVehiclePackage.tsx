@@ -130,7 +130,7 @@ export function RoundVehiclePackage(p: Props) {
 
   return (
     <section className="rvp" aria-labelledby="rvp-title">
-      <ChooseHero id="rvp-title" title={[msg('Choose '), msg('Vehicle'), msg(' & Package')]} sub={msg('Round Trip · Flexible Hours · Transparent Kms')} photo={photo} />
+      <ChooseHero id="rvp-title" title={msg('Select Vehicle & Package')} sub={msg('Flexible duration · Clear kilometre limits')} />
 
       <div className="rvp__tabs" role="radiogroup" aria-label={t('Vehicle')}>
         {p.categories.map((c) => {
@@ -213,9 +213,7 @@ export function RoundVehiclePackage(p: Props) {
           <span className="rvp__top">
             <span className="rvp__icon" aria-hidden="true"><Icon name="calendar-check" size={26} /></span>
             <span className="rvp__ttl">
-              <strong className="rvp__name">{t('Round Trip')}{entry?.days ? <> · <em>{entry.days === 1 ? t('1 Day') : t('{n} Days', { n: entry.days })}</em></> : null}</strong>
-              <small className="rvp__tag">{t('Fare confirmed by quote')}</small>
-            </span>
+              <strong className="rvp__name">{t('Round Trip')}{entry?.days ? <> · <em>{entry.days === 1 ? t('1 Day') : t('{n} Days', { n: entry.days })}</em></> : null}</strong>            </span>
             <b className="rvp__price">{formatINR(fare.total)}</b>
           </span>
           <span className="rvp__body">

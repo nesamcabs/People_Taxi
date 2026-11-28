@@ -14,6 +14,7 @@ import { Icon } from '@/components/Icon';
 import type { PickerConfig } from '@/components/LocationPicker';
 import { PlaceField } from '@/components/PlaceField';
 import { TimePicker, formatTime12 } from '@/components/TimePicker';
+import { DatePicker, opensDatePicker } from '@/components/DatePicker';
 import { useBooking } from '@/state/Booking';
 import { UNAVAILABLE_TEXT, useServiceAvailability, type ServiceKey } from '@/lib/serviceAvailability';
 import { useAuth } from '@/state/Auth';
@@ -21,7 +22,7 @@ import { setPendingReturn } from '@/lib/pendingReturn';
 import { saveDraft, RENTAL_PACKAGE_HOURS } from '@/lib/draft';
 import { useDeviceLocation, useLivePickupDefault, useOnline, useToday } from '@/lib/hooks';
 import { ClockIcon, SwapIcon } from '@/shared/components/CabParts';
-import { combineDateTime, defaultPickup, latestPickup, pickupDayFor, quickDaySwitch, timeForDay, toDateInput, toTimeInput } from '@/lib/schedule';
+import { combineDateTime, defaultPickup, latestPickup, quickDaySwitch, timeForDay, toDateInput } from '@/lib/schedule';
 import { isOvernightPickup } from '@core/utils/timePackages';
 import { ServiceNote } from '@/components/ServiceNote';
 import { SERVICE_TITLE, isLocalRentals, type ServiceId } from '@/lib/services';
@@ -96,7 +97,7 @@ export function BookingForm({
   // The selected service for the five-service selector (the same reading the phone bottom bar uses).
   const activeService = useActiveService();
   const avail = useServiceAvailability();
-  const { pickup, drop, scheduledAt, tripEndAt, tripType } = draft;
+  const { pickup, drop, scheduledAt, scheduleByRider, tripEndAt, tripType } = draft;
   const isRound = service === 'outstation' && tripType === 'Round Trip';
   // Services the admin has switched off (Admin → Services) show as "Currently unavailable" and cannot be searched.
   const keyOf = (id: ServiceId, trip: 'One Way' | 'Round Trip' = tripType === 'Round Trip' ? 'Round Trip' : 'One Way'): ServiceKey | null =>
@@ -112,6 +113,7 @@ export function BookingForm({
 
   const [addingStop, setAddingStop] = useState(false);
   const [timeFor, setTimeFor] = useState<'pickup' | null>(null);
+  const [dateOpen, setDateOpen] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [direction, setDirection] = useState<AirportDirection>(() => directionOf(pickup, drop));
   const refs = useRef<Partial<Record<Field, HTMLElement | null>>>({});
@@ -139,21 +141,17 @@ export function BookingForm({
   }, [service, pickup?.lat, pickup?.lng, pickup?.name, drop?.id, drop?.lat, drop?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Schedule (local date + time inputs mirrored into the draft) ─────────
-  // By default: today, 30 minutes from now. A time already chosen earlier is kept while it can still be booked.
-  const keptSchedule = scheduledAt && !scheduleProblem(scheduledAt) ? scheduledAt : null;
-  const scheduleTouched = useRef(keptSchedule !== null);
-  // True once the rider picks the date themselves (or a schedule they chose earlier is kept). Until then, picking a time
-  // also moves the date to the first day that time can be booked (a time already gone today means tomorrow).
-  const datePicked = useRef(keptSchedule !== null);
+  // Every time the form opens the pickup starts at today, 30 minutes from now (rounded up to 5 minutes); a time chosen on
+  // an earlier visit is not brought back. While the rider changes nothing it keeps following the clock.
+  const scheduleTouched = useRef(false);
   // Re-renders at midnight, so the "Today" / "Tomorrow" tag on the date follows the calendar.
   useToday();
-  const [date, setDate] = useState(() => (keptSchedule ? toDateInput(keptSchedule) : defaultPickup().date));
-  const [time, setTime] = useState(() => (keptSchedule ? toTimeInput(keptSchedule) : defaultPickup().time));
+  const [date, setDate] = useState(() => defaultPickup().date);
+  const [time, setTime] = useState(() => defaultPickup().time);
   // The quick day button above the date, and what it does: move the date only (the time is kept while it can be booked).
   const quickDay = date ? quickDaySwitch(date) : null;
   const switchDay = (to: string) => {
     scheduleTouched.current = true;
-    datePicked.current = true;
     setDate(to);
     setTime((t) => timeForDay(to, t));
     setErrors((x) => ({ ...x, date: '', time: '' }));
@@ -165,8 +163,9 @@ export function BookingForm({
   });
   useEffect(() => {
     const d = combineDateTime(date, time);
-    if ((d?.getTime() ?? null) !== (scheduledAt?.getTime() ?? null)) update({ scheduledAt: d });
-  }, [date, time]); // eslint-disable-line react-hooks/exhaustive-deps
+    const byRider = scheduleTouched.current;
+    if ((d?.getTime() ?? null) !== (scheduledAt?.getTime() ?? null) || byRider !== scheduleByRider) update({ scheduledAt: d, scheduleByRider: byRider });
+  }, [date, time, timeFor]); // eslint-disable-line react-hooks/exhaustive-deps
   // Round trip: the customer chooses how many days the trip lasts. It ends on the last day, at the pickup time.
   const [days, setDays] = useState<number>(() => {
     if (!tripEndAt || !scheduledAt) return 1;
@@ -512,20 +511,7 @@ export function BookingForm({
                   max={toDateInput(latestPickup())}
                   aria-invalid={!!errors.date || undefined}
                   aria-describedby={errors.date ? 'bf-date-err' : undefined}
-                  onClick={(e) => {
-                    // With the native arrow gone, tapping anywhere on the field opens the calendar.
-                    try {
-                      e.currentTarget.showPicker?.();
-                    } catch {
-                      /* the browser opens it itself */
-                    }
-                  }}
-                  onChange={(e) => {
-                    scheduleTouched.current = true;
-                    datePicked.current = true;
-                    setDate(e.target.value);
-                    setErrors((x) => ({ ...x, date: '', time: '' }));
-                  }}
+                  {...opensDatePicker(() => setDateOpen(true))}
                 />
                 {/* Quick day button: "Tomorrow" (or "Today" when the date is tomorrow). It changes only the date; the
                     calendar opens only from the date box itself. */}
@@ -601,6 +587,21 @@ export function BookingForm({
         </form>
       )}
 
+      {dateOpen ? (
+        <DatePicker
+          title={t('Pickup date')}
+          value={date}
+          min={toDateInput(new Date())}
+          max={toDateInput(latestPickup())}
+          onClose={() => setDateOpen(false)}
+          onSelect={(iso) => {
+            scheduleTouched.current = true;
+            setDate(iso);
+            setErrors((x) => ({ ...x, date: '', time: '' }));
+            setDateOpen(false);
+          }}
+        />
+      ) : null}
       {timeFor ? (
         <TimePicker
           title={t('Pickup time')}
@@ -608,7 +609,6 @@ export function BookingForm({
           value={time}
           validate="pickup"
           notBefore={null}
-          resolveDate={(t) => pickupDayFor(date, t, datePicked.current)}
           onClose={() => setTimeFor(null)}
           onConfirm={(t, day) => {
             scheduleTouched.current = true;

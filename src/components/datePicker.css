@@ -1,0 +1,160 @@
+/* The pickup-date sheet: quick day cards on top, a month calendar under them. Colours come from the site's tokens. */
+.dpk {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.dpk button {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+.dpk button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Quick days: a row that slides sideways. */
+.dpk__quick {
+  display: flex;
+  gap: 8px;
+  margin: 0 -4px;
+  padding: 2px 4px 6px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+}
+.dpk__quick::-webkit-scrollbar {
+  display: none;
+}
+.dpk .dpk__day {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: center;
+  gap: 1px;
+  min-width: 66px;
+  padding: 8px 10px 9px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  color: var(--ink);
+  scroll-snap-align: start;
+}
+.dpk__day small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.dpk__day b {
+  font-size: 1.4rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+.dpk__day span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.dpk .dpk__day:hover {
+  border-color: var(--brand);
+}
+.dpk .dpk__day[aria-pressed='true'] {
+  border-color: transparent;
+  background: var(--brand-gradient, var(--brand));
+  color: #fff;
+  box-shadow: 0 10px 18px -10px var(--brand);
+}
+.dpk__day[aria-pressed='true'] small,
+.dpk__day[aria-pressed='true'] span {
+  color: rgb(255 255 255 / 0.85);
+}
+
+/* Month calendar. */
+.dpk__cal {
+  padding: 10px 10px 8px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper, #f7f9fc);
+}
+.dpk__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.dpk__head strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+.dpk .dpk__nav {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--surface, #fff);
+  color: var(--brand);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.12);
+}
+.dpk .dpk__nav:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.dpk__grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+.dpk__wd {
+  padding: 4px 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 800;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dpk .dpk__date {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 38px;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+.dpk .dpk__date:enabled:hover {
+  background: var(--surface, #fff);
+}
+.dpk .dpk__date:disabled {
+  color: var(--faint, #b8c0cc);
+  font-weight: 500;
+  cursor: default;
+}
+/* Today: a small dot under the number. */
+.dpk__date.is-today::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand);
+}
+.dpk .dpk__date[aria-pressed='true'] {
+  background: var(--brand);
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 6px 12px -6px var(--brand);
+}
+.dpk__date[aria-pressed='true']::after {
+  background: #fff;
+}

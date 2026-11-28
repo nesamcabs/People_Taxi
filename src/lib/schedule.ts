@@ -18,23 +18,16 @@ export function combineDateTime(date: string, time: string): Date | null {
 }
 
 /**
- * The pickup day for a time picked on the clock wheel, so the rider never has to fix the date by hand:
- * - A day the form filled in itself (the default, or an earlier automatic move) becomes the first of today and tomorrow on
- *   which that time can still be booked: 9:00 AM picked in the evening is tomorrow morning, 8:00 PM picked at noon stays today.
- * - A day the rider picked is kept, except today with a time that has already gone (or is under the minimum lead away):
- *   that time tomorrow instead.
- * A day left in the past (the page stayed open over midnight) counts as today. Any other case keeps the date, and the
- * picker's usual check explains what is wrong.
+ * The pickup times the picker offers for `day`: every 5 minutes that can still be booked. Today that starts at the
+ * minimum notice from now (with a minute to spare, so the first one is still valid at Confirm); a later day has them all.
+ * Empty when nothing is left on the day.
  */
-export function pickupDayFor(date: string, time: string, riderPickedDay: boolean, now = Date.now()): string {
-  const base = new Date(now);
-  const today = toDateInput(base);
-  const tomorrow = toDateInput(new Date(base.getFullYear(), base.getMonth(), base.getDate() + 1));
-  const day = date && date < today ? today : date;
-  const bookable = (d: string) => !scheduleProblem(combineDateTime(d, time), now);
-  if (!riderPickedDay && (day === today || day === tomorrow)) return bookable(today) ? today : bookable(tomorrow) ? tomorrow : day;
-  if (day === today && !bookable(today) && bookable(tomorrow)) return tomorrow;
-  return day;
+export function pickerSlots(day: string, now = Date.now()): string[] {
+  const soonest = now + (SCHEDULE_MIN_LEAD_MIN + 1) * 60000;
+  return Array.from({ length: 288 }, (_, i) => `${pad(Math.floor(i / 12))}:${pad((i % 12) * 5)}`).filter((hhmm) => {
+    const at = combineDateTime(day, hhmm);
+    return !!at && at.getTime() >= soonest;
+  });
 }
 
 /**

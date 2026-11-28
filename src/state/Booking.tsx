@@ -111,9 +111,9 @@ export function BookingProvider({ children }: { children: ReactNode }) {
     (patch) => setDraft((d) => ({ ...d, ...(typeof patch === 'function' ? patch(d) : patch) })),
     [],
   );
-  const reset = useCallback(() => setDraft((d) => ({ ...d, drop: null, stops: [], scheduledAt: null, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', tripType: 'One Way', multicity: false, roofCarrier: false, pets: false, promoCode: '', notes: '', pickupWhen: '' })), []);
+  const reset = useCallback(() => setDraft((d) => ({ ...d, drop: null, stops: [], scheduledAt: null, scheduleByRider: false, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', tripType: 'One Way', multicity: false, roofCarrier: false, pets: false, promoCode: '', notes: '', pickupWhen: '' })), []);
   // A repeat booking always needs a fresh future pickup: the old schedule is never carried over.
-  const startFrom = useCallback<BookingValue['startFrom']>((pickup, drop) => setDraft((d) => ({ ...d, pickup, drop, stops: [], scheduledAt: null, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', multicity: false, roofCarrier: false, pets: false, promoCode: '', pickupWhen: '' })), []);
+  const startFrom = useCallback<BookingValue['startFrom']>((pickup, drop) => setDraft((d) => ({ ...d, pickup, drop, stops: [], scheduledAt: null, scheduleByRider: false, tripEndAt: null, tripDays: 1, daysAuto: false, timePackage: '', multicity: false, roofCarrier: false, pets: false, promoCode: '', pickupWhen: '' })), []);
 
   const routeStops = draft.tripType === 'Round Trip' ? draft.stops : [];
   // Only a real Round Trip comes back to the pickup. A Multicity tour (stored as a Round Trip with a flag) ends at its own final drop.

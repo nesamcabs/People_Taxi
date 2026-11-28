@@ -1933,6 +1933,16 @@
   font-size: 1.35rem;
   font-weight: 800;
 }
+.timepick__note {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--brand-soft);
+  color: var(--brand-ink, var(--brand));
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
 
 /* ── Location picker ────────────────────────────────────────── */
 .picker {
