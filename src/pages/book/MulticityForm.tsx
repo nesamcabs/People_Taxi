@@ -110,7 +110,8 @@ export function MulticityForm() {
   const cities = useMemo(() => state.stops.filter((s) => s.place), [state.stops]);
 
   const todayStr = useMemo(() => toDateInput(new Date()), []);
-  const maxDateStr = useMemo(() => toDateInput(latestPickup()), []);
+  // Worked out on every render: the office's advance-booking limit can arrive after the form opens.
+  const maxDateStr = toDateInput(latestPickup());
 
   const removeStop = (id: string) => {
     setState((s) => ({ ...s, stops: s.stops.filter((st) => st.id !== id) }));

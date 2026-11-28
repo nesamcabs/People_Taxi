@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { scheduleProblem } from '@core/utils/bookingRules';
-import { combineDateTime, earliestPickup, earliestSlot, latestPickup, pickerSlots, pickupTimeOptions, quickDaySwitch, leadMinutesFrom, ridenowBookingTime, ridenowPickup, ridenowStale, timeForDay, toDateInput, toTimeInput } from './schedule';
+import { combineDateTime, earliestPickup, earliestSlot, latestPickup, pickerSlots, pickupTimeOptions, quickDaySwitch, leadMinutesFrom, maxAdvanceDaysFrom, ridenowBookingTime, ridenowPickup, ridenowStale, timeForDay, toDateInput, toTimeInput } from './schedule';
 
 describe('pickup scheduling', () => {
   it('round-trips the date and time inputs', () => {
@@ -118,6 +118,14 @@ describe('ride now (Local / Rental)', () => {
 
 describe('ride now follows the server minimum notice', () => {
   const now = new Date(2026, 10, 27, 19, 21, 30).getTime();
+
+  it('reads the advance-booking limit the way the server does', () => {
+    expect(maxAdvanceDaysFrom({ bookingMaxAdvanceDays: 365 })).toBe(365);
+    expect(maxAdvanceDaysFrom({ bookingMaxAdvanceDays: 90 })).toBe(90);
+    expect(maxAdvanceDaysFrom({ bookingMaxAdvanceDays: 0 })).toBe(30);
+    expect(maxAdvanceDaysFrom({ bookingMaxAdvanceDays: 400 })).toBe(30);
+    expect(maxAdvanceDaysFrom(null)).toBe(30);
+  });
 
   it('reads settings/operations the way the server does', () => {
     expect(leadMinutesFrom({ bookingMinLeadMinutes: 0 })).toBe(0);

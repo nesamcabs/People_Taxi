@@ -4,6 +4,17 @@ import type { RideCategory } from '../types';
 import { formatINR } from './format';
 
 /**
+ * How many days ahead a pickup can be booked. Starts at the server's default (30) and follows the office's setting
+ * (admin → Settings → "Advance booking limit", saved as settings/operations.bookingMaxAdvanceDays) once it has been read,
+ * so the calendar and the checks here offer exactly what the booking server accepts.
+ */
+let maxAdvanceDays = SCHEDULE_MAX_DAYS;
+export const getMaxAdvanceDays = () => maxAdvanceDays;
+export const setMaxAdvanceDays = (days: number) => {
+  maxAdvanceDays = days;
+};
+
+/**
  * Why a pickup can't be booked, or '' when it can. Every booking is an advance booking, so a
  * pickup date and time is required; the server enforces the same window and is the authority.
  */
@@ -11,7 +22,7 @@ export function scheduleProblem(at: Date | null, now = Date.now()): string {
   if (!at) return 'Choose your pickup date and time.';
   const lead = (at.getTime() - now) / 60000;
   if (lead < SCHEDULE_MIN_LEAD_MIN) return `Choose a pickup at least ${SCHEDULE_MIN_LEAD_MIN} minutes from now.`;
-  if (lead > SCHEDULE_MAX_DAYS * 1440) return `You can book up to ${SCHEDULE_MAX_DAYS} days ahead.`;
+  if (lead > maxAdvanceDays * 1440) return `You can book up to ${maxAdvanceDays} days ahead.`;
   return '';
 }
 

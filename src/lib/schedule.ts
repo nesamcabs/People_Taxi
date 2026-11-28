@@ -1,6 +1,6 @@
 import { SCHEDULE_MAX_DAYS, SCHEDULE_MIN_LEAD_MIN } from '@core/config/constants';
 import type { LocationErrorKind } from '@core/services/geoService';
-import { scheduleProblem } from '@core/utils/bookingRules';
+import { getMaxAdvanceDays, scheduleProblem } from '@core/utils/bookingRules';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -77,6 +77,12 @@ export function leadMinutesFrom(settings: unknown): number {
   const v = settings && typeof settings === 'object' ? (settings as Record<string, unknown>).bookingMinLeadMinutes : undefined;
   return typeof v === 'number' && Number.isFinite(v) && v >= 0 && v <= MAX_LEAD_MIN ? Math.round(v) : SCHEDULE_MIN_LEAD_MIN;
 }
+/** The office's advance-booking limit from settings/operations, read exactly as the server reads it (1–365 days; missing or
+ *  out of range → 30). */
+export function maxAdvanceDaysFrom(settings: unknown): number {
+  const v = settings && typeof settings === 'object' ? (settings as Record<string, unknown>).bookingMaxAdvanceDays : undefined;
+  return typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 365 ? Math.round(v) : SCHEDULE_MAX_DAYS;
+}
 /**
  * The pickup "Ride now" is priced for: the minimum notice plus a minute, rounded up to 5 minutes so the fares on screen stay
  * steady (with no notice it is the current time, a few minutes at most ahead).
@@ -112,13 +118,13 @@ export function pickupTimeOptions(date: string, slots: readonly string[], now = 
   if (date === toDateInput(first)) out.push(toTimeInput(first));
   for (const t of slots) {
     const at = combineDateTime(date, t);
-    if (!at || at.getTime() <= first.getTime() || at.getTime() > now + SCHEDULE_MAX_DAYS * 86400000) continue;
+    if (!at || at.getTime() <= first.getTime() || at.getTime() > now + getMaxAdvanceDays() * 86400000) continue;
     out.push(t);
   }
   return out;
 }
 
-export const latestPickup = (now = Date.now()) => new Date(now + SCHEDULE_MAX_DAYS * 86400000);
+export const latestPickup = (now = Date.now()) => new Date(now + getMaxAdvanceDays() * 86400000);
 
 /** Location problems explained for a browser (the shared texts talk about phone settings). */
 export const LOCATION_HELP: Record<LocationErrorKind, string> = {
